@@ -134,7 +134,7 @@ class Sample:
         # sampling kind
         self.kind = str(kind)
 
-        # linear interpolation with low-pass hamming filtering
+        # linear interpolation with hamming filtering
         if self.kind == "hamming":
 
             # fill nans
