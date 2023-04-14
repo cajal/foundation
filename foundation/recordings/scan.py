@@ -135,17 +135,19 @@ def sample_response(
     )
     if unit_ids is None:
         units = pipeline.ScanSet.UnitInfo * pipeline.Activity.Trace & key
+        n = len(units)
     else:
         unit_keys = [dict(key, unit_id=unit_id) for unit_id in unit_ids]
         units = pipeline.ScanSet.UnitInfo * pipeline.Activity.Trace & unit_keys
+        n = len(unit_keys)
 
     # fetch traces and offsets
+    logger.info(f"Fetching {n} response traces")
     keys, ms_delays, traces = units.fetch(dj.key, "ms_delay", "trace", order_by=units.primary_key)
     offsets = ms_delays / 1000
 
     # verify number of tuples
-    if unit_ids is not None:
-        assert len(keys) == len(unit_ids)
+    assert len(keys) == n, f"Expected {n} traces but only fetched {len(keys)}"
 
     # response sampler
     sample = Sample(
