@@ -6,8 +6,8 @@ def lowpass(trace, source_period, target_period, filter_type="hamming"):
     """
     Parameters
     ----------
-    trace : np.array
-        1D array
+    trace : 1D array
+        trace values
     source_period : float
         source sampling period
     target_period : float
@@ -17,8 +17,8 @@ def lowpass(trace, source_period, target_period, filter_type="hamming"):
 
     Returns
     -------
-    np.array
-        lowpassed 1D array
+    1D array
+        lowpassed trace
     """
     filt = lowpass_filter(
         source_period=source_period,
@@ -32,20 +32,48 @@ def consecutive_nans(trace):
     """
     Parameters
     ----------
-    trace : np.array
-        1D array
+    trace : 1D array
+        trace values
 
     Returns
     -------
-    np.array
-        1D array indicating numbers of consecutive NaNs
+    1D array
+        consecutive NaNs
     """
     nan = np.isnan(trace)
     pad = np.concatenate([[0], nan, [0]])
     delt = np.nonzero(np.diff(pad))[0]
-    consec = np.zeros_like(trace, dtype=int)
+    nans = np.zeros_like(trace, dtype=int)
 
     for a, b in delt.reshape(-1, 2):
-        consec[a:b] = b - a
+        nans[a:b] = b - a
 
-    return consec
+    return nans
+
+
+def truncate(*traces, tolerance=1):
+    """Truncates traces to the same length
+
+    Parameters
+    ----------
+    traces : Tuple[1D array]
+        traces that possibly differ in length
+    tolerance : int
+        tolerance for length mismatches
+
+    Returns
+    -------
+    Tuple[array]
+        1D arrays of the same length
+    """
+    lengths = list(map(len, traces))
+    min_len = min(lengths)
+    max_len = max(lengths)
+
+    if max_len - min_len > tolerance:
+        raise ValueError(f"Traces differ in length by more than {tolerance}")
+
+    if max_len > min_len:
+        logger.info(f"Truncating {max_len - min_len} frames")
+
+    return tuple(trace[:min_len] for trace in traces)

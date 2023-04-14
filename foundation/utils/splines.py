@@ -59,15 +59,15 @@ class NaNSpline(InterpolatedUnivariateSpline):
         return ret
 
 
-def spline(x, y, k=1, ext=2, nan=False, ntol=0):
+def spline(x, y, k=1, ext=2, nan=False):
     """1-D interpolative spline
 
     Parameters
     ----------
-    x : np.array
-        [N] -- must be strictly increasing
-    y : np.array
-        [N +/- ntol]
+    x : 1D array
+        values must be strictly increasing
+    y : 1D array
+        length must be equal to x
     k : int
         degree of the smoothing spline -- must be 1 <= k <= 5
     ext : int | str
@@ -76,27 +76,13 @@ def spline(x, y, k=1, ext=2, nan=False, ntol=0):
             if ext=1 or 'zeros', return 0
             if ext=2 or 'raise', raise a ValueError
             if ext=3 of 'const', return the boundary value
-    ntol : int
-        tolerance for x and y length mismatch
+    nan : bool
+        whether NaNs are allowed
 
     Returns
     -------
     InterpolatedUnivariateSpline
     """
-    nx = len(x)
-    ny = len(y)
-
-    if abs(nx - ny) > ntol:
-        raise ValueError(f"x and y differ in length by more than {ntol}")
-
-    if nx > ny:
-        logger.warning(f"Truncating x by {nx - ny}")
-        x = x[:ny]
-
-    elif ny > nx:
-        logger.warning(f"Truncating y by {ny - nx}")
-        y = y[:nx]
-
     if nan:
         return NaNSpline(x, y, k=k, ext=ext)
     else:

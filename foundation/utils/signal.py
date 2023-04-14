@@ -14,8 +14,8 @@ def lowpass_filter(source_period, target_period, filter_type="hamming"):
 
     Returns
     -------
-    np.array
-        1D lowpass filter
+    1D array
+        lowpass filter
     """
     if target_period < source_period:
         raise ValueError("target_period must be >= source_period")

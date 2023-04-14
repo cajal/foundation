@@ -44,9 +44,9 @@ def scan_times(animal_id, session, scan_idx):
 
     Returns
     -------
-    np.array
+    1D array
         start of each scan volume in stimulus clock
-    np.array
+    1D array
         start of each scan volume in behavior clock
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
