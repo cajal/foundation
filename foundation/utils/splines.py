@@ -39,24 +39,22 @@ class NaNSpline(InterpolatedUnivariateSpline):
         nan = xnan | ynan
         super().__init__(x[~nan], y[~nan], **kwargs)
 
-        # nan spline with (0 inidcates finite, > 0 indicates nan)
+        # nan spline (0 inidcates finite, > 0 indicates nan)
         self.nans = interp1d(x, 1 * nan, kind="linear")
 
     def __call__(self, x, **kwargs):
         # transform x to centerered position
         x = x - self.x0
 
-        # detect nans
-        old_nans = np.isnan(x)
-        newnan = np.zeros_like(x)
-        newnan[old_nans] = 1
-        newnan[~old_nans] = self.nans(x[~old_nans])
+        # nan mask
+        notnan = ~np.isnan(x)
+        nan = np.ones_like(x)
+        nan[notnan] = self.nans(x[notnan])
+        nan = nan > 0
 
-        # interpolate non-nan values and fill detected nans
-        idx = newnan > 0
-        ret = np.zeros_like(x)
-        ret[idx] = np.nan
-        ret[~idx] = super().__call__(x[~idx], **kwargs)
+        # interpolate non-nan values, nan otherwise
+        ret = np.full_like(x, np.nan)
+        ret[~nan] = super().__call__(x[~nan], **kwargs)
 
         return ret
 
