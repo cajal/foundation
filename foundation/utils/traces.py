@@ -5,32 +5,6 @@ from .signal import lowpass_filter
 from .logging import logger
 
 
-def lowpass(trace, source_period, target_period, filter_type="hamming"):
-    """
-    Parameters
-    ----------
-    trace : 1D array
-        trace values
-    source_period : float
-        source sampling period
-    target_period : float
-        target sampling period
-    filter_type : str
-        lowpass filter type
-
-    Returns
-    -------
-    1D array
-        lowpassed trace
-    """
-    filt = lowpass_filter(
-        source_period=source_period,
-        target_period=target_period,
-        filter_type=filter_type,
-    )
-    return np.convolve(trace, filt, mode="same")
-
-
 def consecutive_nans(trace):
     """
     Parameters
@@ -127,6 +101,7 @@ class Sample:
         # truncate time and trace arrays to be the same length
         self.time, *traces = truncate(time, *traces, tolerance=tolerance)
 
+        # verify time
         assert np.all(np.isfinite(self.time)), "Non-finite values found in time"
         assert np.all(np.diff(self.time) > 0), "Time is not monotonically increasing"
 
@@ -158,12 +133,14 @@ class Sample:
 
         # setup based on specified king
         self.kind = str(kind)
+
+        # linear interpolation with low-pass hamming filtering
         if self.kind == "hamming":
 
             # fill nans
             traces = map(fill_nans, traces)
 
-            # low-pass with hamming filter if source period < target period
+            # low-pass if source period < target period
             source_period = np.median(np.diff(self.time))
             if source_period < self.target_period:
                 logger.info("Low-pass filtering traces with hamming filter")
@@ -192,35 +169,55 @@ class Sample:
         if ignored:
             logger.warning(f"Ignoring kwargs {ignored}")
 
-    def __call__(self, t):
-        """Sample traces at the given time points
+    def interpolants(self, start, end):
+        """
+        Parameters
+        ----------
+        start : float
+            start time
+        end : float
+            end time
+
+        Returns
+        -------
+        1D array
+            interpolant values
+        """
+        return np.arange(self.shift(start), self.shift(end), self.target_period)
+
+    def __call__(self, start, end):
+        """Sample traces
 
         Parameters
         ----------
-        t : 1D array
-            time points
+        start : float
+            start time
+        end : float
+            end time
 
         Returns
         -------
         Tuple[1D array]
             sampled traces
         """
-        t = self.shift(t)
+        t = self.interpolants(start, end)
         return tuple(trace(t) for trace in self.traces)
 
-    def consecutive_nans(self, t):
-        """Max consecutive NaNs in underlying trace
+    def consecutive_nans(self, start, end):
+        """Consecutive NaNs in original trace
 
         Parameters
         ----------
-        t : 1D array
-            time points
+        start : float
+            start time
+        end : float
+            end time
 
         Returns
         -------
         Tuple[t]
             Maximum number of consecutive NaNs per trace
         """
-        t = self.shift(t)
+        t = self.interpolants(start, end)
         nans = (nan(t).max() for nan in self.nans)
         return tuple(None if np.isnan(n) else int(n) for n in nans)
