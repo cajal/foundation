@@ -131,7 +131,7 @@ class Sample:
         )
         self.nans = list(starmap(interp, zip(traces, self.offsets)))
 
-        # setup based on specified king
+        # sampling kind
         self.kind = str(kind)
 
         # linear interpolation with low-pass hamming filtering
