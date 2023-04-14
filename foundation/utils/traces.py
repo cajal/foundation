@@ -103,7 +103,7 @@ class Sample:
 
         # verify time
         assert np.all(np.isfinite(self.time)), "Non-finite values found in time"
-        assert np.all(np.diff(self.time) > 0), "Time is not monotonically increasing"
+        assert np.all(np.diff(self.time) >= 0), "Time is not monotonically increasing"
 
         # target sampling period
         self.target_period = float(target_period)
