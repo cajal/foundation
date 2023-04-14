@@ -60,7 +60,7 @@ class NaNSpline(InterpolatedUnivariateSpline):
 
 
 def spline(x, y, k=1, ext=2, nan=False):
-    """1-D interpolative spline
+    """1D interpolative spline
 
     Parameters
     ----------
@@ -86,6 +86,6 @@ def spline(x, y, k=1, ext=2, nan=False):
     if nan:
         return NaNSpline(x, y, k=k, ext=ext)
     else:
-        assert np.isfinite(x).all()
-        assert np.isfinite(y).all()
+        assert not np.isnan(x).any()
+        assert not np.isnan(y).any()
         return CenteredSpline(x, y, k=k, ext=ext)
