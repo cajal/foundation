@@ -94,9 +94,9 @@ class Sample:
         tolerace : int
             tolerance for time and trace length mismatches
         kind : str
-            specifies the kind fo sampling
+            specifies the kind of sampling
         kwargs : dict
-            kind options
+            additional sampling options
         """
         # truncate time and trace arrays to be the same length
         self.time, *traces = truncate(time, *traces, tolerance=tolerance)
