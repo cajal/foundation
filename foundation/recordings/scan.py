@@ -24,17 +24,17 @@ def pipe(animal_id, session, scan_idx):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
     fuse = dj.create_virtual_module("fuse", "pipeline_fuse")
-    pipe = dj.U("pipe") & (fuse.ScanDone & key)
-    pipe = pipe.fetch1("pipe")
+    pipeline = dj.U("pipe") & (fuse.ScanDone & key)
+    pipeline = pipeline.fetch1("pipe")
 
-    if pipe == "meso":
+    if pipeline == "meso":
         return dj.create_virtual_module("meso", "pipeline_meso")
 
-    elif pipe == "reso":
+    elif pipeline == "reso":
         return dj.create_virtual_module("reso", "pipeline_meso")
 
     else:
-        raise ValueError(f"{pipe} not recognized")
+        raise ValueError(f"{pipeline} not recognized")
 
 
 def scan_times(animal_id, session, scan_idx):
@@ -118,7 +118,7 @@ def sample_response(
 
     Returns
     -------
-    List[dj.key]
+    List[dict]
         unit keys
     Sample
         samples responses by the stimulus clock
