@@ -246,3 +246,71 @@ def sample_pupil(
     )
 
     return time_spline, sample
+
+
+def sample_treadmill(
+    animal_id,
+    session,
+    scan_idx,
+    target_period=0.1,
+    tolerance=1,
+    kind="hamming",
+    **kwargs,
+):
+    """
+    Parameters
+    ----------
+    animal_id : int
+        animal id
+    session : int
+        scan session
+    scan_idx : int
+        scan index
+    target_period : float
+        target sampling period
+    tolerace : int
+        tolerance for time and response length mismatches
+    kind : str
+        specifies the kind of sampling
+    kwargs : dict
+        additional sampling options
+
+    Returns
+    -------
+    scipy.interpolate.InterpolatedUnivariateSpline
+        converts stimulus to behavior clock
+    foundation.utils.traces.Sample
+        samples treadmill trace (velocity) by the behavior clock
+    """
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+    stimulus_time, behavior_time, _ = scan_times(**key)
+
+    # stimulus time -> behavior time
+    time_spline = spline(
+        x=stimulus_time,
+        y=behavior_time,
+        k=1,
+        ext=2,
+        nan=False,
+    )
+
+    # load treadmill schema
+    treadmill = dj.create_virtual_module("treadmill", "pipeline_treadmill")
+
+    # fetch data
+    tread_time, tread_vel = (treadmill.Treadmill & key).fetch1("treadmill_time", "treadmill_vel", squeeze=True)
+
+    # fill NaN treadmill times
+    if np.isnan(tread_time).any():
+        logger.info("Replacing NaNs in eye time with interpolated values")
+        tread_time = fill_nans(tread_time)
+
+    # treadmill sampler
+    sample = Sample(
+        time=tread_time,
+        traces=[tread_vel],
+        target_period=target_period,
+        tolerance=tolerance,
+        kind=kind,
+        **kwargs,
+    )
