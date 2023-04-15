@@ -201,16 +201,6 @@ def sample_pupil(
         samples pupil traces (Radius, Center X, Center Y) by the behavior clock
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    stimulus_time, behavior_time, _ = scan_times(**key)
-
-    # stimulus time -> behavior time
-    time_spline = spline(
-        x=stimulus_time,
-        y=behavior_time,
-        k=1,
-        ext=2,
-        nan=False,
-    )
 
     # load pupil schema
     pupil = dj.create_virtual_module("pupil", "pipeline_eye")
@@ -245,7 +235,7 @@ def sample_pupil(
         **kwargs,
     )
 
-    return time_spline, sample
+    return sample
 
 
 def sample_treadmill(
@@ -283,16 +273,6 @@ def sample_treadmill(
         samples treadmill trace (velocity) by the behavior clock
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    stimulus_time, behavior_time, _ = scan_times(**key)
-
-    # stimulus time -> behavior time
-    time_spline = spline(
-        x=stimulus_time,
-        y=behavior_time,
-        k=1,
-        ext=2,
-        nan=False,
-    )
 
     # load treadmill schema
     treadmill = dj.create_virtual_module("treadmill", "pipeline_treadmill")
@@ -314,3 +294,5 @@ def sample_treadmill(
         kind=kind,
         **kwargs,
     )
+
+    return sample
