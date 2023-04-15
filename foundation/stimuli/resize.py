@@ -14,7 +14,7 @@ class ResizeMixin:
         """
         Returns
         -------
-        Callable[[image: Image, height: int, width: int], Image]
+        Callable[[Image], Image]
         """
         raise NotImplementedError()
 
@@ -22,51 +22,46 @@ class ResizeMixin:
     def resize(self):
         f = self._resize
 
-        def resize(image, height, width):
+        def resize(image):
             """
             Parameters
             ----------
             image : Image
                 stimulus frame
-            height : int
-                target height
-            width : int
-                target width
 
             Returns
             -------
             Image
                 resized stimulus frame
             """
-            if height == image.height and width == image.width:
-                return image
-            else:
-                return f(image, height, width)
+            return f(image)
 
         return resize
 
 
 @schema
-class ResampleFilter(dj.Lookup, ResizeMixin):
+class Bilinear(dj.Lookup, ResizeMixin):
     definition = """
-    resample_filter     : varchar(32)   # resampling filter
+    height      : smallint unsigned  # stimulus frame height
+    width       : smallint unsigned  # stimulus frame height
     """
 
     @property
     def _resize(self):
-        filt = self.fetch1("resample_filter")
-        resample = getattr(Image, filt)
-        logger.info(f"Resampling with {filt} filter")
+        height, width = self.fetch1("height", "width")
 
-        def f(image, height, width):
-            return image.resize((width, height), resample=resample)
+        def f(image):
+            if image.height == height and image.width == width:
+                return image
+            else:
+                return image.resize((width, height), resample=Image.BILINEAR)
 
         return f
 
 
 @link(schema)
 class Resize:
-    links = [ResampleFilter]
+    links = [Bilinear]
     name = "resize"
     comment = "stimulus resizing method"
     length = 8
