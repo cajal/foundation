@@ -55,22 +55,22 @@ class OffsetMixin:
 
 
 @schema
-class Frames(dj.Lookup, OffsetMixin):
+class OffsetFrames(dj.Lookup, OffsetMixin):
     definition = """
     -> Rate
-    frames      : smallint unsigned     # number of offset frames
+    offset_frames   : smallint unsigned     # number of offset frames
     """
 
     @property
     def offset(self):
         period = (Rate & self).link.period
-        frames = self.fetch1("frames")
+        frames = self.fetch1("offset_frames")
         return period * frames
 
 
 @link(schema)
 class Offset:
-    links = [Frames]
+    links = [OffsetFrames]
     name = "offset"
     comment = "sampling offset"
     length = 8
