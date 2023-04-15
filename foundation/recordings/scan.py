@@ -148,7 +148,7 @@ def sample_response(
     offsets = ms_delays / 1000
 
     # verify number of tuples
-    assert len(keys) == n, f"Expected {n} traces but only fetched {len(keys)}"
+    assert len(keys) == n, f"Expected {n} traces but found {len(keys)}"
 
     # response sampler
     sample = Sample(
@@ -237,7 +237,7 @@ def sample_pupil(
         **kwargs,
     )
 
-    # transform stimulus time to behavior time
+    # stimulus time -> behavior time
     time = interp1d(stimulus_time, behavior_time, kind="linear")
 
     return time, sample
