@@ -43,13 +43,9 @@ class Rate:
 
 
 class OffsetMixin:
-    def offset(self, period):
+    @property
+    def offset(self):
         """
-        Parameters
-        ----------
-        period : float
-            sampling period (seconds)
-
         Returns
         -------
         float
@@ -61,12 +57,15 @@ class OffsetMixin:
 @schema
 class Frames(dj.Lookup, OffsetMixin):
     definition = """
+    -> Rate
     frames      : smallint unsigned     # number of offset frames
     """
 
-    def offset(self, period):
+    @property
+    def offset(self):
+        period = (Rate & self).link.period
         frames = self.fetch1("frames")
-        return float(period * frames)
+        return period * frames
 
 
 @link(schema)
