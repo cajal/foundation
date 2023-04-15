@@ -1,12 +1,11 @@
 import datajoint as dj
 import numpy as np
-from scipy.interpolate import interp1d
-
 from foundation.utils.traces import Sample, fill_nans
+from foundation.utils.splines import spline
 from foundation.utils.logging import logger
 
 
-def pipe(animal_id, session, scan_idx):
+def load_pipe(animal_id, session, scan_idx):
     """
     Parameters
     ----------
@@ -25,17 +24,17 @@ def pipe(animal_id, session, scan_idx):
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
     fuse = dj.create_virtual_module("fuse", "pipeline_fuse")
-    pipeline = dj.U("pipe") & (fuse.ScanDone & key)
-    pipeline = pipeline.fetch1("pipe")
+    pipe = dj.U("pipe") & (fuse.ScanDone & key)
+    pipe = pipe.fetch1("pipe")
 
-    if pipeline == "meso":
+    if pipe == "meso":
         return dj.create_virtual_module("meso", "pipeline_meso")
 
-    elif pipeline == "reso":
+    elif pipe == "reso":
         return dj.create_virtual_module("reso", "pipeline_meso")
 
     else:
-        raise ValueError(f"{pipeline} not recognized")
+        raise ValueError(f"{pipe} not recognized")
 
 
 def scan_times(animal_id, session, scan_idx):
@@ -59,11 +58,11 @@ def scan_times(animal_id, session, scan_idx):
         pipeline_meso | pipeline_reso
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    pipeline = pipe(**key)
+    pipe = load_pipe(**key)
 
     # number of planes
-    n = (pipeline.ScanInfo & key).proj(n="nfields div nrois").fetch1("n")
-    if n != len(dj.U("z") & (pipeline.ScanInfo.Field & key)):
+    n = (pipe.ScanInfo & key).proj(n="nfields div nrois").fetch1("n")
+    if n != len(dj.U("z") & (pipe.ScanInfo.Field & key)):
         raise ValueError("unexpected number of depths")
 
     # fetch times
@@ -75,7 +74,7 @@ def scan_times(animal_id, session, scan_idx):
     assert np.isfinite(stimulus_time).all()
     assert np.isfinite(behavior_time).all()
 
-    return stimulus_time, behavior_time, pipeline
+    return stimulus_time, behavior_time, pipe
 
 
 def sample_response(
@@ -121,11 +120,11 @@ def sample_response(
     -------
     List[dict]
         unit keys
-    Sample
+    foundation.utils.traces.Sample
         samples responses by the stimulus clock
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    time, _, pipeline = scan_times(**key)
+    time, _, pipe = scan_times(**key)
 
     # restrict units
     key = dict(
@@ -135,11 +134,11 @@ def sample_response(
         spike_method=spike_method,
     )
     if unit_ids is None:
-        units = pipeline.ScanSet.UnitInfo * pipeline.Activity.Trace & key
+        units = pipe.ScanSet.UnitInfo * pipe.Activity.Trace & key
         n = len(units)
     else:
         unit_keys = [dict(key, unit_id=unit_id) for unit_id in unit_ids]
-        units = pipeline.ScanSet.UnitInfo * pipeline.Activity.Trace & unit_keys
+        units = pipe.ScanSet.UnitInfo * pipe.Activity.Trace & unit_keys
         n = len(unit_keys)
 
     # fetch traces and offsets
@@ -196,13 +195,22 @@ def sample_pupil(
 
     Returns
     -------
-    interp1d
+    scipy.interpolate.InterpolatedUnivariateSpline
         converts stimulus to behavior clock
-    Sample
+    foundation.utils.traces.Sample
         samples pupil traces (Radius, Center X, Center Y) by the behavior clock
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
     stimulus_time, behavior_time, _ = scan_times(**key)
+
+    # stimulus time -> behavior time
+    time_spline = spline(
+        x=stimulus_time,
+        y=behavior_time,
+        k=1,
+        ext=2,
+        nan=False,
+    )
 
     # load pupil schema
     pupil = dj.create_virtual_module("pupil", "pipeline_eye")
@@ -237,7 +245,4 @@ def sample_pupil(
         **kwargs,
     )
 
-    # stimulus time -> behavior time
-    time = interp1d(stimulus_time, behavior_time, kind="linear")
-
-    return time, sample
+    return time_spline, sample
