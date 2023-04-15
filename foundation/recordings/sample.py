@@ -2,10 +2,10 @@ import datajoint as dj
 from djutils import link
 
 
-schema = dj.schema("foundation_recordings", context=locals())
+schema = dj.schema("foundation_recordings")
 
 
-# ---------- Sampling Rates -------------
+# ---------- Sampling Rates ----------
 
 
 class RateMixin:
@@ -39,7 +39,7 @@ class Rate:
     length = 8
 
 
-# ---------- Sampling Offsets -------------
+# ---------- Sampling Offsets ----------
 
 
 class OffsetMixin:

@@ -1,5 +1,5 @@
-import datajoint as dj
 import numpy as np
+import datajoint as dj
 from foundation.utils.traces import Sample, fill_nans
 from foundation.utils.splines import spline
 from foundation.utils.logging import logger
