@@ -80,3 +80,14 @@ class Resize(TransformMixin, dj.Lookup):
                 return frames.apply(resize)
 
         return f
+
+
+# ---------- Transform Links ----------
+
+
+@link(schema)
+class Transform:
+    links = [Resize]
+    name = "transform"
+    comment = "stimulus transformation"
+    length = 16

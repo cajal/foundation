@@ -67,6 +67,23 @@ class Video:
             logger.warn("Only supported for homogenous videos.")
 
     @property
+    def channels(self):
+        """
+        Returns
+        -------
+        int | None
+            frame width
+        """
+        if not self.homogenous:
+            logger.warn("Only supported for homogenous videos.")
+            return
+
+        if self.mode == "L":
+            return 1
+        else:
+            raise NotImplementedError(f"Mode {self.mode} has not yet been implemented.")
+
+    @property
     def array(self):
         """
         Returns
@@ -82,7 +99,6 @@ class Video:
         if self.mode == "L":
             frames = np.stack([np.array(frame) for frame in self.frames], 0)
             return frames[:, :, :, None]
-
         else:
             raise NotImplementedError(f"Mode {self.mode} has not yet been implemented.")
 
