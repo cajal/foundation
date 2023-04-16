@@ -3,8 +3,8 @@ import datajoint as dj
 import io
 import av
 from PIL import Image
-from tqdm import tqdm
-from foundation.utils.logging import logger
+from foundation.utils.video import Video
+
 
 stimulus = dj.create_virtual_module("stimulus", "pipeline_stimulus")
 gabor = dj.create_virtual_module("gabor", "pipeline_gabor")
@@ -44,7 +44,7 @@ class ConditionMixin:
         """
         Returns
         -------
-        List[Image]
+        Video
             stimulus frames
         """
         raise NotImplementedError
@@ -80,7 +80,7 @@ class Clip(ConditionMixin, dj.Computed):
             if i == end:
                 return
 
-            yield frame.to_image().convert(mode="L")
+            yield frame.to_image().convert(mode="L")  # TODO: currently assumes that all clips are grayscale
 
     @staticmethod
     def _frames(condition_hash):
@@ -93,7 +93,7 @@ class Clip(ConditionMixin, dj.Computed):
     @property
     def frames(self):
         condition_hash, n = self.fetch1("condition_hash", "frames")
-        frames = list(self.decode(condition_hash))
+        frames = Video(self.decode(condition_hash))
         assert len(frames) == n
         return frames
 
@@ -114,7 +114,11 @@ class Monet2(ConditionMixin, dj.Computed):
     def frames(self):
         key, n = self.fetch1(dj.key, "frames")
         movie = (stimulus.Monet2 & key).fetch1("movie").squeeze(2)
-        return [Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])]
+
+        frames = Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
+        assert len(frames) == n
+
+        return frames
 
 
 # ---------- stimulus.Trippy ----------
@@ -133,7 +137,11 @@ class Trippy(ConditionMixin, dj.Computed):
     def frames(self):
         key, n = self.fetch1(dj.key, "frames")
         movie = (stimulus.Trippy & key).fetch1("movie")
-        return [Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])]
+
+        frames = Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
+        assert len(frames) == n
+
+        return frames
 
 
 # ---------- stimulus.GaborSequence ----------
@@ -163,7 +171,7 @@ class GaborSequence(ConditionMixin, dj.Computed):
         frames = np.concatenate(movs)
         assert len(frames) == sequence["frames"]
 
-        return [Image.fromarray(frame, mode="L") for frame in frames]
+        return Video([Image.fromarray(frame, mode="L") for frame in frames])
 
 
 # ---------- stimulus.DotSequence ----------
@@ -190,7 +198,7 @@ class DotSequence(ConditionMixin, dj.Computed):
         frames = np.stack(images[id_trace])
         assert len(frames) == n_frames
 
-        return [Image.fromarray(frame, mode="L") for frame in frames]
+        return Video([Image.fromarray(frame, mode="L") for frame in frames])
 
 
 # ---------- stimulus.RdkSequence ----------
@@ -234,7 +242,7 @@ class RdkSequence(ConditionMixin, dj.Computed):
             movs += [movie]
         frames = np.concatenate(movs)
 
-        return [Image.fromarray(frame, mode="L") for frame in frames]
+        return Video([Image.fromarray(frame, mode="L") for frame in frames])
 
 
 # ---------- stimulus.Frame ----------
@@ -268,8 +276,6 @@ class Frame(ConditionMixin, dj.Computed):
             raise NotImplementedError(f"Image mode {mode} not implemented")
 
         if pre_blank > 0:
-            frames = [blank, image, blank]
+            return Video([blank, image, blank])
         else:
-            frames = [image, blank]
-
-        return frames
+            return Video([image, blank])
