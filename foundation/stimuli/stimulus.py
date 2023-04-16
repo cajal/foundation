@@ -6,6 +6,7 @@ from djutils import link
 from PIL import Image
 from foundation.utils.video import Video
 
+
 schema = dj.schema("foundation_stimuli")
 
 
