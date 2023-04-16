@@ -367,13 +367,13 @@ class TrialStimulus(dj.Computed):
         trial = stim.Trial * stim.Condition & key
         stim_type, flip_times = trial.fetch1("stimulus_type", "flip_times", squeeze=True)
 
-        stimuli = stimulus.Stimulus & {"stimulus_type": stim_type.split(".")[1]}
-        if stimuli:
-            part = stimuli.part
-        else:
-            logger.warning("Stimulus not found. Populate stimuli before populating trials.")
+        stim_type = stim_type.split(".")[1]
+        stim_key = stimulus.Stimulus.join(stim_type, trial)
+
+        if stim_key is None:
+            logger.warning("Skipping trial because stimulus not found. Populate stimuli before populating trials.")
             return
 
-        key["stimulus_id"], frames = (part * part.link & trial).fetch1("stimulus_id", "frames")
+        key["stimulus_id"], frames = stim_key.fetch1("stimulus_id", "frames")
         key["frames_match"] = bool(frames == len(flip_times))
         self.insert1(key)
