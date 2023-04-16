@@ -50,7 +50,7 @@ class Resize(TransformMixin, dj.Lookup):
     definition = """
     height      : smallint unsigned     # stimulus frame height
     width       : smallint unsigned     # stimulus frame width
-    resample    : varchar(64)           # type of resampling
+    resample    : varchar(64)           # resampling filter
     """
 
     @property
@@ -75,7 +75,7 @@ class Resize(TransformMixin, dj.Lookup):
                 return frames
 
             else:
-                logger.info(f"Resampling to {height}x{width} with bilinear filter.")
+                logger.info(f"Resampling to {height}x{width} with {resample} filter.")
                 resize = lambda frame: frame.resize((width, height), resample=filt)
                 return frames.apply(resize)
 
