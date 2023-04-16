@@ -43,7 +43,7 @@ class ResizeMixin:
 class Bilinear(dj.Lookup, ResizeMixin):
     definition = """
     height      : smallint unsigned  # stimulus frame height
-    width       : smallint unsigned  # stimulus frame height
+    width       : smallint unsigned  # stimulus frame width
     """
 
     @property
