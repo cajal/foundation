@@ -1,8 +1,60 @@
 import numpy as np
 import datajoint as dj
+from foundation.stimuli import stimulus
 from foundation.utils.traces import Sample, fill_nans
 from foundation.utils.splines import spline
 from foundation.utils.logging import logger
+
+stim = dj.create_virtual_module("stim", "pipeline_stimulus")
+fuse = dj.create_virtual_module("fuse", "pipeline_fuse")
+meso = dj.create_virtual_module("meso", "pipeline_meso")
+reso = dj.create_virtual_module("reso", "pipeline_reso")
+pupil = dj.create_virtual_module("pupil", "pipeline_eye")
+tread = dj.create_virtual_module("tread", "pipeline_treadmill")
+
+
+# ---------- Populate Functions ----------
+
+
+def populate_stimuli(animal_id, session, scan_idx, reserve_jobs=True, display_progress=True):
+    """
+    Parameters
+    ----------
+    animal_id : int
+        animal id
+    session : int
+        scan session
+    scan_idx : int
+        scan index
+    reserve_jobs : bool
+        job reservation for AutoPopulate
+    display_progress : bool
+        display progress
+    """
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    # scan trials
+    trials = stim.Trial & key
+
+    # stimulus types
+    stim_types = dj.U("stimulus_type") & (stim.Condition & trials)
+    stim_types = stim_types.fetch("stimulus_type")
+
+    # populate each stimulus type
+    for stim_type in stim_types:
+
+        table = getattr(stimulus, stim_type.split(".")[1])
+
+        if table is None:
+            raise NotImplementedError(f"Condition {stim_type} is not yet implemented")
+
+        table.populate(trials, reserve_jobs=reserve_jobs, display_progress=display_progress)
+
+    # fill links
+    stimulus.Stimulus.fill()
+
+
+# ---------- Loading Functions ----------
 
 
 def load_pipe(animal_id, session, scan_idx):
@@ -23,21 +75,20 @@ def load_pipe(animal_id, session, scan_idx):
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    fuse = dj.create_virtual_module("fuse", "pipeline_fuse")
     pipe = dj.U("pipe") & (fuse.ScanDone & key)
     pipe = pipe.fetch1("pipe")
 
     if pipe == "meso":
-        return dj.create_virtual_module("meso", "pipeline_meso")
+        return meso
 
     elif pipe == "reso":
-        return dj.create_virtual_module("reso", "pipeline_meso")
+        return reso
 
     else:
         raise ValueError(f"{pipe} not recognized")
 
 
-def scan_times(animal_id, session, scan_idx):
+def load_scan_times(animal_id, session, scan_idx):
     """
     Parameters
     ----------
@@ -66,9 +117,8 @@ def scan_times(animal_id, session, scan_idx):
         raise ValueError("unexpected number of depths")
 
     # fetch times
-    stimulus = dj.create_virtual_module("stimulus", "pipeline_stimulus")
     fetch = lambda sync: (sync & key).fetch1("frame_times")[::n]
-    stimulus_time, behavior_time = map(fetch, [stimulus.Sync, stimulus.BehaviorSync])
+    stimulus_time, behavior_time = map(fetch, [stim.Sync, stim.BehaviorSync])
 
     # verify times
     assert np.isfinite(stimulus_time).all()
@@ -77,7 +127,7 @@ def scan_times(animal_id, session, scan_idx):
     return stimulus_time, behavior_time, pipe
 
 
-def sample_response(
+def load_response_sampler(
     animal_id,
     session,
     scan_idx,
@@ -124,7 +174,7 @@ def sample_response(
         samples responses by the stimulus clock
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    time, _, pipe = scan_times(**key)
+    time, _, pipe = load_scan_times(**key)
 
     # restrict units
     key = dict(
@@ -163,7 +213,7 @@ def sample_response(
     return keys, sample
 
 
-def sample_pupil(
+def load_pupil_sampler(
     animal_id,
     session,
     scan_idx,
@@ -202,18 +252,21 @@ def sample_pupil(
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    # load pupil schema
-    pupil = dj.create_virtual_module("pupil", "pipeline_eye")
-
-    # pupil trace times
+    # fetch times
     eye_time = (pupil.Eye & key).fetch1("eye_time", squeeze=True)
+
+    # fill NaN treadmill times
     if np.isnan(eye_time).any():
         logger.info("Replacing NaNs in eye time with interpolated values")
         eye_time = fill_nans(eye_time)
 
-    # pupil trace
+    # verify tracking exists
+    fit_key = pupil.FittedPupil & dict(key, tracking_method=tracking_method)
+    fit_key = fit_key.fetch1(dj.key)
+
+    # fetch pupil fits
     logger.info("Fetching pupil traces")
-    fits = pupil.FittedPupil.Circle & dict(key, tracking_method=tracking_method)
+    fits = pupil.FittedPupil.Circle & fit_key
     radius, center = fits.fetch("radius", "center", order_by="frame_id")
 
     # deal with NaNs
@@ -238,7 +291,7 @@ def sample_pupil(
     return sample
 
 
-def sample_treadmill(
+def load_treadmill_sampler(
     animal_id,
     session,
     scan_idx,
@@ -274,11 +327,8 @@ def sample_treadmill(
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    # load treadmill schema
-    treadmill = dj.create_virtual_module("treadmill", "pipeline_treadmill")
-
-    # fetch data
-    tread_time, tread_vel = (treadmill.Treadmill & key).fetch1("treadmill_time", "treadmill_vel", squeeze=True)
+    # fetch times and velocities
+    tread_time, tread_vel = (tread.Treadmill & key).fetch1("treadmill_time", "treadmill_vel", squeeze=True)
 
     # fill NaN treadmill times
     if np.isnan(tread_time).any():
