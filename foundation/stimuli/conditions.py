@@ -14,7 +14,28 @@ rdk = dj.create_virtual_module("rdk", "pipeline_rdk")
 schema = dj.schema("foundation_stimuli")
 
 
-class FramesMixin:
+class ConditionMixin:
+    definition = """
+    -> stimulus.{table}
+    ---
+    frames      : int unsigned  # number of stimulus frames
+    """
+
+    @staticmethod
+    def _frames(condition_hash):
+        """
+        Parameters
+        ----------
+        condition_hash : str
+            primary key of stimulus.Condition
+
+        Returns
+        -------
+        int
+            number of stimulus frames
+        """
+        raise NotImplementedError()
+
     @property
     def frames(self):
         """
@@ -25,14 +46,14 @@ class FramesMixin:
         """
         raise NotImplementedError
 
+    def make(self, key):
+        key["frames"] = self._frames(**key)
+        self.insert1(key)
+
 
 @schema
-class Clip(dj.Computed, FramesMixin):
-    definition = """
-    -> stimulus.Clip
-    ---
-    frames      : int unsigned  # number of stimulus frames
-    """
+class Clip(ConditionMixin, dj.Computed):
+    definition = ConditionMixin.definition.format(table="Clip")
 
     @staticmethod
     def decode(condition_hash):
@@ -55,13 +76,13 @@ class Clip(dj.Computed, FramesMixin):
 
             yield frame.to_image().convert(mode="L")
 
-    def make(self, key):
+    @staticmethod
+    def _frames(condition_hash):
         frames = 0
-        for _ in self.decode(**key):
+        for _ in Clip.decode(condition_hash):
             frames += 1
 
-        key["frames"] = frames
-        self.insert1(key)
+        return frames
 
     @property
     def frames(self):
@@ -72,18 +93,13 @@ class Clip(dj.Computed, FramesMixin):
 
 
 @schema
-class Monet2(dj.Computed, FramesMixin):
-    definition = """
-    -> stimulus.Monet2
-    ---
-    frames      : int unsigned  # number of stimulus frames
-    """
+class Monet2(ConditionMixin, dj.Computed):
+    definition = ConditionMixin.definition.format(table="Monet2")
 
-    def make(self, key):
-        movie = (stimulus.Monet2 & key).fetch1("movie")
-
-        key["frames"] = movie.shape[-1]
-        self.insert1(key)
+    @staticmethod
+    def _frames(condition_hash):
+        key = dict(condition_hash=condition_hash)
+        return (stimulus.Monet2 & key).fetch1("movie").shape[-1]
 
     @property
     def frames(self):
@@ -93,18 +109,13 @@ class Monet2(dj.Computed, FramesMixin):
 
 
 @schema
-class Trippy(dj.Computed, FramesMixin):
-    definition = """
-    -> stimulus.Trippy
-    ---
-    frames      : int unsigned  # number of stimulus frames
-    """
+class Trippy(ConditionMixin, dj.Computed):
+    definition = ConditionMixin.definition.format(table="Trippy")
 
-    def make(self, key):
-        movie = (stimulus.Trippy & key).fetch1("movie")
-
-        key["frames"] = movie.shape[-1]
-        self.insert1(key)
+    @staticmethod
+    def _frames(condition_hash):
+        key = dict(condition_hash=condition_hash)
+        return (stimulus.Trippy & key).fetch1("movie").shape[-1]
 
     @property
     def frames(self):
@@ -114,21 +125,18 @@ class Trippy(dj.Computed, FramesMixin):
 
 
 @schema
-class GaborSequence(dj.Computed, FramesMixin):
-    definition = """
-    -> stimulus.GaborSequence
-    ---
-    frames      : int unsigned  # number of stimulus frames
-    """
+class GaborSequence(ConditionMixin, dj.Computed):
+    definition = ConditionMixin.definition.format(table="GaborSequence")
 
-    def make(self, key):
+    @staticmethod
+    def _frames(condition_hash):
+        key = dict(condition_hash=condition_hash)
         sequence = (stimulus.GaborSequence & key).fetch1()
 
         n_frames = (gabor.Sequence.Gabor * gabor.Gabor & sequence).fetch("n_frames")
         assert len(n_frames) == sequence["sequence_length"]
 
-        key["frames"] = sum(n_frames)
-        self.insert1(key)
+        return sum(n_frames)
 
     @property
     def frames(self):
@@ -144,18 +152,14 @@ class GaborSequence(dj.Computed, FramesMixin):
 
 
 @schema
-class DotSequence(dj.Computed, FramesMixin):
-    definition = """
-    -> stimulus.DotSequence
-    ---
-    frames      : int unsigned  # number of stimulus frames
-    """
+class DotSequence(ConditionMixin, dj.Computed):
+    definition = ConditionMixin.definition.format(table="DotSequence")
 
-    def make(self, key):
+    @staticmethod
+    def _frames(condition_hash):
+        key = dict(condition_hash=condition_hash)
         sequence = (stimulus.DotSequence & key).fetch1()
-
-        key["frames"] = (dot.Trace * dot.Display & sequence).fetch1("n_frames")
-        self.insert1(key)
+        return (dot.Trace * dot.Display & sequence).fetch1("n_frames")
 
     @property
     def frames(self):
@@ -172,14 +176,12 @@ class DotSequence(dj.Computed, FramesMixin):
 
 
 @schema
-class RdkSequence(dj.Computed, FramesMixin):
-    definition = """
-    -> stimulus.RdkSequence
-    ---
-    frames      : int unsigned  # number of stimulus frames
-    """
+class RdkSequence(ConditionMixin, dj.Computed):
+    definition = ConditionMixin.definition.format(table="RdkSequence")
 
-    def make(self, key):
+    @staticmethod
+    def _frames(condition_hash):
+        key = dict(condition_hash=condition_hash)
         sequence = (stimulus.RdkSequence & key).fetch1()
 
         keys = [dict(sequence, sequence_id=i) for i in range(sequence["sequence_length"])]
@@ -191,8 +193,7 @@ class RdkSequence(dj.Computed, FramesMixin):
         frames = np.concatenate([(table & keys).fetch("n_frames") for table in tables])
         assert len(frames) == sequence["sequence_length"]
 
-        key["frames"] = frames.sum()
-        self.insert1(key)
+        return frames.sum()
 
     @property
     def frames(self):
@@ -213,3 +214,38 @@ class RdkSequence(dj.Computed, FramesMixin):
         frames = np.concatenate(movs)
 
         return [Image.fromarray(frame, mode="L") for frame in frames]
+
+
+@schema
+class Frame(ConditionMixin, dj.Computed):
+    definition = ConditionMixin.definition.format(table="Frame")
+
+    @staticmethod
+    def _frames(condition_hash):
+        key = dict(condition_hash=condition_hash)
+        pre_blank = (stimulus.Frame & key).fetch1("pre_blank_period") > 0
+
+        if pre_blank:
+            return 3
+        else:
+            return 2
+
+    @property
+    def frames(self):
+        tup = stimulus.StaticImage.Image * stimulus.Frame & self
+        image, pre_blank = tup.fetch1("image", "pre_blank_period")
+
+        image = Image.fromarray(image)
+
+        if image.mode == "L":
+            blank = np.full([image.height, image.width], 128, dtype=np.uint8)
+            blank = Image.fromarray(blank)
+        else:
+            raise NotImplementedError(f"Image mode {mode} not implemented")
+
+        if pre_blank > 0:
+            frames = [blank, image, blank]
+        else:
+            frames = [image, blank]
+
+        return frames

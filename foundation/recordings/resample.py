@@ -21,7 +21,7 @@ class RateMixin:
 
 
 @schema
-class Hz(dj.Lookup, RateMixin):
+class Hz(RateMixin, dj.Lookup):
     definition = """
     hz          : decimal(9, 6)         # samples per second
     """
@@ -55,7 +55,7 @@ class OffsetMixin:
 
 
 @schema
-class OffsetFrames(dj.Lookup, OffsetMixin):
+class OffsetFrames(OffsetMixin, dj.Lookup):
     definition = """
     -> Rate
     offset_frames   : smallint unsigned     # number of offset frames

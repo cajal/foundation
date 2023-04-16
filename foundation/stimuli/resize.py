@@ -40,7 +40,7 @@ class ResizeMixin:
 
 
 @schema
-class Bilinear(dj.Lookup, ResizeMixin):
+class Bilinear(ResizeMixin, dj.Lookup):
     definition = """
     height      : smallint unsigned  # stimulus frame height
     width       : smallint unsigned  # stimulus frame width
