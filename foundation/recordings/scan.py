@@ -40,15 +40,16 @@ def populate_stimuli(animal_id, session, scan_idx, reserve_jobs=True, display_pr
     stim_types = dj.U("stimulus_type") & (stim.Condition & trials)
     stim_types = stim_types.fetch("stimulus_type")
 
-    # populate each stimulus type
+    # populate each stimulus table
     for stim_type in stim_types:
 
-        table = getattr(stimulus, stim_type.split(".")[1])
+        table = stim_type.split(".")[1]
+        table = getattr(stimulus, table)
 
         if table is None:
             raise NotImplementedError(f"Condition {stim_type} is not yet implemented")
-
-        table.populate(trials, reserve_jobs=reserve_jobs, display_progress=display_progress)
+        else:
+            table.populate(trials, reserve_jobs=reserve_jobs, display_progress=display_progress)
 
     # fill links
     stimulus.Stimulus.fill()
