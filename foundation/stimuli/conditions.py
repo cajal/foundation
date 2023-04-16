@@ -14,6 +14,9 @@ rdk = dj.create_virtual_module("rdk", "pipeline_rdk")
 schema = dj.schema("foundation_stimuli")
 
 
+# ---------- Condition Mixin ----------
+
+
 class ConditionMixin:
     definition = """
     -> stimulus.{table}
@@ -49,6 +52,9 @@ class ConditionMixin:
     def make(self, key):
         key["frames"] = self._frames(**key)
         self.insert1(key)
+
+
+# ---------- stimulus.Clip ----------
 
 
 @schema
@@ -92,6 +98,9 @@ class Clip(ConditionMixin, dj.Computed):
         return frames
 
 
+# ---------- stimulus.Monet2 ----------
+
+
 @schema
 class Monet2(ConditionMixin, dj.Computed):
     definition = ConditionMixin.definition.format(table="Monet2")
@@ -108,6 +117,9 @@ class Monet2(ConditionMixin, dj.Computed):
         return [Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])]
 
 
+# ---------- stimulus.Trippy ----------
+
+
 @schema
 class Trippy(ConditionMixin, dj.Computed):
     definition = ConditionMixin.definition.format(table="Trippy")
@@ -122,6 +134,9 @@ class Trippy(ConditionMixin, dj.Computed):
         key, n = self.fetch1(dj.key, "frames")
         movie = (stimulus.Trippy & key).fetch1("movie")
         return [Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])]
+
+
+# ---------- stimulus.GaborSequence ----------
 
 
 @schema
@@ -151,6 +166,9 @@ class GaborSequence(ConditionMixin, dj.Computed):
         return [Image.fromarray(frame, mode="L") for frame in frames]
 
 
+# ---------- stimulus.DotSequence ----------
+
+
 @schema
 class DotSequence(ConditionMixin, dj.Computed):
     definition = ConditionMixin.definition.format(table="DotSequence")
@@ -173,6 +191,9 @@ class DotSequence(ConditionMixin, dj.Computed):
         assert len(frames) == n_frames
 
         return [Image.fromarray(frame, mode="L") for frame in frames]
+
+
+# ---------- stimulus.RdkSequence ----------
 
 
 @schema
@@ -214,6 +235,9 @@ class RdkSequence(ConditionMixin, dj.Computed):
         frames = np.concatenate(movs)
 
         return [Image.fromarray(frame, mode="L") for frame in frames]
+
+
+# ---------- stimulus.Frame ----------
 
 
 @schema
