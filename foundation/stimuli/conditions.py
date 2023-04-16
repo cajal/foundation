@@ -57,10 +57,54 @@ class Clip(dj.Computed, ConditionMixin):
         for _ in self.decode(**key):
             frames += 1
 
-        key = dict(key, frames=frames)
+        key["frames"] = frames
         self.insert1(key)
 
     @property
     def frames(self):
-        condition_hash = self.fetch1("condition_hash")
-        return list(self.decode(condition_hash))
+        condition_hash, n = self.fetch1("condition_hash", "frames")
+        frames = list(self.decode(condition_hash))
+        assert len(frames) == n
+        return frames
+
+
+@schema
+class Monet2(dj.Computed, ConditionMixin):
+    definition = """
+    -> stimulus.Monet2
+    ---
+    frames      : int unsigned  # number of stimulus frames
+    """
+
+    def make(self, key):
+        movie = (stimulus.Monet2 & key).fetch1("movie")
+
+        key["frames"] = movie.shape[-1]
+        self.insert1(key)
+
+    @property
+    def frames(self):
+        key, n = self.fetch1(dj.key, "frames")
+        movie = (stimulus.Monet2 & key).fetch1("movie").squeeze(2)
+        return [Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])]
+
+
+@schema
+class Trippy(dj.Computed, ConditionMixin):
+    definition = """
+    -> stimulus.Trippy
+    ---
+    frames      : int unsigned  # number of stimulus frames
+    """
+
+    def make(self, key):
+        movie = (stimulus.Trippy & key).fetch1("movie")
+
+        key["frames"] = movie.shape[-1]
+        self.insert1(key)
+
+    @property
+    def frames(self):
+        key, n = self.fetch1(dj.key, "frames")
+        movie = (stimulus.Trippy & key).fetch1("movie")
+        return [Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])]
