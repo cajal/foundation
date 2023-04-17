@@ -104,7 +104,7 @@ class Trial(dj.Computed):
             frames = link.frames
 
         except MissingError:
-            logger.warning(f"Skipping {key} due to missing stimulus_id.")
+            logger.warning(f"Skipping {key} due to missing link data.")
 
         key["stimulus_id"] = stimulus_id
         key["frames"] = frames
