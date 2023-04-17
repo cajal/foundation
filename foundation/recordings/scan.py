@@ -42,7 +42,7 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
     stim_types = dj.U("stimulus_type") & (stim.Condition & trial_keys)
     stim_types = stim_types.fetch("stimulus_type")
 
-    # populate each stimulus table
+    # populate each stimulus type
     for stim_type in stim_types:
 
         table = stim_type.split(".")[1]
@@ -53,13 +53,14 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
         else:
             table.populate(trial_keys, reserve_jobs=reserve_jobs, display_progress=display_progress)
 
-    # populate stimulus links
+    # populate stimulus
     stimulus.StimulusLink.fill()
     stimulus.Stimulus.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
-    # # populate trial and fill trial links
-    # trials.ScanTrial.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
-    # trials.Trial.fill()
+    # populate trial
+    trials.ScanTrial.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
+    trials.TrialLink.fill()
+    trials.Trial.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
 
     # # populate trials and fill trials link
     # trials.ScanTrials.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)

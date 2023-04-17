@@ -8,7 +8,7 @@ from foundation.utils.logging import logger
 schema = dj.schema("foundation_recordings")
 
 
-# ---------- Trial Base ----------
+# ---------- Trial Link Base ----------
 
 
 class TrialBase:
@@ -46,7 +46,7 @@ class TrialBase:
         self.insert1(key)
 
 
-# ---------- Trial Types ----------
+# ---------- Trial Link Types ----------
 
 
 pipeline_stimulus = dj.create_virtual_module("pipeline_stimulus", "pipeline_stimulus")
@@ -94,7 +94,7 @@ class Trial(dj.Computed):
     -> TrialLink
     ---
     -> stimulus.Stimulus
-    frames_match            : bool      # number of frames match
+    frames                  : int unsigned      # number of frames
     """
 
     def make(self, key):
@@ -104,20 +104,13 @@ class Trial(dj.Computed):
         try:
             link = (TrialLink & key).link
             stimulus_id = link.stimulus_id
-            trial_frames = link.frames
+            frames = link.frames
 
         except MissingError:
-            logger.warning(f"Skipping {key} due to missing link data.")
-            return
+            logger.warning(f"Skipping {key} due to missing stimulus_id.")
 
-        if "stimulus_id" in key:
-            assert stimulus_id == key["stimulus_id"]
-        else:
-            key["stimulus_id"] = str(stimulus_id)
-
-        stimulus_frames = (stimulus.Stimulus & key).fetch1("frames")
-        key["frames_match"] = bool(trial_frames == stimulus_frames)
-
+        key["stimulus_id"] = stimulus_id
+        key["frames"] = frames
         self.insert1(key)
 
 
