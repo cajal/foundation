@@ -8,10 +8,10 @@ from foundation.utils.logging import logger
 schema = dj.schema("foundation_stimuli")
 
 
-# ---------- Transform Mixin ----------
+# ---------- Transform Base ----------
 
 
-class TransformMixin:
+class TransformBase:
     @property
     def _tranform(self):
         """
@@ -42,11 +42,11 @@ class TransformMixin:
         return transform
 
 
-# ---------- Resize ----------
+# ---------- Transform Types ----------
 
 
 @schema
-class Resize(TransformMixin, dj.Lookup):
+class Resize(TransformBase, dj.Lookup):
     definition = """
     height      : smallint unsigned     # stimulus frame height
     width       : smallint unsigned     # stimulus frame width
@@ -82,7 +82,7 @@ class Resize(TransformMixin, dj.Lookup):
         return f
 
 
-# ---------- Transform Links ----------
+# ---------- Transform Link ----------
 
 
 @link(schema)

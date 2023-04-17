@@ -8,7 +8,7 @@ schema = dj.schema("foundation_recordings")
 # ---------- Sampling Rates ----------
 
 
-class RateMixin:
+class RateBase:
     @property
     def period(self):
         """
@@ -21,7 +21,7 @@ class RateMixin:
 
 
 @schema
-class Hz(RateMixin, dj.Lookup):
+class Hz(RateBase, dj.Lookup):
     definition = """
     hz          : decimal(9, 6)         # samples per second
     """
@@ -42,7 +42,7 @@ class Rate:
 # ---------- Sampling Offsets ----------
 
 
-class OffsetMixin:
+class OffsetBase:
     @property
     def offset(self):
         """
@@ -55,7 +55,7 @@ class OffsetMixin:
 
 
 @schema
-class OffsetFrames(OffsetMixin, dj.Lookup):
+class OffsetFrames(OffsetBase, dj.Lookup):
     definition = """
     -> Rate
     offset_frames   : smallint unsigned     # number of offset frames

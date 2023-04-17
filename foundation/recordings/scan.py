@@ -12,7 +12,7 @@ reso = dj.create_virtual_module("reso", "pipeline_reso")
 pupil = dj.create_virtual_module("pupil", "pipeline_eye")
 tread = dj.create_virtual_module("tread", "pipeline_treadmill")
 
-schema = dj.schema("foundation_recordings")
+
 
 
 # ---------- Populate Functions ----------
@@ -350,30 +350,3 @@ def load_treadmill_sampler(
 
     return sample
 
-
-# ---------- Tables ----------
-
-
-@schema
-class TrialStimulus(dj.Computed):
-    definition = """
-    -> stim.Trial
-    ---
-    -> stimulus.Stimulus
-    frames_match            : bool      # number of frames match
-    """
-
-    def make(self, key):
-        trial = stim.Trial * stim.Condition & key
-        stim_type, flip_times = trial.fetch1("stimulus_type", "flip_times", squeeze=True)
-
-        stim_type = stim_type.split(".")[1]
-        stim_key = stimulus.Stimulus.join(stim_type, trial)
-
-        if stim_key is None:
-            logger.warning("Skipping trial because stimulus not found. Populate stimuli before populating trials.")
-            return
-
-        key["stimulus_id"], frames = stim_key.fetch1("stimulus_id", "frames")
-        key["frames_match"] = bool(frames == len(flip_times))
-        self.insert1(key)

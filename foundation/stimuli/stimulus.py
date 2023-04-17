@@ -10,11 +10,11 @@ from foundation.utils.video import Video
 schema = dj.schema("foundation_stimuli")
 
 
-# ---------- Stimulus Mixin ----------
+# ---------- Stimulus Base ----------
 
 
-class StimulusMixin:
-    definition = """
+class StimulusBase:
+    _definition = """
     {key}
     ---
     frames      : int unsigned  # number of frames
@@ -68,7 +68,7 @@ class StimulusMixin:
         self.insert1(dict(**key, **_key))
 
 
-# ---------- pipeline_stimulus.Condition ----------
+# ---------- Stimulus Types ----------
 
 stimulus = dj.create_virtual_module("stimulus", "pipeline_stimulus")
 gabor = dj.create_virtual_module("gabor", "pipeline_gabor")
@@ -77,8 +77,8 @@ rdk = dj.create_virtual_module("rdk", "pipeline_rdk")
 
 
 @schema
-class Clip(StimulusMixin, dj.Computed):
-    definition = StimulusMixin.definition.format(key="-> stimulus.Clip")
+class Clip(StimulusBase, dj.Computed):
+    definition = StimulusBase._definition.format(key="-> stimulus.Clip")
 
     @staticmethod
     def _frames(**key):
@@ -106,8 +106,8 @@ class Clip(StimulusMixin, dj.Computed):
 
 
 @schema
-class Monet2(StimulusMixin, dj.Computed):
-    definition = StimulusMixin.definition.format(key="-> stimulus.Monet2")
+class Monet2(StimulusBase, dj.Computed):
+    definition = StimulusBase._definition.format(key="-> stimulus.Monet2")
 
     @staticmethod
     def _frames(**key):
@@ -116,8 +116,8 @@ class Monet2(StimulusMixin, dj.Computed):
 
 
 @schema
-class Trippy(StimulusMixin, dj.Computed):
-    definition = StimulusMixin.definition.format(key="-> stimulus.Trippy")
+class Trippy(StimulusBase, dj.Computed):
+    definition = StimulusBase._definition.format(key="-> stimulus.Trippy")
 
     @staticmethod
     def _frames(**key):
@@ -126,8 +126,8 @@ class Trippy(StimulusMixin, dj.Computed):
 
 
 @schema
-class GaborSequence(StimulusMixin, dj.Computed):
-    definition = StimulusMixin.definition.format(key="-> stimulus.GaborSequence")
+class GaborSequence(StimulusBase, dj.Computed):
+    definition = StimulusBase._definition.format(key="-> stimulus.GaborSequence")
 
     @staticmethod
     def _frames(**key):
@@ -140,8 +140,8 @@ class GaborSequence(StimulusMixin, dj.Computed):
 
 
 @schema
-class DotSequence(StimulusMixin, dj.Computed):
-    definition = StimulusMixin.definition.format(key="-> stimulus.DotSequence")
+class DotSequence(StimulusBase, dj.Computed):
+    definition = StimulusBase._definition.format(key="-> stimulus.DotSequence")
 
     @staticmethod
     def _frames(**key):
@@ -158,8 +158,8 @@ class DotSequence(StimulusMixin, dj.Computed):
 
 
 @schema
-class RdkSequence(StimulusMixin, dj.Computed):
-    definition = StimulusMixin.definition.format(key="-> stimulus.RdkSequence")
+class RdkSequence(StimulusBase, dj.Computed):
+    definition = StimulusBase._definition.format(key="-> stimulus.RdkSequence")
 
     @staticmethod
     def _frames(**key):
@@ -182,8 +182,8 @@ class RdkSequence(StimulusMixin, dj.Computed):
 
 
 @schema
-class Frame(StimulusMixin, dj.Computed):
-    definition = StimulusMixin.definition.format(key="-> stimulus.Frame")
+class Frame(StimulusBase, dj.Computed):
+    definition = StimulusBase._definition.format(key="-> stimulus.Frame")
 
     @staticmethod
     def _frames(**key):
@@ -203,7 +203,7 @@ class Frame(StimulusMixin, dj.Computed):
             return Video([image, blank])
 
 
-# ---------- Stimulus Links ----------
+# ---------- Stimulus Link ----------
 
 
 @link(schema)
