@@ -98,9 +98,6 @@ class Trial(dj.Computed):
     """
 
     def make(self, key):
-        self.insert1(key)
-
-    def make(self, key):
         try:
             link = (TrialLink & key).link
             stimulus_id = link.stimulus_id
