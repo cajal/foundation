@@ -90,4 +90,3 @@ class Transform:
     links = [Resize]
     name = "transform"
     comment = "stimulus transformation"
-    length = 16

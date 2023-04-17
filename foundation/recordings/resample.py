@@ -36,7 +36,6 @@ class Rate:
     links = [Hz]
     name = "rate"
     comment = "sampling rate"
-    length = 8
 
 
 # ---------- Sampling Offsets ----------
@@ -73,4 +72,3 @@ class Offset:
     links = [OffsetFrames]
     name = "offset"
     comment = "sampling offset"
-    length = 8

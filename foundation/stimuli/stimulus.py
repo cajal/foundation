@@ -211,4 +211,3 @@ class Stimulus:
     links = [Clip, Monet2, Trippy, GaborSequence, DotSequence, RdkSequence, Frame]
     name = "stimulus"
     comment = "stimulus frames"
-    length = 16

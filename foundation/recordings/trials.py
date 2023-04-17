@@ -62,6 +62,7 @@ class TrialBase:
 
 # ---------- Trial Types ----------
 
+
 pipeline_stimulus = dj.create_virtual_module("pipeline_stimulus", "pipeline_stimulus")
 
 
@@ -85,3 +86,13 @@ class ScanTrial(TrialBase, dj.Computed):
             stimulus_id = stim.fetch1("stimulus_id")
 
         return stimulus_id, frames
+
+
+# ---------- Trial Link ----------
+
+
+@link(schema)
+class Trial:
+    links = [ScanTrial]
+    name = "trial"
+    comment = "recording trial"
