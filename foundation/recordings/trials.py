@@ -29,9 +29,9 @@ class TrialBase:
 
         Returns
         -------
-        stimulus_id : str
+        str
             primary key of stimulus.Stimulus
-        frames : int
+        int
             number of frames
 
         Raises
@@ -46,7 +46,7 @@ class TrialBase:
             stimulus_id, trial_frames = self._stimulus_frames(**key)
 
         except MissingError:
-            logger.warning("Skipping trial because stimulus not found. Populate stimuli before populating trials.")
+            logger.warning(f"Skipping {key} because stimulus not found.")
             return
 
         if "stimulus_id" in key:
@@ -96,3 +96,78 @@ class Trial:
     links = [ScanTrial]
     name = "trial"
     comment = "recording trial"
+
+
+# ---------- Trials Base ----------
+
+
+class TrialsBase:
+    _definition = """
+    {key}
+    ---
+    trials              : int unsigned  # number of trials
+    """
+
+    class Trial(dj.Part):
+        definition = """
+        -> master
+        ---
+        -> Trial
+        """
+
+    @staticmethod
+    def _trials(**key):
+        """
+        Parameters
+        ----------
+        key : dict
+            primary key
+
+        Returns
+        -------
+        Trial
+            restricted Trial table
+
+        Raises
+        ------
+        MissingError
+            if trial is missing
+        """
+        raise NotImplementedError()
+
+    def make(self, key):
+        try:
+            trials = self._trials(**key)
+
+        except MissingError:
+            logger.warning(f"Skipping {key} because trial not found.")
+            return
+
+        assert isinstance(trials, Trial), f"Expected Trial table but got {trials.__class__}"
+
+        master_key = dict(key, trials=len(trials))
+        self.insert1(master_key)
+
+        part_keys = (self & key) * trials.proj()
+        self.Trial.insert(part_keys)
+
+
+# ---------- Trials Types ----------
+
+
+pipeline_experiment = dj.create_virtual_module("pipeline_experiment", "pipeline_experiment")
+
+
+@schema
+class ScanTrials(TrialsBase, dj.Computed):
+    definition = TrialsBase._definition.format(key="-> pipeline_experiment.Scan")
+
+    @staticmethod
+    def _trials(**key):
+        all_trials = pipeline_stimulus.Trial & key
+        trials = Trial & (Trial.ScanTrial * ScanTrial & key)
+
+        if len(trials) == len(all_trials):
+            return trials
+        else:
+            raise MissingError()
