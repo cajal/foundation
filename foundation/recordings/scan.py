@@ -53,16 +53,17 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
         else:
             table.populate(trial_keys, reserve_jobs=reserve_jobs, display_progress=display_progress)
 
-    # fill stimulus links
-    stimulus.Stimulus.fill()
+    # populate stimulus links
+    stimulus.StimulusLink.fill()
+    stimulus.Stimulus.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
-    # populate trial and fill trial links
-    trials.ScanTrial.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
-    trials.Trial.fill()
+    # # populate trial and fill trial links
+    # trials.ScanTrial.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
+    # trials.Trial.fill()
 
-    # populate trials and fill trials link
-    trials.ScanTrials.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
-    trials.Trials.fill()
+    # # populate trials and fill trials link
+    # trials.ScanTrials.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
+    # trials.Trials.fill()
 
 
 # ---------- Loading Functions ----------
