@@ -111,7 +111,6 @@ class TrialsBase:
     class Trial(dj.Part):
         definition = """
         -> master
-        ---
         -> Trial
         """
 
@@ -148,7 +147,7 @@ class TrialsBase:
         master_key = dict(key, trials=len(trials))
         self.insert1(master_key)
 
-        part_keys = (self & key) * trials.proj()
+        part_keys = (self & key).proj() * trials.proj()
         self.Trial.insert(part_keys)
 
 
@@ -171,3 +170,13 @@ class ScanTrials(TrialsBase, dj.Computed):
             return trials
         else:
             raise MissingError()
+
+
+# ---------- Trials Link ----------
+
+
+@link(schema)
+class Trials:
+    links = [ScanTrials]
+    name = "trials"
+    comment = "recording trials"

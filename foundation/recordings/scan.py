@@ -1,9 +1,11 @@
 import numpy as np
 import datajoint as dj
 from foundation.stimuli import stimulus
+from foundation.recordings import trials
 from foundation.utils.traces import Sample, fill_nans
 from foundation.utils.splines import spline
 from foundation.utils.logging import logger
+
 
 stim = dj.create_virtual_module("stim", "pipeline_stimulus")
 fuse = dj.create_virtual_module("fuse", "pipeline_fuse")
@@ -13,12 +15,10 @@ pupil = dj.create_virtual_module("pupil", "pipeline_eye")
 tread = dj.create_virtual_module("tread", "pipeline_treadmill")
 
 
-
-
 # ---------- Populate Functions ----------
 
 
-def populate_stimuli(animal_id, session, scan_idx, reserve_jobs=True, display_progress=True):
+def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progress=True):
     """
     Parameters
     ----------
@@ -36,10 +36,10 @@ def populate_stimuli(animal_id, session, scan_idx, reserve_jobs=True, display_pr
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
     # scan trials
-    trials = stim.Trial & key
+    trial_keys = stim.Trial & key
 
     # stimulus types
-    stim_types = dj.U("stimulus_type") & (stim.Condition & trials)
+    stim_types = dj.U("stimulus_type") & (stim.Condition & trial_keys)
     stim_types = stim_types.fetch("stimulus_type")
 
     # populate each stimulus table
@@ -51,10 +51,18 @@ def populate_stimuli(animal_id, session, scan_idx, reserve_jobs=True, display_pr
         if table is None:
             raise NotImplementedError(f"Condition {stim_type} is not yet implemented")
         else:
-            table.populate(trials, reserve_jobs=reserve_jobs, display_progress=display_progress)
+            table.populate(trial_keys, reserve_jobs=reserve_jobs, display_progress=display_progress)
 
-    # fill links
+    # fill stimulus links
     stimulus.Stimulus.fill()
+
+    # populate trial and fill trial links
+    trials.ScanTrial.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
+    trials.Trial.fill()
+
+    # populate trials and fill trials link
+    trials.ScanTrials.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
+    trials.Trials.fill()
 
 
 # ---------- Loading Functions ----------
@@ -349,4 +357,3 @@ def load_treadmill_sampler(
     )
 
     return sample
-
