@@ -92,7 +92,7 @@ class Trial(TrialBase, dj.Computed):
             flips = link.flips
 
         except MissingError:
-            logger.warning(f"Missing stimulus. Skipping {key}.")
+            logger.warning(f"Missing flips. Skipping {key}.")
             return
 
         key["stimulus_id"] = stimulus.fetch1("stimulus_id")
