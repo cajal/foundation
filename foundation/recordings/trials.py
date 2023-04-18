@@ -303,11 +303,11 @@ class FilteredTrials(ComputedTrialsBase, dj.Computed):
         filters = (TrialFilters & key).members
         filters = filters.fetch(dj.key, order_by=filters.primary_key)
 
-        for filt_key in filters:
-            trials = trials & (TrialFilterLink & filt_key).link.filter(trials).proj()
+        keys = [(TrialFilterLink & filt).link.filter(trials).proj() for filt in filters]
+        filtered = trials & dj.AndList(keys)
 
-        master_key = dict(key, trials=len(trials))
+        master_key = dict(key, trials=len(filtered))
         self.insert1(master_key)
 
-        part_key = (self & master_key).proj() * trials.proj()
+        part_key = (self & master_key).proj() * filtered.proj()
         self.Trial.insert(part_key)
