@@ -10,7 +10,9 @@ pipe_stim = dj.create_virtual_module("pipe_stim", "pipeline_stimulus")
 schema = dj.schema("foundation_stimuli")
 
 
-# ---------- Stimulus Base ----------
+# -------------- Stimulus --------------
+
+# -- Base --
 
 
 class StimulusBase:
@@ -24,7 +26,7 @@ class StimulusBase:
         raise NotImplementedError()
 
 
-# ---------- Stimulus Types ----------
+# -- Types --
 
 
 @schema
@@ -171,7 +173,7 @@ class Frame(StimulusBase, dj.Lookup):
             return Video([image, blank])
 
 
-# ---------- Stimulus Link ----------
+# -- Link --
 
 
 @link(schema)

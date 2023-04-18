@@ -9,7 +9,9 @@ pipe_exp = dj.create_virtual_module("pipe_exp", "pipeline_experiment")
 schema = dj.schema("foundation_recordings")
 
 
-# ---------- Trial Link Base ----------
+# -------------- Trial --------------
+
+# -- Base --
 
 
 class TrialBase:
@@ -44,7 +46,7 @@ class TrialBase:
         raise NotImplementedError()
 
 
-# ---------- Trial Link Types ----------
+# -- Types --
 
 
 @schema
@@ -65,7 +67,7 @@ class ScanTrial(TrialBase, dj.Lookup):
         return (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
 
 
-# ---------- Trial Link ----------
+# -- Link --
 
 
 @link(schema)
@@ -106,7 +108,9 @@ class Trial(dj.Computed):
         self.insert1(key)
 
 
-# ---------- Trials Base ----------
+# -------------- Trials --------------
+
+# -- Base --
 
 
 class TrialsBase:
@@ -126,7 +130,7 @@ class TrialsBase:
         raise NotImplementedError()
 
 
-# ---------- Trials Types ----------
+# -- Types --
 
 
 @schema
@@ -146,7 +150,7 @@ class ScanTrials(TrialsBase, dj.Lookup):
         return trials
 
 
-# ---------- Trials Link ----------
+# -- Link --
 
 
 @link(schema)
@@ -187,7 +191,9 @@ class Trials(dj.Computed):
         self.Trial.insert(part_keys)
 
 
-# ---------- Trial Restriction Base ----------
+# -------------- Trial Filter --------------
+
+# -- Base --
 
 
 class TrialFilterBase:
@@ -204,6 +210,9 @@ class TrialFilterBase:
             retricted tuples from Trial table
         """
         raise NotImplementedError()
+
+
+# -- Types --
 
 
 @schema
