@@ -7,12 +7,12 @@ from foundation.utils.splines import spline
 from foundation.utils.logging import logger
 
 
-stim = dj.create_virtual_module("stim", "pipeline_stimulus")
-fuse = dj.create_virtual_module("fuse", "pipeline_fuse")
-meso = dj.create_virtual_module("meso", "pipeline_meso")
-reso = dj.create_virtual_module("reso", "pipeline_reso")
-pupil = dj.create_virtual_module("pupil", "pipeline_eye")
-tread = dj.create_virtual_module("tread", "pipeline_treadmill")
+pipe_stim = dj.create_virtual_module("pipe_stim", "pipeline_stimulus")
+pipe_fuse = dj.create_virtual_module("pipe_fuse", "pipeline_fuse")
+pipe_meso = dj.create_virtual_module("pipe_meso", "pipeline_meso")
+pipe_reso = dj.create_virtual_module("pipe_reso", "pipeline_reso")
+pipe_pupil = dj.create_virtual_module("pipe_pupil", "pipeline_eye")
+pipe_tread = dj.create_virtual_module("pipe_tread", "pipeline_treadmill")
 
 
 # ---------- Populate Functions ----------
@@ -35,14 +35,12 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    # scan trials
-    trial_keys = stim.Trial & key
-
     # stimulus types
-    stim_types = dj.U("stimulus_type") & (stim.Condition & trial_keys)
+    conditions = pipe_stim.Condition & (pipe_stim.Trial & key)
+    stim_types = dj.U("stimulus_type") & conditions
     stim_types = stim_types.fetch("stimulus_type")
 
-    # populate each stimulus type
+    # fill stimulus types
     for stim_type in stim_types:
 
         table = stim_type.split(".")[1]
@@ -51,14 +49,15 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
         if table is None:
             raise NotImplementedError(f"Condition {stim_type} is not yet implemented")
         else:
-            table.populate(trial_keys, reserve_jobs=reserve_jobs, display_progress=display_progress)
+            conds = conditions & dict(stimulus_type=stim_type)
+            table.insert(conds.proj(), skip_duplicates=True)
 
     # populate stimulus
     stimulus.StimulusLink.fill()
     stimulus.Stimulus.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
     # populate trial
-    trials.ScanTrial.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
+    trials.ScanTrial.insert(key.proj(), skip_duplicates=True)
     trials.TrialLink.fill()
     trials.Trial.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
 
@@ -88,14 +87,14 @@ def load_pipe(animal_id, session, scan_idx):
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    pipe = dj.U("pipe") & (fuse.ScanDone & key)
+    pipe = dj.U("pipe") & (pipe_fuse.ScanDone & key)
     pipe = pipe.fetch1("pipe")
 
     if pipe == "meso":
-        return meso
+        return pipe_meso
 
     elif pipe == "reso":
-        return reso
+        return pipe_reso
 
     else:
         raise ValueError(f"{pipe} not recognized")
@@ -131,7 +130,7 @@ def load_scan_times(animal_id, session, scan_idx):
 
     # fetch times
     fetch = lambda sync: (sync & key).fetch1("frame_times")[::n]
-    stimulus_time, behavior_time = map(fetch, [stim.Sync, stim.BehaviorSync])
+    stimulus_time, behavior_time = map(fetch, [pipe_stim.Sync, pipe_stim.BehaviorSync])
 
     # verify times
     assert np.isfinite(stimulus_time).all()
@@ -266,7 +265,7 @@ def load_pupil_sampler(
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
     # fetch times
-    eye_time = (pupil.Eye & key).fetch1("eye_time", squeeze=True)
+    eye_time = (pipe_pupil.Eye & key).fetch1("eye_time", squeeze=True)
 
     # fill NaN treadmill times
     if np.isnan(eye_time).any():
@@ -274,12 +273,12 @@ def load_pupil_sampler(
         eye_time = fill_nans(eye_time)
 
     # verify tracking exists
-    fit_key = pupil.FittedPupil & dict(key, tracking_method=tracking_method)
+    fit_key = pipe_pupil.FittedPupil & dict(key, tracking_method=tracking_method)
     fit_key = fit_key.fetch1(dj.key)
 
     # fetch pupil fits
     logger.info("Fetching pupil traces")
-    fits = pupil.FittedPupil.Circle & fit_key
+    fits = pipe_pupil.FittedPupil.Circle & fit_key
     radius, center = fits.fetch("radius", "center", order_by="frame_id")
 
     # deal with NaNs
@@ -341,7 +340,7 @@ def load_treadmill_sampler(
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
     # fetch times and velocities
-    tread_time, tread_vel = (tread.Treadmill & key).fetch1("treadmill_time", "treadmill_vel", squeeze=True)
+    tread_time, tread_vel = (pipe_tread.Treadmill & key).fetch1("treadmill_time", "treadmill_vel", squeeze=True)
 
     # fill NaN treadmill times
     if np.isnan(tread_time).any():

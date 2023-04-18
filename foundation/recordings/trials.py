@@ -5,6 +5,7 @@ from foundation.stimuli import stimulus
 from foundation.utils.errors import MissingError
 from foundation.utils.logging import logger
 
+pipe_stim = dj.create_virtual_module("pipe_stim", "pipeline_stimulus")
 schema = dj.schema("foundation_recordings")
 
 
@@ -42,25 +43,19 @@ class TrialBase:
         """
         raise NotImplementedError()
 
-    def make(self, key):
-        self.insert1(key)
-
 
 # ---------- Trial Link Types ----------
 
 
-pipeline_stimulus = dj.create_virtual_module("pipeline_stimulus", "pipeline_stimulus")
-
-
 @schema
-class ScanTrial(TrialBase, dj.Computed):
+class ScanTrial(TrialBase, dj.Lookup):
     definition = """
-    -> pipeline_stimulus.Trial
+    -> pipe_stim.Trial
     """
 
     @property
     def stimulus_id(self):
-        trial = pipeline_stimulus.Trial * pipeline_stimulus.Condition & self
+        trial = pipe_stim.Trial * pipe_stim.Condition & self
 
         stim_type = trial.fetch1("stimulus_type")
         stim_type = stim_type.split(".")[1]
@@ -74,7 +69,7 @@ class ScanTrial(TrialBase, dj.Computed):
 
     @property
     def frames(self):
-        flip_times = (pipeline_stimulus.Trial & self).fetch1("flip_times", squeeze=True)
+        flip_times = (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
         return len(flip_times)
 
 
@@ -176,7 +171,7 @@ class Trial(dj.Computed):
 
 #     @staticmethod
 #     def _trials(**key):
-#         all_trials = pipeline_stimulus.Trial & key
+#         all_trials = pipe_stim.Trial & key
 #         trials = Trial & (Trial.ScanTrial * ScanTrial & key)
 
 #         if len(trials) == len(all_trials):

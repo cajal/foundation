@@ -6,11 +6,11 @@ from djutils import link
 from PIL import Image
 from foundation.utils.video import Video
 
-
+pipe_stim = dj.create_virtual_module("pipe_stim", "pipeline_stimulus")
 schema = dj.schema("foundation_stimuli")
 
 
-# ---------- Stimulus Link Base ----------
+# ---------- Stimulus Base ----------
 
 
 class StimulusBase:
@@ -23,27 +23,19 @@ class StimulusBase:
         """
         raise NotImplementedError()
 
-    def make(self, key):
-        self.insert1(key)
 
-
-# ---------- Stimulus Link Types ----------
-
-stimulus = dj.create_virtual_module("stimulus", "pipeline_stimulus")
-gabor = dj.create_virtual_module("gabor", "pipeline_gabor")
-dot = dj.create_virtual_module("dot", "pipeline_dot")
-rdk = dj.create_virtual_module("rdk", "pipeline_rdk")
+# ---------- Stimulus Types ----------
 
 
 @schema
-class Clip(StimulusBase, dj.Computed):
+class Clip(StimulusBase, dj.Lookup):
     definition = """
-    -> stimulus.Clip
+    -> pipe_stim.Clip
     """
 
     @property
     def frames(self):
-        clip = stimulus.Movie * stimulus.Movie.Clip * stimulus.Clip & self
+        clip = pipe_stim.Movie * pipe_stim.Movie.Clip * pipe_stim.Clip & self
         clip, start, end, fps = clip.fetch1("clip", "skip_time", "cut_after", "frame_rate")
 
         start, end = map(float, [start, end])
@@ -67,21 +59,21 @@ class Clip(StimulusBase, dj.Computed):
 
 
 @schema
-class Monet2(StimulusBase, dj.Computed):
+class Monet2(StimulusBase, dj.Lookup):
     definition = """
-    -> stimulus.Monet2
+    -> pipe_stim.Monet2
     """
 
     @property
     def frames(self):
-        movie = (stimulus.Monet2 & self).fetch1("movie").squeeze(2)
+        movie = (pipe_stim.Monet2 & self).fetch1("movie").squeeze(2)
         return Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
 
 
 @schema
-class Trippy(StimulusBase, dj.Computed):
+class Trippy(StimulusBase, dj.Lookup):
     definition = """
-    -> stimulus.Trippy
+    -> pipe_stim.Trippy
     """
 
     @property
@@ -91,14 +83,15 @@ class Trippy(StimulusBase, dj.Computed):
 
 
 @schema
-class GaborSequence(StimulusBase, dj.Computed):
+class GaborSequence(StimulusBase, dj.Lookup):
     definition = """
-    -> stimulus.GaborSequence
+    -> pipe_stim.GaborSequence
     """
 
     @property
     def frames(self):
-        sequence = (stimulus.GaborSequence & self).fetch1()
+        gabor = dj.create_virtual_module("gabor", "pipeline_gabor")
+        sequence = (pipe_stim.GaborSequence & self).fetch1()
 
         movs = (gabor.Sequence.Gabor * gabor.Gabor & sequence).fetch("movie", order_by="sequence_id")
         assert len(movs) == sequence["sequence_length"]
@@ -107,14 +100,15 @@ class GaborSequence(StimulusBase, dj.Computed):
 
 
 @schema
-class DotSequence(StimulusBase, dj.Computed):
+class DotSequence(StimulusBase, dj.Lookup):
     definition = """
-    -> stimulus.DotSequence
+    -> pipe_stim.DotSequence
     """
 
     @property
     def frames(self):
-        sequence = (stimulus.DotSequence & self).fetch1()
+        dot = dj.create_virtual_module("dot", "pipeline_dot")
+        sequence = (pipe_stim.DotSequence & self).fetch1()
 
         images = (dot.Dot * dot.Sequence.Dot * dot.Display & sequence).fetch("image", order_by="dot_id")
         assert len(images) == sequence["sequence_length"]
@@ -127,14 +121,15 @@ class DotSequence(StimulusBase, dj.Computed):
 
 
 @schema
-class RdkSequence(StimulusBase, dj.Computed):
+class RdkSequence(StimulusBase, dj.Lookup):
     definition = """
-    -> stimulus.RdkSequence
+    -> pipe_stim.RdkSequence
     """
 
     @property
     def frames(self):
-        sequence = (stimulus.RdkSequence & self).fetch1()
+        rdk = dj.create_virtual_module("rdk", "pipeline_rdk")
+        sequence = (pipe_stim.RdkSequence & self).fetch1()
 
         movs = []
         for i in range(sequence["sequence_length"]):
@@ -153,14 +148,14 @@ class RdkSequence(StimulusBase, dj.Computed):
 
 
 @schema
-class Frame(StimulusBase, dj.Computed):
+class Frame(StimulusBase, dj.Lookup):
     definition = """
-    -> stimulus.Frame
+    -> pipe_stim.Frame
     """
 
     @property
     def frames(self):
-        tup = stimulus.StaticImage.Image * stimulus.Frame & self
+        tup = pipe_stim.StaticImage.Image * pipe_stim.Frame & self
         image, pre_blank = tup.fetch1("image", "pre_blank_period")
         image = Image.fromarray(image)
 
@@ -187,7 +182,7 @@ class StimulusLink:
 
 
 @schema
-class Stimulus(dj.Computed):
+class Stimulus(StimulusBase, dj.Computed):
     definition = """
     -> StimulusLink
     ---
@@ -205,7 +200,7 @@ class Stimulus(dj.Computed):
         -------
         Video
         """
-        key, T, H, W, C, mode = self.fetch1(dj.key, "frames", "height", "width", "channels", "mode")
+        T, H, W, C, mode = self.fetch1("frames", "height", "width", "channels", "mode")
         frames = (StimulusLink & self).link.frames
 
         assert len(frames) == T
