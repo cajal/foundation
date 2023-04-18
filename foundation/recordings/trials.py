@@ -213,5 +213,5 @@ class FlipsEqualsFrames(TrialFilterBase, dj.Lookup):
     """
 
     def filter(self, trials):
-        key = (trials * stimulus.Stimulus * self).proj(eq="flips=frames") & "flips_equal_frames=eq"
+        key = (trials * stimulus.Stimulus * self).proj(eq="flips=frames") & "flips_equals_frames=eq"
         return trials & key
