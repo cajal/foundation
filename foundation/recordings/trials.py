@@ -1,8 +1,8 @@
 import numpy as np
 import datajoint as dj
 from djutils import link, group, method, row_method, row_property, MissingError
-from foundation.stimuli import stimulus
 from foundation.utils.logging import logger
+from foundation.stimuli import stimulus
 
 pipe_stim = dj.create_virtual_module("pipe_stim", "pipeline_stimulus")
 pipe_exp = dj.create_virtual_module("pipe_exp", "pipeline_experiment")
@@ -122,7 +122,7 @@ class TrialsBase:
         Returns
         -------
         Trial
-            restricted Trial table
+            Trial tuples
         """
         raise NotImplementedError()
 

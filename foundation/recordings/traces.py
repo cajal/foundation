@@ -1,8 +1,8 @@
 import numpy as np
 import datajoint as dj
 from djutils import link, group, method, row_method, row_property, MissingError
-from foundation.recordings import trials
 from foundation.utils.logging import logger
+from foundation.recordings import trials
 
 pipe_meso = dj.create_virtual_module("pipe_meso", "pipeline_meso")
 schema = dj.schema("foundation_recordings")
@@ -35,7 +35,7 @@ class TraceBase:
         """
         Returns
         -------
-        Trial
+        trials.Trial
             Trial tuples
         """
         raise NotImplementedError()
@@ -49,3 +49,8 @@ class MesoActivity(TraceBase, dj.Lookup):
     definition = """
     -> pipe_meso.Activity.Trace
     """
+
+    @row_property
+    def trials(self):
+        key = trials.TrialsLink.ScanTrials * trials.ScanTrials & self
+        return (trials.Trials & key).trials
