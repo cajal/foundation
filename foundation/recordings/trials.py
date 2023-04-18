@@ -190,32 +190,28 @@ class Trials(dj.Computed):
 # ---------- Trial Restriction Base ----------
 
 
-# class TrialRestrictionBase:
-#     @property
-#     def _restrict(self):
-#         """
-#         Returns
-#         -------
-#         Callable[[Trial], Trial]
-#         """
-#         raise NotImplementedError()
+class TrialFilterBase:
+    def filter(self, trials):
+        """
+        Parameters
+        ----------
+        trials : Trial
+            tuples from Trial table
 
-#     @property
-#     def restrict(self):
-#         f = self._restrict
+        Returns
+        -------
+        Trial
+            retricted tuples from Trial table
+        """
+        raise NotImplementedError()
 
-#         def restrict(tuples):
-#             """
-#             Parameters
-#             ----------
-#             tuples : TrialBase
-#                 tuples from TrialBase
 
-#             Returns
-#             -------
-#             TrialBase
-#                 retricted tuples from TrialBase
-#             """
-#             return f(tuples)
+@schema
+class FlipsEqualsFrames(TrialFilterBase, dj.Lookup):
+    definition = """
+    flips_equal_frames      : bool      # trial flips == stimulus frames
+    """
 
-#         return restrict
+    def filter(self, trials):
+        key = (trials * stimulus.Stimulus * self).proj(eq="flips=frames") & "flips_equal_frames=eq"
+        return trials & key
