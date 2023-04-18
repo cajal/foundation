@@ -161,7 +161,7 @@ class ComputedTrialsBase(TrialsBase):
     @row_property
     def trials(self):
         key, n = self.fetch1(dj.key, "trials")
-        trials = self.Trial & key
+        trials = Trial & (self.Trial & key)
 
         if len(trials) == n:
             return trials
@@ -214,12 +214,12 @@ class TrialFilterBase:
         Parameters
         ----------
         trials : Trial
-            Trial table
+            Trial tuples
 
         Returns
         -------
         Trial
-            retricted Trial table
+            retricted Trial tuples
         """
         raise NotImplementedError()
 
@@ -288,12 +288,11 @@ class FilteredTrials(ComputedTrialsBase, dj.Computed):
 
     def make(self, key):
         trials = (Trials & key).trials
-        trials = Trial & trials
-
         filters = (TrialFilters & key).members
-        filters = filters.fetch(dj.key, order_by=filters.primary_key)
 
-        keys = [(TrialFilterLink & filt).link.filter(trials).proj() for filt in filters]
+        keys = filters.fetch(dj.key, order_by=filters.primary_key)
+        keys = [(TrialFilterLink & k).link.filter(trials).proj() for k in keys]
+
         filtered = trials & dj.AndList(keys)
 
         master_key = dict(key, trials=len(filtered))
