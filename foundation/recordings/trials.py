@@ -202,12 +202,12 @@ class TrialFilterBase:
         Parameters
         ----------
         trials : Trial
-            tuples from Trial table
+            tuples from Trial
 
         Returns
         -------
         Trial
-            retricted tuples from Trial table
+            retricted tuples from Trial
         """
         raise NotImplementedError()
 
@@ -224,3 +224,23 @@ class FlipsEqualsFrames(TrialFilterBase, dj.Lookup):
     def filter(self, trials):
         key = (trials * stimulus.Stimulus * self).proj(eq="flips=frames") & "flips_equals_frames=eq"
         return trials & key
+
+
+@schema
+class StimulusType(TrialFilterBase, dj.Lookup):
+    definition = """
+    stimulus_type       : varchar(128)  # stimulus type
+    """
+
+    def filter(self, trials):
+        return trials & (stimulus.StimulusLink & self)
+
+
+# -- Link --
+
+
+@link(schema)
+class TrialFilterLink:
+    links = [FlipsEqualsFrames, StimulusType]
+    name = "trial_filter"
+    comment = "recording trial filter"
