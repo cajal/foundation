@@ -15,33 +15,25 @@ schema = dj.schema("foundation_recordings")
 
 
 class TrialBase:
-    @property
+    """Recording Trial"""
+
+    @row_property
     def stimulus(self):
         """
         Returns
         -------
         stimulus.Stimulus
             stimulus tuple
-
-        Raises
-        ------
-        MissingError
-            if stimulus is missing
         """
         raise NotImplementedError()
 
-    @property
+    @row_property
     def flips(self):
         """
         Returns
         -------
         1D array
             stimulus flip times
-
-        Raises
-        ------
-        MissingError
-            if flip times are missing
         """
         raise NotImplementedError()
 
@@ -55,14 +47,14 @@ class ScanTrial(TrialBase, dj.Lookup):
     -> pipe_stim.Trial
     """
 
-    @property
+    @row_property
     def stimulus(self):
         trial = pipe_stim.Trial * pipe_stim.Condition & self
         stim_type = trial.fetch1("stimulus_type")
         stim_type = stim_type.split(".")[1]
         return stimulus.StimulusLink.get(stim_type, trial)
 
-    @property
+    @row_property
     def flips(self):
         return (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
 
@@ -78,7 +70,7 @@ class TrialLink:
 
 
 @schema
-class Trial(dj.Computed):
+class Trial(TrialBase, dj.Computed):
     definition = """
     -> TrialLink
     ---
@@ -107,6 +99,14 @@ class Trial(dj.Computed):
         key["flips"] = len(flips)
         self.insert1(key)
 
+    @row_property
+    def stimulus(self):
+        return (TrialLink & self).link.stimulus
+
+    @row_property
+    def flips(self):
+        return (TrialLink & self).link.flips
+
 
 # -------------- Trials --------------
 
@@ -114,18 +114,15 @@ class Trial(dj.Computed):
 
 
 class TrialsBase:
-    @property
+    """Recording Trials"""
+
+    @row_property
     def trials(self):
         """
         Returns
         -------
         Trial
             restricted Trial table
-
-        Raises
-        ------
-        MissingError
-            if trials are missing
         """
         raise NotImplementedError()
 
@@ -139,7 +136,7 @@ class ScanTrials(TrialsBase, dj.Lookup):
     -> pipe_exp.Scan
     """
 
-    @property
+    @row_property
     def trials(self):
         all_trials = pipe_stim.Trial & self
         trials = Trial & (TrialLink.ScanTrial * ScanTrial & self)
@@ -160,8 +157,8 @@ class TrialsLink:
     comment = "recording trials"
 
 
-class ComputedTrialsBase:
-    @property
+class ComputedTrialsBase(TrialsBase):
+    @row_property
     def trials(self):
         key, n = self.fetch1(dj.key, "trials")
         trials = self.Trial & key
@@ -202,16 +199,6 @@ class Trials(ComputedTrialsBase, dj.Computed):
         part_keys = (self & key).proj() * trials.proj()
         self.Trial.insert(part_keys)
 
-    @property
-    def trials(self):
-        key, n = self.fetch1(dj.key, "trials")
-        trials = self.Trial & key
-
-        if len(trials) == n:
-            return trials
-        else:
-            raise MissingError("Trials are missing.")
-
 
 # -------------- Trial Filter --------------
 
@@ -227,12 +214,12 @@ class TrialFilterBase:
         Parameters
         ----------
         trials : Trial
-            tuples from Trial
+            Trial table
 
         Returns
         -------
         Trial
-            retricted tuples from Trial
+            retricted Trial table
         """
         raise NotImplementedError()
 

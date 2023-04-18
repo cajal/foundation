@@ -2,7 +2,7 @@ import io
 import av
 import numpy as np
 import datajoint as dj
-from djutils import link
+from djutils import link, row_property
 from PIL import Image
 from foundation.utils.video import Video
 
@@ -16,7 +16,9 @@ schema = dj.schema("foundation_stimuli")
 
 
 class StimulusBase:
-    @property
+    """Stimlus Frames"""
+
+    @row_property
     def frames(self):
         """
         Returns
@@ -35,7 +37,7 @@ class Clip(StimulusBase, dj.Lookup):
     -> pipe_stim.Clip
     """
 
-    @property
+    @row_property
     def frames(self):
         clip = pipe_stim.Movie * pipe_stim.Movie.Clip * pipe_stim.Clip & self
         clip, start, end, fps = clip.fetch1("clip", "skip_time", "cut_after", "frame_rate")
@@ -66,7 +68,7 @@ class Monet2(StimulusBase, dj.Lookup):
     -> pipe_stim.Monet2
     """
 
-    @property
+    @row_property
     def frames(self):
         movie = (pipe_stim.Monet2 & self).fetch1("movie").squeeze(2)
         return Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
@@ -78,7 +80,7 @@ class Trippy(StimulusBase, dj.Lookup):
     -> pipe_stim.Trippy
     """
 
-    @property
+    @row_property
     def frames(self):
         movie = (stimulus.Trippy & self).fetch1("movie")
         return Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
@@ -90,7 +92,7 @@ class GaborSequence(StimulusBase, dj.Lookup):
     -> pipe_stim.GaborSequence
     """
 
-    @property
+    @row_property
     def frames(self):
         gabor = dj.create_virtual_module("gabor", "pipeline_gabor")
         sequence = (pipe_stim.GaborSequence & self).fetch1()
@@ -107,7 +109,7 @@ class DotSequence(StimulusBase, dj.Lookup):
     -> pipe_stim.DotSequence
     """
 
-    @property
+    @row_property
     def frames(self):
         dot = dj.create_virtual_module("dot", "pipeline_dot")
         sequence = (pipe_stim.DotSequence & self).fetch1()
@@ -128,7 +130,7 @@ class RdkSequence(StimulusBase, dj.Lookup):
     -> pipe_stim.RdkSequence
     """
 
-    @property
+    @row_property
     def frames(self):
         rdk = dj.create_virtual_module("rdk", "pipeline_rdk")
         sequence = (pipe_stim.RdkSequence & self).fetch1()
@@ -155,7 +157,7 @@ class Frame(StimulusBase, dj.Lookup):
     -> pipe_stim.Frame
     """
 
-    @property
+    @row_property
     def frames(self):
         tup = pipe_stim.StaticImage.Image * pipe_stim.Frame & self
         image, pre_blank = tup.fetch1("image", "pre_blank_period")
@@ -195,7 +197,18 @@ class Stimulus(StimulusBase, dj.Computed):
     mode        : varchar(16)   # stimulus mode
     """
 
-    @property
+    def make(self, key):
+        frames = (StimulusLink & key).link.frames
+
+        key["frames"] = len(frames)
+        key["height"] = frames.height
+        key["width"] = frames.width
+        key["channels"] = frames.channels
+        key["mode"] = frames.mode
+
+        self.insert1(key)
+
+    @row_property
     def frames(self):
         """
         Returns
@@ -212,14 +225,3 @@ class Stimulus(StimulusBase, dj.Computed):
         assert frames.mode == mode
 
         return frames
-
-    def make(self, key):
-        frames = (StimulusLink & key).link.frames
-
-        key["frames"] = len(frames)
-        key["height"] = frames.height
-        key["width"] = frames.width
-        key["channels"] = frames.channels
-        key["mode"] = frames.mode
-
-        self.insert1(key)
