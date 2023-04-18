@@ -209,7 +209,7 @@ class TrialFilterBase:
 @schema
 class FlipsEqualsFrames(TrialFilterBase, dj.Lookup):
     definition = """
-    flips_equal_frames      : bool      # trial flips == stimulus frames
+    flips_equals_frames     : bool      # trial flips == stimulus frames
     """
 
     def filter(self, trials):
