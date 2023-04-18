@@ -241,7 +241,7 @@ class TrialFilterBase:
 
 
 @method(schema)
-class FlipsEqualsFrames:
+class FlipsEqualsFrames(TrialFilterBase):
     name = "flips_equals_frames"
     comment = "flips == frames"
 
