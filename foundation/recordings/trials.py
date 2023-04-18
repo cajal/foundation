@@ -160,8 +160,20 @@ class TrialsLink:
     comment = "recording trials"
 
 
+class ComputedTrialsBase:
+    @property
+    def trials(self):
+        key, n = self.fetch1(dj.key, "trials")
+        trials = self.Trial & key
+
+        if len(trials) == n:
+            return trials
+        else:
+            raise MissingError("Trials are missing.")
+
+
 @schema
-class Trials(dj.Computed):
+class Trials(ComputedTrialsBase, dj.Computed):
     definition = """
     -> TrialsLink
     ---
@@ -189,6 +201,16 @@ class Trials(dj.Computed):
 
         part_keys = (self & key).proj() * trials.proj()
         self.Trial.insert(part_keys)
+
+    @property
+    def trials(self):
+        key, n = self.fetch1(dj.key, "trials")
+        trials = self.Trial & key
+
+        if len(trials) == n:
+            return trials
+        else:
+            raise MissingError("Trials are missing.")
 
 
 # -------------- Trial Filter --------------
@@ -254,3 +276,40 @@ class TrialFilters:
     keys = [TrialFilterLink]
     name = "trial_filters"
     comment = "recording trial filters"
+
+
+# -------------- Filtered Trials --------------
+
+
+@schema
+class FilteredTrials(ComputedTrialsBase, dj.Computed):
+    definition = """
+    -> Trials
+    -> TrialFilters
+    ---
+    trials              : int unsigned      # number of trials
+    """
+
+    class Trial(dj.Part):
+        definition = """
+        -> master
+        -> Trial
+        """
+
+    def make(self, key):
+        trials = (Trials & key).trials
+        trials = Trial & trials
+
+        filters = (TrialFilters & key).members
+        filters = filters.fetch(dj.key, order_by=filters.primary_key)
+
+        for filt_key in filters:
+            trials = trials & (TrialFilterLink & filt_key).link.filter(trials).proj()
+
+        master_key = dict(key, trials=len(trials))
+        print(master_key)
+        self.insert1(master_key)
+
+        part_key = (self & master_key).proj() * trials.proj()
+        part_key
+        self.Trial.insert(part_key)
