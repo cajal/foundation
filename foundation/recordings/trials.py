@@ -5,6 +5,7 @@ from foundation.stimuli import stimulus
 from foundation.utils.logging import logger
 
 pipe_stim = dj.create_virtual_module("pipe_stim", "pipeline_stimulus")
+pipe_exp = dj.create_virtual_module("pipe_exp", "pipeline_experiment")
 schema = dj.schema("foundation_recordings")
 
 
@@ -88,101 +89,102 @@ class Trial(dj.Computed):
 
         try:
             stimulus = link.stimulus
+
         except MissingError:
-            logger.warning(f"Missing stimulus. Skipping {key}")
+            logger.warning(f"Missing stimulus. Skipping {key}.")
+            return
 
         try:
             flips = link.flips
+
         except MissingError:
-            logger.warning(f"Missing stimulus. Skipping {key}")
+            logger.warning(f"Missing stimulus. Skipping {key}.")
+            return
 
         key["stimulus_id"] = stimulus.fetch1("stimulus_id")
         key["flips"] = len(flips)
         self.insert1(key)
 
 
-# # ---------- Trials Base ----------
+# ---------- Trials Base ----------
 
 
-# class TrialsBase:
-#     _definition = """
-#     {key}
-#     ---
-#     trials              : int unsigned  # number of trials
-#     """
+class TrialsBase:
+    @property
+    def trials(self):
+        """
+        Returns
+        -------
+        Trial
+            restricted Trial table
 
-#     class Trial(dj.Part):
-#         definition = """
-#         -> master
-#         -> Trial
-#         """
-
-#     @staticmethod
-#     def _trials(**key):
-#         """
-#         Parameters
-#         ----------
-#         key : dict
-#             primary key
-
-#         Returns
-#         -------
-#         Trial
-#             restricted Trial table
-
-#         Raises
-#         ------
-#         MissingError
-#             if trial is missing
-#         """
-#         raise NotImplementedError()
-
-#     def make(self, key):
-#         try:
-#             trials = self._trials(**key)
-
-#         except MissingError:
-#             logger.warning(f"Skipping {key} because trial not found.")
-#             return
-
-#         assert isinstance(trials, Trial), f"Expected Trial table but got {trials.__class__}"
-
-#         master_key = dict(key, trials=len(trials))
-#         self.insert1(master_key)
-
-#         part_keys = (self & key).proj() * trials.proj()
-#         self.Trial.insert(part_keys)
+        Raises
+        ------
+        MissingError
+            if trials are missing
+        """
+        raise NotImplementedError()
 
 
-# # ---------- Trials Types ----------
+# ---------- Trials Types ----------
 
 
-# pipeline_experiment = dj.create_virtual_module("pipeline_experiment", "pipeline_experiment")
+@schema
+class ScanTrials(TrialsBase, dj.Lookup):
+    definition = """
+    -> pipe_exp.Scan
+    """
+
+    @property
+    def trials(self):
+        all_trials = pipe_stim.Trial & self
+        trials = Trial & (TrialLink.ScanTrial * ScanTrial & self)
+
+        if all_trials - trials:
+            raise MissingError()
+
+        return trials
 
 
-# @schema
-# class ScanTrials(TrialsBase, dj.Computed):
-#     definition = TrialsBase._definition.format(key="-> pipeline_experiment.Scan")
-
-#     @staticmethod
-#     def _trials(**key):
-#         all_trials = pipe_stim.Trial & key
-#         trials = Trial & (Trial.ScanTrial * ScanTrial & key)
-
-#         if len(trials) == len(all_trials):
-#             return trials
-#         else:
-#             raise MissingError()
+# ---------- Trials Link ----------
 
 
-# # ---------- Trials Link ----------
+@link(schema)
+class TrialsLink:
+    links = [ScanTrials]
+    name = "trials"
+    comment = "recording trials"
 
 
-# @link(schema)
-# class Trials:
-#     links = [ScanTrials]
-#     name = "trials"
-#     comment = "recording trials"
+@schema
+class Trials(dj.Computed):
+    definition = """
+    -> TrialsLink
+    ---
+    trials              : int unsigned      # number of trials
+    """
+
+    class Trial(dj.Part):
+        definition = """
+        -> master
+        -> Trial
+        """
+
+    def make(self, key):
+        link = (TrialsLink & key).link
+
+        try:
+            trials = link.trials
+
+        except MissingError:
+            logger.warning(f"Mising trials. Skipping {key}.")
+            return
+
+        master_key = dict(key, trials=len(trials))
+        self.insert1(master_key)
+
+        part_keys = (self & key).proj() * trials.proj()
+        self.Trial.insert(part_keys)
 
 
 # ---------- Trial Restriction Base ----------
