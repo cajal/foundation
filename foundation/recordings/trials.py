@@ -307,9 +307,7 @@ class FilteredTrials(ComputedTrialsBase, dj.Computed):
             trials = trials & (TrialFilterLink & filt_key).link.filter(trials).proj()
 
         master_key = dict(key, trials=len(trials))
-        print(master_key)
         self.insert1(master_key)
 
         part_key = (self & master_key).proj() * trials.proj()
-        part_key
         self.Trial.insert(part_key)
