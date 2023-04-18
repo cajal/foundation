@@ -1,8 +1,7 @@
 import numpy as np
 import datajoint as dj
-from djutils import link
+from djutils import link, MissingError
 from foundation.stimuli import stimulus
-from foundation.utils.errors import MissingError
 from foundation.utils.logging import logger
 
 pipe_stim = dj.create_virtual_module("pipe_stim", "pipeline_stimulus")
@@ -14,12 +13,12 @@ schema = dj.schema("foundation_recordings")
 
 class TrialBase:
     @property
-    def stimulus_id(self):
+    def stimulus(self):
         """
         Returns
         -------
-        str
-            primary key of stimulus.Stimulus
+        stimulus.Stimulus
+            stimulus tuple
 
         Raises
         ------
@@ -29,17 +28,17 @@ class TrialBase:
         raise NotImplementedError()
 
     @property
-    def frames(self):
+    def flips(self):
         """
         Returns
         -------
-        int
-            number of trial frames
+        1D array
+            stimulus flip times
 
         Raises
         ------
         MissingError
-            if trial is missing
+            if flip times are missing
         """
         raise NotImplementedError()
 
@@ -54,23 +53,15 @@ class ScanTrial(TrialBase, dj.Lookup):
     """
 
     @property
-    def stimulus_id(self):
+    def stimulus(self):
         trial = pipe_stim.Trial * pipe_stim.Condition & self
-
         stim_type = trial.fetch1("stimulus_type")
         stim_type = stim_type.split(".")[1]
-
-        stim = stimulus.StimulusLink.get(stim_type, trial)
-
-        if stim is None:
-            raise MissingError()
-        else:
-            return stim.fetch1("stimulus_id")
+        return stimulus.StimulusLink.get(stim_type, trial)
 
     @property
-    def frames(self):
-        flip_times = (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
-        return len(flip_times)
+    def flips(self):
+        return (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
 
 
 # ---------- Trial Link ----------
@@ -89,20 +80,24 @@ class Trial(dj.Computed):
     -> TrialLink
     ---
     -> stimulus.Stimulus
-    frames                  : int unsigned      # number of frames
+    flips                   : int unsigned      # number of stimulus flips
     """
 
     def make(self, key):
+        link = (TrialLink & key).link
+
         try:
-            link = (TrialLink & key).link
-            stimulus_id = link.stimulus_id
-            frames = link.frames
-
+            stimulus = link.stimulus
         except MissingError:
-            logger.warning(f"Skipping {key} due to missing link data.")
+            logger.warning(f"Missing stimulus. Skipping {key}")
 
-        key["stimulus_id"] = stimulus_id
-        key["frames"] = frames
+        try:
+            flips = link.flips
+        except MissingError:
+            logger.warning(f"Missing stimulus. Skipping {key}")
+
+        key["stimulus_id"] = stimulus.fetch1("stimulus_id")
+        key["flips"] = len(flips)
         self.insert1(key)
 
 

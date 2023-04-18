@@ -33,10 +33,12 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
     display_progress : bool
         display progress
     """
+    # scan key
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+    scan_trials = pipe_stim.Trial & key
 
     # stimulus types
-    conditions = pipe_stim.Condition & (pipe_stim.Trial & key)
+    conditions = pipe_stim.Condition & scan_trials
     stim_types = dj.U("stimulus_type") & conditions
     stim_types = stim_types.fetch("stimulus_type")
 
@@ -57,9 +59,9 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
     stimulus.Stimulus.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
     # populate trial
-    trials.ScanTrial.insert(key.proj(), skip_duplicates=True)
+    trials.ScanTrial.insert(scan_trials.proj(), skip_duplicates=True)
     trials.TrialLink.fill()
-    trials.Trial.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
+    trials.Trial.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
     # # populate trials and fill trials link
     # trials.ScanTrials.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
