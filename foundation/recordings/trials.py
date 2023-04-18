@@ -1,6 +1,6 @@
 import numpy as np
 import datajoint as dj
-from djutils import link, group, MissingError
+from djutils import link, group, method, row_method, row_property, MissingError
 from foundation.stimuli import stimulus
 from foundation.utils.logging import logger
 
@@ -219,6 +219,9 @@ class Trials(ComputedTrialsBase, dj.Computed):
 
 
 class TrialFilterBase:
+    """Trial Filter"""
+
+    @row_method
     def filter(self, trials):
         """
         Parameters
@@ -237,15 +240,15 @@ class TrialFilterBase:
 # -- Types --
 
 
-@schema
-class FlipsEqualsFrames(TrialFilterBase, dj.Lookup):
-    definition = """
-    flips_equals_frames     : bool      # trial flips == stimulus frames
-    """
+@method(schema)
+class FlipsEqualsFrames:
+    name = "flips_equals_frames"
+    comment = "flips == frames"
 
+    @row_method
     def filter(self, trials):
-        key = (trials * stimulus.Stimulus * self).proj(eq="flips=frames") & "flips_equals_frames=eq"
-        return trials & key
+        key = (trials * stimulus.Stimulus) & "flips = frames"
+        return trials & key.proj()
 
 
 @schema
