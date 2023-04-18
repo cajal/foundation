@@ -1,6 +1,6 @@
 import numpy as np
 import datajoint as dj
-from djutils import link, MissingError
+from djutils import link, group, MissingError
 from foundation.stimuli import stimulus
 from foundation.utils.logging import logger
 
@@ -244,3 +244,13 @@ class TrialFilterLink:
     links = [FlipsEqualsFrames, StimulusType]
     name = "trial_filter"
     comment = "recording trial filter"
+
+
+# -- Group --
+
+
+@group(schema)
+class TrialFilters:
+    keys = [TrialFilterLink]
+    name = "trial_filters"
+    comment = "recording trial filters"
