@@ -72,7 +72,7 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
 # ---------- Loading Functions ----------
 
 
-def load_pipe(animal_id, session, scan_idx):
+def pipeline(animal_id, session, scan_idx):
     """
     Parameters
     ----------
@@ -103,6 +103,33 @@ def load_pipe(animal_id, session, scan_idx):
         raise ValueError(f"{pipe} not recognized")
 
 
+def planes(animal_id, session, scan_idx):
+    """
+    Parameters
+    ----------
+    animal_id : int
+        animal id
+    session : int
+        scan session
+    scan_idx : int
+        scan index
+
+    Returns
+    -------
+    int
+        number of scan plane (z-depths)
+    """
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+    pipe = pipeline(**key)
+
+    # number of planes
+    n = (pipe.ScanInfo & key).proj(n="nfields div nrois").fetch1("n")
+    if n != len(dj.U("z") & (pipe.ScanInfo.Field & key)):
+        raise ValueError("unexpected number of depths")
+
+    return n
+
+
 def load_scan_times(animal_id, session, scan_idx):
     """
     Parameters
@@ -124,7 +151,7 @@ def load_scan_times(animal_id, session, scan_idx):
         pipeline_meso | pipeline_reso
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    pipe = load_pipe(**key)
+    pipe = pipeline(**key)
 
     # number of planes
     n = (pipe.ScanInfo & key).proj(n="nfields div nrois").fetch1("n")
