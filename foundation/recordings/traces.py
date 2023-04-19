@@ -2,10 +2,11 @@ import numpy as np
 import datajoint as dj
 from djutils import link, group, method, row_method, row_property, MissingError
 from foundation.utils.logging import logger
-from foundation.utils.traces import truncate
+from foundation.utils.traces import truncate, fill_nans
 from foundation.recordings import trials
 
 pipe_meso = dj.create_virtual_module("pipe_meso", "pipeline_meso")
+pipe_eye = dj.create_virtual_module("pipe_eye", "pipeline_eye")
 schema = dj.schema("foundation_recordings")
 
 
@@ -98,3 +99,54 @@ class MesoActivity(TraceBase, dj.Lookup):
             flips = trial.flips
 
             yield trial, flips
+
+
+@schema
+class ScanPupilType(dj.Lookup):
+    definition = """
+    pupil_type          : varchar(64)   # fitted scan pupil type
+    pupil_attribute     : varchar(64)   # fitted scan pupil attribute
+    """
+
+
+@schema
+class ScanPupil(TraceBase, dj.Lookup):
+    definition = """
+    -> pipe_eye.FittedPupil
+    -> ScanPupilType
+    """
+
+    @row_property
+    def trace_times(self):
+        # times of eye trace on behavior clocks
+        times = (pipe_eye.Eye & self).fetch1("eye_time")
+
+        # fetch trace based on pupil type and attribute
+        pupil_type, pupil_attr = self.fetch1("pupil_type", "pupil_attribute")
+
+        if pupil_type == "circle":
+            # fitted pupil circle
+            fits = pipe_eye.FittedPupil.Circle & self
+
+            if pupil_attr == "radius":
+                # fitted circle radius
+                trace = fits.fetch("radius", order_by="frame_id")
+
+            elif pupil_attr in ["center_x", "center_y"]:
+                # fitted circle center
+                traces = fits.fetch("center", order_by="frame_id")
+
+                if pupil_attr == "center_x":
+                    trace = np.array([np.nan if t is None else t[0] for t in traces])
+                else:
+                    trace = np.array([np.nan if t is None else t[1] for t in traces])
+
+            else:
+                # other fitted circle attributes not implemented
+                raise NotImplementedError()
+
+        else:
+            # other types not implemented
+            raise NotImplementedError()
+
+        return trace, times
