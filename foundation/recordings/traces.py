@@ -1,6 +1,6 @@
 import numpy as np
 import datajoint as dj
-from djutils import link, group, method, row_method, row_property, MissingError
+from djutils import link, group, method, row_method, row_property
 from foundation.utils.logging import logger
 from foundation.utils.traces import truncate, fill_nans
 from foundation.recordings import trials
@@ -13,7 +13,7 @@ schema = dj.schema("foundation_recordings")
 
 # -------------- Trace --------------
 
-# -- Base --
+# -- Trace Base --
 
 
 class TraceBase:
@@ -48,7 +48,7 @@ class TraceBase:
         raise NotImplementedError()
 
 
-# -- Types --
+# -- Trace Types --
 
 
 @schema
@@ -190,7 +190,7 @@ class ScanTreadmill(ScanBehaviorTraceBase, dj.Lookup):
         return trace, times
 
 
-# -- Link --
+# -- Trace Link --
 
 
 @link(schema)

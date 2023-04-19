@@ -11,7 +11,7 @@ schema = dj.schema("foundation_recordings")
 
 # -------------- Trial --------------
 
-# -- Base --
+# -- Trial Base --
 
 
 class TrialBase:
@@ -38,7 +38,7 @@ class TrialBase:
         raise NotImplementedError()
 
 
-# -- Types --
+# -- Trial Types --
 
 
 @schema
@@ -59,7 +59,7 @@ class ScanTrial(TrialBase, dj.Lookup):
         return (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
 
 
-# -- Link --
+# -- Trial Link --
 
 
 @link(schema)
@@ -67,6 +67,9 @@ class TrialLink:
     links = [ScanTrial]
     name = "trial"
     comment = "recording trial"
+
+
+# -- Computed Trial --
 
 
 @schema
@@ -110,7 +113,7 @@ class Trial(TrialBase, dj.Computed):
 
 # -------------- Trials --------------
 
-# -- Base --
+# -- Trials Base --
 
 
 class TrialsBase:
@@ -127,7 +130,7 @@ class TrialsBase:
         raise NotImplementedError()
 
 
-# -- Types --
+# -- Trials Types --
 
 
 @schema
@@ -147,7 +150,7 @@ class ScanTrials(TrialsBase, dj.Lookup):
         return trials
 
 
-# -- Link --
+# -- Trials Link --
 
 
 @link(schema)
@@ -155,6 +158,9 @@ class TrialsLink:
     links = [ScanTrials]
     name = "trials"
     comment = "recording trials"
+
+
+# -- Computed Trials --
 
 
 class ComputedTrialsBase(TrialsBase):
@@ -202,7 +208,7 @@ class Trials(ComputedTrialsBase, dj.Computed):
 
 # -------------- Trial Filter --------------
 
-# -- Base --
+# -- Trial Filter Base --
 
 
 class TrialFilterBase:
@@ -224,7 +230,7 @@ class TrialFilterBase:
         raise NotImplementedError()
 
 
-# -- Types --
+# -- Trial Filter Types --
 
 
 @method(schema)
@@ -248,7 +254,7 @@ class StimulusType(TrialFilterBase, dj.Lookup):
         return trials & (stimulus.StimulusLink & self)
 
 
-# -- Link --
+# -- Trial Filter Link --
 
 
 @link(schema)
@@ -258,7 +264,7 @@ class TrialFilterLink:
     comment = "recording trial filter"
 
 
-# -- Group --
+# -- Trial Filter Group --
 
 
 @group(schema)
@@ -268,7 +274,7 @@ class TrialFilters:
     comment = "recording trial filters"
 
 
-# -------------- Filtered Trials --------------
+# -- Computed Trial Filter --
 
 
 @schema

@@ -12,7 +12,7 @@ schema = dj.schema("foundation_stimuli")
 
 # -------------- Stimulus --------------
 
-# -- Base --
+# -- Stimulus Base --
 
 
 class StimulusBase:
@@ -28,7 +28,7 @@ class StimulusBase:
         raise NotImplementedError()
 
 
-# -- Types --
+# -- Stimulus Types --
 
 
 @schema
@@ -175,7 +175,7 @@ class Frame(StimulusBase, dj.Lookup):
             return Video([image, blank])
 
 
-# -- Link --
+# -- Stimulus Link --
 
 
 @link(schema)
@@ -183,6 +183,9 @@ class StimulusLink:
     links = [Clip, Monet2, Trippy, GaborSequence, DotSequence, RdkSequence, Frame]
     name = "stimulus"
     comment = "stimulus frames"
+
+
+# -- Computed Stimulus --
 
 
 @schema
