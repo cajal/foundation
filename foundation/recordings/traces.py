@@ -58,21 +58,14 @@ class MesoActivity(TraceBase, dj.Lookup):
 
     @row_property
     def trace_times(self):
-        from foundation.recordings.scan import planes
+        from foundation.recordings.scan import stimulus_times
 
         # scan key
-        scan_key = ["animal_id", "session", "scan_idx"]
-        scan_key = dict(zip(scan_key, self.fetch1(*scan_key)))
+        key = ["animal_id", "session", "scan_idx"]
+        key = dict(zip(key, self.fetch1(*key)))
 
-        # number of scan planes
-        n = planes(**scan_key)
-
-        # start of each scan volume in stimulus clock
-        stim = dj.create_virtual_module("stim", "pipeline_stimulus")
-        times = (stim.Sync & scan_key).fetch1("frame_times")[::n]
-
-        # verify times are all finite
-        assert np.isfinite(times).all()
+        # times on stimulus clock
+        times = stimulus_times(**key)
 
         # activity trace
         trace = (pipe_meso.Activity.Trace & self).fetch1("trace")
@@ -92,11 +85,43 @@ class MesoActivity(TraceBase, dj.Lookup):
         key = trials.TrialsLink.ScanTrials * trials.ScanTrials & self
         keys = (trials.Trials & key).trials
 
-        # iterate through trials
+        # yield trials
         for key in keys.fetch(dj.key, order_by=keys.primary_key):
 
             trial = trials.Trial & key
             flips = trial.flips
+
+            yield trial, flips
+
+
+class ScanBehaviorTraceBase(TraceBase):
+    """Scan Behavior Trace --- stimulus time -> behavior time"""
+
+    @row_property
+    def trial_times(self):
+        from foundation.recordings.scan import stimulus_times, behavior_times
+        from foundation.utils.splines import CenteredSpline
+
+        # scan key
+        key = ["animal_id", "session", "scan_idx"]
+        key = dict(zip(key, self.fetch1(*key)))
+
+        # times on stimulus and behavior clocks
+        stim_times = stimulus_times(**key)
+        beh_times = behavior_times(**key)
+
+        # stimulus -> behavior time
+        times = CenteredSpline(stim_times, beh_times, k=1, ext=3)
+
+        # restrict trials
+        key = trials.TrialsLink.ScanTrials * trials.ScanTrials & self
+        keys = (trials.Trials & key).trials
+
+        # yield trials
+        for key in keys.fetch(dj.key, order_by=keys.primary_key):
+
+            trial = trials.Trial & key
+            flips = times(trial.flips)
 
             yield trial, flips
 
@@ -110,7 +135,7 @@ class ScanPupilType(dj.Lookup):
 
 
 @schema
-class ScanPupil(TraceBase, dj.Lookup):
+class ScanPupil(ScanBehaviorTraceBase, dj.Lookup):
     definition = """
     -> pipe_eye.FittedPupil
     -> ScanPupilType

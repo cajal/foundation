@@ -57,35 +57,3 @@ class NaNSpline(InterpolatedUnivariateSpline):
         ret[~nan] = super().__call__(x[~nan], **kwargs)
 
         return ret
-
-
-def spline(x, y, k=1, ext=2, nan=False):
-    """1D interpolative spline
-
-    Parameters
-    ----------
-    x : 1D array
-        values must be strictly increasing
-    y : 1D array
-        length must be equal to x
-    k : int
-        degree of the smoothing spline -- must be 1 <= k <= 5
-    ext : int | str
-        controls the extrapolation mode for elements not in the interval defined by the knot sequence.
-            if ext=0 or 'extrapolate', return the extrapolated value
-            if ext=1 or 'zeros', return 0
-            if ext=2 or 'raise', raise a ValueError
-            if ext=3 of 'const', return the boundary value
-    nan : bool
-        whether NaNs are allowed
-
-    Returns
-    -------
-    InterpolatedUnivariateSpline
-    """
-    if nan:
-        return NaNSpline(x, y, k=k, ext=ext)
-    else:
-        assert not np.isnan(x).any()
-        assert not np.isnan(y).any()
-        return CenteredSpline(x, y, k=k, ext=ext)
