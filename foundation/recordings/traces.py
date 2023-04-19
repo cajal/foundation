@@ -7,6 +7,7 @@ from foundation.recordings import trials
 
 pipe_meso = dj.create_virtual_module("pipe_meso", "pipeline_meso")
 pipe_eye = dj.create_virtual_module("pipe_eye", "pipeline_eye")
+pipe_tread = dj.create_virtual_module("pipe_tread", "pipeline_treadmill")
 schema = dj.schema("foundation_recordings")
 
 
@@ -175,3 +176,25 @@ class ScanPupil(ScanBehaviorTraceBase, dj.Lookup):
             raise NotImplementedError()
 
         return trace, times
+
+
+@schema
+class ScanTreadmill(ScanBehaviorTraceBase, dj.Lookup):
+    definition = """
+    -> pipe_tread.Treadmill
+    """
+
+    @row_property
+    def trace_times(self):
+        trace, times = (pipe_tread.Treadmill & self).fetch1("treadmill_vel", "treadmill_time")
+        return trace, times
+
+
+# -- Link --
+
+
+@link(schema)
+class TraceLink:
+    links = [MesoActivity, ScanPupil, ScanTreadmill]
+    name = "trace"
+    comment = "recording trace"
