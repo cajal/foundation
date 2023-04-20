@@ -2,9 +2,6 @@ import numpy as np
 import datajoint as dj
 from scipy.interpolate import interp1d
 from foundation.utils.traces import Times
-from foundation.stimuli import stimulus
-from foundation.recordings import trials
-
 
 pipe_stim = dj.create_virtual_module("pipe_stim", "pipeline_stimulus")
 pipe_fuse = dj.create_virtual_module("pipe_fuse", "pipeline_fuse")
@@ -32,6 +29,9 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
     display_progress : bool
         display progress
     """
+    from foundation.stimuli import stimulus
+    from foundation.recordings import trials
+
     # scan key
     scan_key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
     scan_trials = pipe_stim.Trial & scan_key

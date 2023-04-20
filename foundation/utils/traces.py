@@ -100,7 +100,12 @@ class Trace:
         return len(self.array)
 
     def __getitem__(self, key):
-        return self.array[key]
+        ret = self.array[key]
+
+        if ret.ndim > 0:
+            ret = self.__class__(self.array[key], nans=self.nans, copy=True)
+
+        return ret
 
 
 class Times(Trace):
@@ -113,7 +118,7 @@ class Times(Trace):
             raise ValueError("Values do not monotonically increase.")
 
 
-def fill_nans(trace, inplace=False):
+def fill_nans(trace, inplace=False): # TODO
     """
     Parameters
     ----------
