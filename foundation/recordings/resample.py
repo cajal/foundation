@@ -1,23 +1,30 @@
 import datajoint as dj
-from djutils import link
+from djutils import link, method, row_property
 
 
 schema = dj.schema("foundation_recordings")
 
 
-# ---------- Sampling Rates ----------
+# ---------- Rate ----------
+
+# -- Rate Base --
 
 
 class RateBase:
-    @property
+    """Resampling Rate"""
+
+    @row_property
     def period(self):
         """
         Returns
         -------
         float
-            sampling period (seconds)
+            resampling period (seconds)
         """
         raise NotImplementedError()
+
+
+# -- Rate Types --
 
 
 @schema
@@ -26,23 +33,30 @@ class Hz(RateBase, dj.Lookup):
     hz          : decimal(9, 6)         # samples per second
     """
 
-    @property
+    @row_property
     def period(self):
         return 1 / float(self.fetch1("hz"))
+
+
+# -- Rate Link --
 
 
 @link(schema)
 class Rate:
     links = [Hz]
     name = "rate"
-    comment = "sampling rate"
+    comment = "resampling rate"
 
 
-# ---------- Sampling Offsets ----------
+# ---------- Offset ----------
+
+# -- Offset Base --
 
 
 class OffsetBase:
-    @property
+    """Resampling Offset"""
+
+    @row_property
     def offset(self):
         """
         Returns
@@ -53,22 +67,24 @@ class OffsetBase:
         raise NotImplementedError()
 
 
-@schema
-class OffsetFrames(OffsetBase, dj.Lookup):
-    definition = """
-    -> Rate
-    offset_frames   : smallint unsigned     # number of offset frames
-    """
+# -- Offset Types --
 
-    @property
+
+@method(schema)
+class ZeroOffset(OffsetBase):
+    name = "zero_offset"
+    comment = "zero resampling offset"
+
+    @row_property
     def offset(self):
-        period = (Rate & self).link.period
-        frames = self.fetch1("offset_frames")
-        return period * frames
+        return 0
+
+
+# -- Offset Link --
 
 
 @link(schema)
 class Offset:
-    links = [OffsetFrames]
+    links = [ZeroOffset]
     name = "offset"
-    comment = "sampling offset"
+    comment = "resampling offset"

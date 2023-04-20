@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
-from itertools import starmap
-from .signal import lowpass_filter
+from .errors import OutOfBounds
 from .logging import logger
 
 
@@ -72,24 +71,35 @@ class TraceTimes:
             raise ValueError("times must be monotically increasing")
 
         self.t0 = np.nanmedian(times)
-        self.times = self.clock(times)
+        self.tmin = np.nanmin(times)
+        self.tmax = np.nanmax(times)
+        self.times = self.clock(times, verify=False)
         self.trace = trace
         self.init()
 
     def init(self):
         pass
 
-    def clock(self, time):
+    def clock(self, time, verify=True):
         """
         Parameter
         ---------
         time : 1D array
             time on initialized clock
+        verify : bool
+            verify time is finite and within bounds
 
         Returns
         -------
             time on internal clock (centered by median for numerical stability)
         """
+        if verify:
+            if np.isnan(time).any():
+                raise ValueError("Nans found in time.")
+
+            if np.min(time) < self.tmin or np.max(time) > self.tmax:
+                raise OutOfBounds("Time is out of bounds.")
+
         return time - self.t0
 
 

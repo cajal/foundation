@@ -4,7 +4,7 @@ from .traces import fill_nans, TraceTimes
 from .logging import logger
 
 
-class NanDetector(TraceTimes):
+class Nans(TraceTimes):
     def __call__(self, start, end):
         """
         Parameters
@@ -22,7 +22,7 @@ class NanDetector(TraceTimes):
         raise NotImplementedError()
 
 
-class ConsecutiveNans(NanDetector):
+class ConsecutiveNans(Nans):
     def init(self):
         # nans in either times or trace
         times_nan = np.isnan(self.times)
@@ -43,7 +43,9 @@ class ConsecutiveNans(NanDetector):
             logger.info("Found nans in times. Filling with linear interpolation.")
             self.times = fill_nans(self.times)
 
+        # nearest index
+        self.index = interp1d(self.times, np.arange(len(self.times)), kind="nearest")
+
     def __call__(self, start, end):
-        i = np.searchsorted(t, x, side="right") - 1
-        j = np.searchsorted(t, y, side="left") + 1
+        i, j = map(int, map(self.index, map(self.clock, [start, end])))
         return self.nans[i:j].max()
