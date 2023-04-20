@@ -4,6 +4,115 @@ from .errors import OutOfBounds
 from .logging import logger
 
 
+class Trace:
+    """1D trace"""
+
+    def __init__(self, array, nans=False, copy=True):
+        """
+        Parameters
+        ----------
+        array : array-like
+            1D trace array
+        nans : bool
+            whether nans are allowed in the trace
+        copy : bool
+            whether trace data is copied
+        """
+        self.array = np.array(array, copy=copy)
+        self.nans = bool(nans)
+
+        if self.array.ndim != 1:
+            raise ValueError("Trace must be 1D.")
+
+        if not self.nans and np.isnan(self.array).any():
+            raise ValueError("Nans found in trace.")
+
+    @property
+    def nan_mask(self):
+        """
+        Returns
+        -------
+        1D array (dtype = bool) | None
+            boolean mask indicating nans
+        """
+        if not self.nans:
+            return
+
+        _nan_mask = getattr(self, "_nan_mask", None)
+        if _nan_mask is None:
+            _nan_mask = self._nan_mask = np.isnan(self.array)
+
+        return _nan_mask
+
+    @property
+    def median(self):
+        """
+        Returns
+        -------
+        float-like
+            median of the trace
+        """
+        _median = getattr(self, "_median", None)
+        if _median is None:
+            _median = self._median = np.nanmedian(self.array)
+
+        return _median
+
+    @property
+    def centered(self):
+        """
+        Returns
+        -------
+        1D array
+            centered trace array
+        """
+        return self.center(self.array)
+
+    def center(self, trace):
+        """
+        Parameters
+        ----------
+        1D array
+            trace array
+
+        Returns
+        -------
+        1D array
+            centers the provided trace array
+        """
+        return trace - self.median
+
+    def uncenter(self, trace):
+        """
+        Parameters
+        ----------
+        1D array
+            trace array
+
+        Returns
+        -------
+        1D array
+            uncenters the provided trace array
+        """
+        return trace + self.median
+
+    def __len__(self):
+        return len(self.array)
+
+    def __getitem__(self, key):
+        return self.array[key]
+
+
+class Times(Trace):
+    def __init__(self, times, nans=False, copy=True):
+        super().__init__(array=times, nans=nans, copy=copy)
+
+        t = self.array[~self.nan_mask] if self.nans else self.array
+        incr = np.diff(t) > 0
+        if not incr.all():
+            raise ValueError("Values do not monotonically increase.")
+
+
 def fill_nans(trace, inplace=False):
     """
     Parameters
@@ -31,14 +140,14 @@ def truncate(*traces, tolerance=1):
 
     Parameters
     ----------
-    traces : Tuple[1D array]
+    traces : Tuple[Trace]
         traces that possibly differ in length
     tolerance : int
         tolerance for length mismatches
 
     Returns
     -------
-    Tuple[1D array]
+    Tuple[Trace]
         traces of the same length
     """
     lengths = tuple(map(len, traces))

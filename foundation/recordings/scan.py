@@ -1,5 +1,7 @@
 import numpy as np
 import datajoint as dj
+from scipy.interpolate import interp1d
+from foundation.utils.traces import Times
 from foundation.stimuli import stimulus
 from foundation.recordings import trials
 
@@ -8,6 +10,8 @@ pipe_stim = dj.create_virtual_module("pipe_stim", "pipeline_stimulus")
 pipe_fuse = dj.create_virtual_module("pipe_fuse", "pipeline_fuse")
 pipe_meso = dj.create_virtual_module("pipe_meso", "pipeline_meso")
 pipe_reso = dj.create_virtual_module("pipe_reso", "pipeline_reso")
+pipe_eye = dj.create_virtual_module("pipe_eye", "pipeline_eye")
+pipe_tread = dj.create_virtual_module("pipe_tread", "pipeline_treadmill")
 
 
 # ---------- Populate Functions ----------
@@ -137,16 +141,15 @@ def stimulus_times(animal_id, session, scan_idx):
 
     Returns
     -------
-    1D array
+    foundation.utils.traces.Times (nans = False)
         start of each scan volume on the stimulus clock
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
     n = planes(**key)
     times = (pipe_stim.Sync & key).fetch1("frame_times")[::n]
-    assert np.isfinite(times).all()
 
-    return times
+    return Times(times, nans=False, copy=False)
 
 
 def behavior_times(animal_id, session, scan_idx):
@@ -162,16 +165,99 @@ def behavior_times(animal_id, session, scan_idx):
 
     Returns
     -------
-    1D array
-        start of each scan volume on the stimulus clock
+    foundation.utils.traces.Times (nans = False)
+        start of each scan volume on the behavior clock
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
     n = planes(**key)
     times = (pipe_stim.BehaviorSync & key).fetch1("frame_times")[::n]
-    assert np.isfinite(times).all()
 
-    return times
+    return Times(times, nans=False, copy=False)
+
+
+def eye_times(animal_id, session, scan_idx):
+    """
+    Parameters
+    ----------
+    animal_id : int
+        animal id
+    session : int
+        scan session
+    scan_idx : int
+        scan index
+
+    Returns
+    -------
+    foundation.utils.traces.Times (nans = True)
+        eye trace times on the stimulus clock
+    """
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    stim_times = stimulus_times(**key)
+    beh_times = behavior_times(**key)
+    beh_to_stim = interp1d(
+        x=beh_times.centered,
+        y=stim_times.centered,
+        kind="linear",
+        fill_value=np.nan,
+        bounds_error=False,
+        copy=False,
+    )
+
+    raw = (pipe_eye.Eye & key).fetch1("eye_time")
+    times = np.full_like(raw, np.nan)
+    nans = np.isnan(raw)
+
+    t = raw[~nans]
+    t = beh_times.center(t)
+    t = beh_to_stim(t)
+    t = stim_times.uncenter(t)
+
+    times[~nans] = t
+    return Times(times, nans=True, copy=False)
+
+
+def treadmill_times(animal_id, session, scan_idx):
+    """
+    Parameters
+    ----------
+    animal_id : int
+        animal id
+    session : int
+        scan session
+    scan_idx : int
+        scan index
+
+    Returns
+    -------
+    foundation.utils.traces.Times (nans = True)
+        treadmill trace times on the stimulus clock
+    """
+    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+
+    stim_times = stimulus_times(**key)
+    beh_times = behavior_times(**key)
+    beh_to_stim = interp1d(
+        x=beh_times.centered,
+        y=stim_times.centered,
+        kind="linear",
+        fill_value=np.nan,
+        bounds_error=False,
+        copy=False,
+    )
+
+    raw = (pipe_tread.Treadmill & key).fetch1("treadmill_time")
+    times = np.full_like(raw, np.nan)
+    nans = np.isnan(raw)
+
+    t = raw[~nans]
+    t = beh_times.center(t)
+    t = beh_to_stim(t)
+    t = stim_times.uncenter(t)
+
+    times[~nans] = t
+    return Times(times, nans=True, copy=False)
 
 
 # ------- OLD ----

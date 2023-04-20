@@ -39,7 +39,7 @@ class TraceBase:
         Returns
         -------
         trials.Trial
-            tuples from the trials.Trial table
+            tuples from trials.Trial
         """
         raise NotImplementedError()
 
