@@ -104,11 +104,19 @@ class Trial(TrialBase, dj.Computed):
 
     @row_property
     def stimulus(self):
-        return (TrialLink & self).link.stimulus
+        return stimulus.Stimulus & self
 
     @row_property
     def flips(self):
-        return (TrialLink & self).link.flips
+        flips = (TrialLink & self).link.flips
+
+        if len(flips) != self.fetch1("flips"):
+            raise ValueError("Flip numbers do not match.")
+
+        if not np.all(np.diff(flips) > 0):
+            raise ValueError("Flips do not monotonically increase in time.")
+
+        return flips
 
 
 # -------------- Trials --------------

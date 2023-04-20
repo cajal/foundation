@@ -1,8 +1,8 @@
 import numpy as np
 import datajoint as dj
-from djutils import link, group, method, row_method, row_property
+from djutils import link, group, method, row_method, row_property, MissingError, RestrictionError
 from foundation.utils.logging import logger
-from foundation.utils.traces import truncate, fill_nans
+from foundation.utils.traces import truncate
 from foundation.recordings import trials
 
 pipe_meso = dj.create_virtual_module("pipe_meso", "pipeline_meso")
@@ -20,30 +20,40 @@ class TraceBase:
     """Recording Trace"""
 
     @row_property
-    def trace_times(self):
+    def times_trace(self):
         """
         Returns
         -------
         1D array
-            recording trace
+            recording times
         1D array
-            recording times of each point in the trace
+            recording trace
 
         IMPORTANT : arrays must be the same length
         """
         raise NotImplementedError()
 
     @row_property
-    def trial_times(self):
+    def trials(self):
+        """
+        Returns
+        -------
+        trials.Trial
+            tuples from the trials.Trial table
+        """
+        raise NotImplementedError()
+
+    @row_property
+    def trial_flips(self):
         """
         Returns
         -------
         Iterator[tuple[trials.Trial, 1D array]]
             yields
-                trial.Trial
+                trials.Trial
                     recording trial
                 1D array
-                    recording times of each stimulus flips
+                    recording times of each stimulus flip
         """
         raise NotImplementedError()
 
@@ -51,14 +61,23 @@ class TraceBase:
 # -- Trace Types --
 
 
+class ScanBase(TraceBase):
+    """Scan Trials"""
+
+    @row_property
+    def trials(self):
+        key = trials.TrialsLink.ScanTrials * trials.ScanTrials & self
+        return (trials.Trials & key).trials
+
+
 @schema
-class MesoActivity(TraceBase, dj.Lookup):
+class MesoActivity(ScanBase, dj.Lookup):
     definition = """
     -> pipe_meso.Activity.Trace
     """
 
     @row_property
-    def trace_times(self):
+    def times_trace(self):
         from foundation.recordings.scan import stimulus_times
 
         # scan key
@@ -68,25 +87,20 @@ class MesoActivity(TraceBase, dj.Lookup):
         # times on stimulus clock
         times = stimulus_times(**key)
 
+        # imaging delay
+        delay = (pipe_meso.ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
+
         # activity trace
         trace = (pipe_meso.Activity.Trace & self).fetch1("trace")
 
         # trim to same length
-        trace, times = truncate(trace, times, tolerance=1)
+        times, trace = truncate(times, trace, tolerance=1)
 
-        # imaging delay
-        delay = (pipe_meso.ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
-
-        return trace, times + delay
+        return times + delay, trace
 
     @row_property
-    def trial_times(self):
-
-        # restrict trials
-        key = trials.TrialsLink.ScanTrials * trials.ScanTrials & self
-        keys = (trials.Trials & key).trials
-
-        # yield trials
+    def trial_flips(self):
+        keys = self.trials
         for key in keys.fetch(dj.key, order_by=keys.primary_key):
 
             trial = trials.Trial & key
@@ -95,11 +109,11 @@ class MesoActivity(TraceBase, dj.Lookup):
             yield trial, flips
 
 
-class ScanBehaviorTraceBase(TraceBase):
+class ScanBehaviorTraceBase(ScanBase):
     """Scan Behavior Trace --- stimulus time -> behavior time"""
 
     @row_property
-    def trial_times(self):
+    def trial_flips(self):
         from foundation.recordings.scan import stimulus_times, behavior_times
         from foundation.utils.splines import CenteredSpline
 
@@ -114,11 +128,8 @@ class ScanBehaviorTraceBase(TraceBase):
         # stimulus -> behavior time
         times = CenteredSpline(stim_times, beh_times, k=1, ext=3)
 
-        # restrict trials
-        key = trials.TrialsLink.ScanTrials * trials.ScanTrials & self
-        keys = (trials.Trials & key).trials
-
         # yield trials
+        keys = self.trials
         for key in keys.fetch(dj.key, order_by=keys.primary_key):
 
             trial = trials.Trial & key
@@ -143,7 +154,7 @@ class ScanPupil(ScanBehaviorTraceBase, dj.Lookup):
     """
 
     @row_property
-    def trace_times(self):
+    def times_trace(self):
         # times of eye trace on behavior clocks
         times = (pipe_eye.Eye & self).fetch1("eye_time")
 
@@ -175,7 +186,7 @@ class ScanPupil(ScanBehaviorTraceBase, dj.Lookup):
             # other types not implemented
             raise NotImplementedError()
 
-        return trace, times
+        return times, trace
 
 
 @schema
@@ -185,9 +196,9 @@ class ScanTreadmill(ScanBehaviorTraceBase, dj.Lookup):
     """
 
     @row_property
-    def trace_times(self):
-        trace, times = (pipe_tread.Treadmill & self).fetch1("treadmill_vel", "treadmill_time")
-        return trace, times
+    def times_trace(self):
+        times, trace = (pipe_tread.Treadmill & self).fetch1("treadmill_time", "treadmill_vel")
+        return times, trace
 
 
 # -- Trace Link --
@@ -198,3 +209,53 @@ class TraceLink:
     links = [MesoActivity, ScanPupil, ScanTreadmill]
     name = "trace"
     comment = "recording trace"
+
+
+# -- Computed Trace --
+
+
+@schema
+class Trace(TraceBase, dj.Computed):
+    definition = """
+    -> TraceLink
+    ---
+    trials              : int unsigned      # number of trials
+    """
+
+    def make(self, key):
+        trials = (TraceLink & key).link.trials
+        key["trials"] = len(trials)
+        self.insert1(key)
+
+    @row_property
+    def times_trace(self):
+        times, trace = (TraceLink & self).link.times_trace
+        return times, trace
+
+    @row_property
+    def trials(self):
+        n = self.fetch1("trials")
+        trials = (TraceLink & self).link.trials
+
+        if n != len(trials):
+            raise MissingError("Trials are missing")
+
+        return trials
+
+    @row_property
+    def trial_flips(self):
+        n = self.fetch1("trials")
+        for trial, flips in (TraceLink & self).link.trial_flips:
+
+            if not (np.diff(flips) > 0).all():
+                raise ValueError("Flips do not monotonically increase.")
+
+            yield trial, flips
+            n -= 1
+
+        if n == 0:
+            return
+        elif n > 0:
+            raise MissingError("Missing trials.")
+        else:
+            raise RestrictionError("Extra trials received.")

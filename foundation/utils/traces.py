@@ -67,7 +67,7 @@ class TraceTimes:
         if len(times) != len(trace):
             raise ValueError("times and trace arrays must be the same length")
 
-        if not np.nanmin(np.diff(times)):
+        if not np.nanmin(np.diff(times)) > 0:
             raise ValueError("times must be monotically increasing")
 
         self.t0 = np.nanmedian(times)
@@ -87,16 +87,13 @@ class TraceTimes:
         time : 1D array
             time on initialized clock
         verify : bool
-            verify time is finite and within bounds
+            verify time is within bounds
 
         Returns
         -------
             time on internal clock (centered by median for numerical stability)
         """
         if verify:
-            if np.isnan(time).any():
-                raise ValueError("Nans found in time.")
-
             if np.min(time) < self.tmin or np.max(time) > self.tmax:
                 raise OutOfBounds("Time is out of bounds.")
 
