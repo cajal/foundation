@@ -3,7 +3,7 @@ import datajoint as dj
 from djutils import link, group, method, row_method, row_property, MissingError, RestrictionError
 from foundation.utils.logging import logger
 from foundation.utils.traces import truncate
-from foundation.recordings import trials
+from foundation.recordings import trial
 
 pipe_meso = dj.create_virtual_module("pipe_meso", "pipeline_meso")
 pipe_eye = dj.create_virtual_module("pipe_eye", "pipeline_eye")
@@ -66,8 +66,8 @@ class ScanBase(TraceBase):
 
     @row_property
     def trials(self):
-        key = trials.TrialsLink.ScanTrials * trials.ScanTrials & self
-        return (trials.Trials & key).trials
+        key = trial.TrialsLink.ScanTrials * trial.ScanTrials & self
+        return (trial.Trials & key).trials
 
 
 @schema
@@ -103,7 +103,7 @@ class MesoActivity(ScanBase, dj.Lookup):
         keys = self.trials
         for key in keys.fetch(dj.key, order_by=keys.primary_key):
 
-            trial = trials.Trial & key
+            trial = trial.Trial & key
             flips = trial.flips
 
             yield trial, flips
@@ -132,7 +132,7 @@ class ScanBehaviorTraceBase(ScanBase):
         keys = self.trials
         for key in keys.fetch(dj.key, order_by=keys.primary_key):
 
-            trial = trials.Trial & key
+            trial = trial.Trial & key
             flips = times(trial.flips)
 
             yield trial, flips

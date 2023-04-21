@@ -2,10 +2,10 @@ import numpy as np
 import datajoint as dj
 from djutils import link, group, method, row_method, row_property, MissingError
 from foundation.utils.logging import logger
+from foundation.utils.trace import Trace
 from foundation.stimuli import stimulus
 
 pipe_stim = dj.create_virtual_module("pipe_stim", "pipeline_stimulus")
-pipe_exp = dj.create_virtual_module("pipe_exp", "pipeline_experiment")
 schema = dj.schema("foundation_recordings")
 
 
@@ -32,7 +32,7 @@ class TrialBase:
         """
         Returns
         -------
-        1D array
+        foundation.utils.trace.Trace
             stimulus flip times
         """
         raise NotImplementedError()
@@ -56,7 +56,8 @@ class ScanTrial(TrialBase, dj.Lookup):
 
     @row_property
     def flips(self):
-        return (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
+        flips = (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
+        return Trace(flips, nan=False, monotonic=True)
 
 
 # -- Trial Link --
@@ -93,6 +94,7 @@ class Trial(TrialBase, dj.Computed):
 
         try:
             flips = link.flips
+            assert flips.monotonic
 
         except MissingError:
             logger.warning(f"Missing flips. Skipping {key}.")
@@ -113,105 +115,10 @@ class Trial(TrialBase, dj.Computed):
         if len(flips) != self.fetch1("flips"):
             raise ValueError("Flip numbers do not match.")
 
-        if not np.all(np.diff(flips) > 0):
+        if not flips.monotonic:
             raise ValueError("Flips do not monotonically increase in time.")
 
         return flips
-
-
-# -------------- Trials --------------
-
-# -- Trials Base --
-
-
-class TrialsBase:
-    """Recording Trials"""
-
-    @row_property
-    def trials(self):
-        """
-        Returns
-        -------
-        Trial
-            Trial tuples
-        """
-        raise NotImplementedError()
-
-
-# -- Trials Types --
-
-
-@schema
-class ScanTrials(TrialsBase, dj.Lookup):
-    definition = """
-    -> pipe_exp.Scan
-    """
-
-    @row_property
-    def trials(self):
-        all_trials = pipe_stim.Trial & self
-        trials = Trial & (TrialLink.ScanTrial * ScanTrial & self)
-
-        if all_trials - trials:
-            raise MissingError()
-
-        return trials
-
-
-# -- Trials Link --
-
-
-@link(schema)
-class TrialsLink:
-    links = [ScanTrials]
-    name = "trials"
-    comment = "recording trials"
-
-
-# -- Computed Trials --
-
-
-class ComputedTrialsBase(TrialsBase):
-    @row_property
-    def trials(self):
-        key, n = self.fetch1(dj.key, "trials")
-        trials = Trial & (self.Trial & key)
-
-        if len(trials) == n:
-            return trials
-        else:
-            raise MissingError("Trials are missing.")
-
-
-@schema
-class Trials(ComputedTrialsBase, dj.Computed):
-    definition = """
-    -> TrialsLink
-    ---
-    trials              : int unsigned      # number of trials
-    """
-
-    class Trial(dj.Part):
-        definition = """
-        -> master
-        -> Trial
-        """
-
-    def make(self, key):
-        link = (TrialsLink & key).link
-
-        try:
-            trials = link.trials
-
-        except MissingError:
-            logger.warning(f"Mising trials. Skipping {key}.")
-            return
-
-        master_key = dict(key, trials=len(trials))
-        self.insert1(master_key)
-
-        part_keys = (self & key).proj() * trials.proj()
-        self.Trial.insert(part_keys)
 
 
 # -------------- Trial Filter --------------
@@ -276,41 +183,7 @@ class TrialFilterLink:
 
 
 @group(schema)
-class TrialFilters:
+class TrialFilterGroup:
     keys = [TrialFilterLink]
     name = "trial_filters"
     comment = "recording trial filters"
-
-
-# -- Computed Trial Filter --
-
-
-@schema
-class FilteredTrials(ComputedTrialsBase, dj.Computed):
-    definition = """
-    -> Trials
-    -> TrialFilters
-    ---
-    trials              : int unsigned      # number of trials
-    """
-
-    class Trial(dj.Part):
-        definition = """
-        -> master
-        -> Trial
-        """
-
-    def make(self, key):
-        trials = (Trials & key).trials
-        filters = (TrialFilters & key).members
-
-        keys = filters.fetch(dj.key, order_by=filters.primary_key)
-        keys = [(TrialFilterLink & k).link.filter(trials).proj() for k in keys]
-
-        filtered = trials & dj.AndList(keys)
-
-        master_key = dict(key, trials=len(filtered))
-        self.insert1(master_key)
-
-        part_key = (self & master_key).proj() * filtered.proj()
-        self.Trial.insert(part_key)

@@ -4,7 +4,7 @@ from djutils import link, method, row_method
 from tqdm import tqdm
 from foundation.utils.logging import logger
 from foundation.utils.errors import OutOfBounds
-from foundation.recordings import trials, traces, resample
+from foundation.recordings import trial, trace, resample
 
 
 schema = dj.schema("foundation_recordings")
@@ -70,4 +70,4 @@ class Nans(dj.Computed):
 
     @property
     def key_source(self):
-        return traces.TraceLink.proj() * resample.Offset().proj() * NansLink.proj()
+        return trace.TraceLink.proj() * resample.Offset().proj() * NansLink.proj()

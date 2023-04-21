@@ -1,7 +1,7 @@
 import numpy as np
 import datajoint as dj
 from scipy.interpolate import interp1d
-from foundation.utils.traces import Times
+from foundation.utils.trace import Trace
 
 pipe_stim = dj.create_virtual_module("pipe_stim", "pipeline_stimulus")
 pipe_fuse = dj.create_virtual_module("pipe_fuse", "pipeline_fuse")
@@ -141,7 +141,7 @@ def stimulus_times(animal_id, session, scan_idx):
 
     Returns
     -------
-    foundation.utils.traces.Times (nans = False)
+    foundation.utils.traces.Trace
         start of each scan volume on the stimulus clock
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
@@ -149,7 +149,7 @@ def stimulus_times(animal_id, session, scan_idx):
     n = planes(**key)
     times = (pipe_stim.Sync & key).fetch1("frame_times")[::n]
 
-    return Times(times, nans=False, copy=False)
+    return Trace(times, nan=False, monotonic=True, copy=False)
 
 
 def behavior_times(animal_id, session, scan_idx):
@@ -165,7 +165,7 @@ def behavior_times(animal_id, session, scan_idx):
 
     Returns
     -------
-    foundation.utils.traces.Times (nans = False)
+    foundation.utils.traces.Trace
         start of each scan volume on the behavior clock
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
@@ -173,7 +173,7 @@ def behavior_times(animal_id, session, scan_idx):
     n = planes(**key)
     times = (pipe_stim.BehaviorSync & key).fetch1("frame_times")[::n]
 
-    return Times(times, nans=False, copy=False)
+    return Trace(times, nan=False, monotonic=True, copy=False)
 
 
 def eye_times(animal_id, session, scan_idx):
@@ -189,7 +189,7 @@ def eye_times(animal_id, session, scan_idx):
 
     Returns
     -------
-    foundation.utils.traces.Times (nans = True)
+    foundation.utils.traces.Trace
         eye trace times on the stimulus clock
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
@@ -197,8 +197,8 @@ def eye_times(animal_id, session, scan_idx):
     stim_times = stimulus_times(**key)
     beh_times = behavior_times(**key)
     beh_to_stim = interp1d(
-        x=beh_times.centered,
-        y=stim_times.centered,
+        x=beh_times - beh_times.median,
+        y=stim_times - stim_times.median,
         kind="linear",
         fill_value=np.nan,
         bounds_error=False,
@@ -206,16 +206,11 @@ def eye_times(animal_id, session, scan_idx):
     )
 
     raw = (pipe_eye.Eye & key).fetch1("eye_time")
-    times = np.full_like(raw, np.nan)
     nans = np.isnan(raw)
+    times = np.full_like(raw, np.nan)
+    times[~nans] = beh_to_stim(raw[~nans] - beh_times.median) + stim_times.median
 
-    t = raw[~nans]
-    t = beh_times.center(t)
-    t = beh_to_stim(t)
-    t = stim_times.uncenter(t)
-
-    times[~nans] = t
-    return Times(times, nans=True, copy=False)
+    return Trace(times, nan=True, monotonic=True, copy=False)
 
 
 def treadmill_times(animal_id, session, scan_idx):
@@ -231,7 +226,7 @@ def treadmill_times(animal_id, session, scan_idx):
 
     Returns
     -------
-    foundation.utils.traces.Times (nans = True)
+    foundation.utils.traces.Trace
         treadmill trace times on the stimulus clock
     """
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
@@ -239,8 +234,8 @@ def treadmill_times(animal_id, session, scan_idx):
     stim_times = stimulus_times(**key)
     beh_times = behavior_times(**key)
     beh_to_stim = interp1d(
-        x=beh_times.centered,
-        y=stim_times.centered,
+        x=beh_times - beh_times.median,
+        y=stim_times - stim_times.median,
         kind="linear",
         fill_value=np.nan,
         bounds_error=False,
@@ -248,16 +243,11 @@ def treadmill_times(animal_id, session, scan_idx):
     )
 
     raw = (pipe_tread.Treadmill & key).fetch1("treadmill_time")
-    times = np.full_like(raw, np.nan)
     nans = np.isnan(raw)
+    times = np.full_like(raw, np.nan)
+    times[~nans] = beh_to_stim(raw[~nans] - beh_times.median) + stim_times.median
 
-    t = raw[~nans]
-    t = beh_times.center(t)
-    t = beh_to_stim(t)
-    t = stim_times.uncenter(t)
-
-    times[~nans] = t
-    return Times(times, nans=True, copy=False)
+    return Trace(times, nan=True, monotonic=True, copy=False)
 
 
 # ------- OLD ----

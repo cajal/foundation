@@ -4,144 +4,8 @@ from .errors import OutOfBounds
 from .logging import logger
 
 
-class Trace:
-    """1D trace"""
-
-    def __init__(self, array, nans=False, copy=True):
-        """
-        Parameters
-        ----------
-        array : array-like
-            1D trace array
-        nans : bool
-            whether nans are allowed in the trace
-        copy : bool
-            whether trace data is copied
-        """
-        self.array = np.array(array, copy=copy)
-        self.nans = bool(nans)
-
-        if self.array.ndim != 1:
-            raise ValueError("Trace must be 1D.")
-
-        if not self.nans and np.isnan(self.array).any():
-            raise ValueError("Nans found in trace.")
-
-    @property
-    def nan_mask(self):
-        """
-        Returns
-        -------
-        1D array (dtype = bool) | None
-            boolean mask indicating nans
-        """
-        if not self.nans:
-            return
-
-        _nan_mask = getattr(self, "_nan_mask", None)
-        if _nan_mask is None:
-            _nan_mask = self._nan_mask = np.isnan(self.array)
-
-        return _nan_mask
-
-    @property
-    def median(self):
-        """
-        Returns
-        -------
-        float-like
-            median of the trace
-        """
-        _median = getattr(self, "_median", None)
-        if _median is None:
-            _median = self._median = np.nanmedian(self.array)
-
-        return _median
-
-    @property
-    def centered(self):
-        """
-        Returns
-        -------
-        1D array
-            centered trace array
-        """
-        return self.center(self.array)
-
-    def center(self, trace):
-        """
-        Parameters
-        ----------
-        1D array
-            trace array
-
-        Returns
-        -------
-        1D array
-            centers the provided trace array
-        """
-        return trace - self.median
-
-    def uncenter(self, trace):
-        """
-        Parameters
-        ----------
-        1D array
-            trace array
-
-        Returns
-        -------
-        1D array
-            uncenters the provided trace array
-        """
-        return trace + self.median
-
-    def __len__(self):
-        return len(self.array)
-
-    def __getitem__(self, key):
-        ret = self.array[key]
-
-        if ret.ndim > 0:
-            ret = self.__class__(self.array[key], nans=self.nans, copy=True)
-
-        return ret
-
-
-class Times(Trace):
-    def __init__(self, times, nans=False, copy=True):
-        super().__init__(array=times, nans=nans, copy=copy)
-
-        t = self.array[~self.nan_mask] if self.nans else self.array
-        incr = np.diff(t) > 0
-        if not incr.all():
-            raise ValueError("Values do not monotonically increase.")
-
-
-def fill_nans(trace, inplace=False): # TODO
-    """
-    Parameters
-    ----------
-    trace : 1D array
-        trace values
-    inplace : bool
-        inplace modification of trace
-
-    Returns
-    -------
-    1D array
-        trace with nan values interpolated
-    """
-    if not inplace:
-        trace = trace.copy()
-
-    nan = np.isnan(trace)
-    trace[nan] = 0 if nan.all() else np.interp(np.nonzero(nan)[0], np.nonzero(~nan)[0], trace[~nan])
-    return trace
-
-
-def truncate(*traces, tolerance=1):
-    """Truncates traces to the same length
+def truncate(*arrays, tolerance=1):
+    """Truncates arrays to the same length
 
     Parameters
     ----------
@@ -155,7 +19,7 @@ def truncate(*traces, tolerance=1):
     Tuple[Trace]
         traces of the same length
     """
-    lengths = tuple(map(len, traces))
+    lengths = tuple(map(len, arrays))
     min_len = min(lengths)
     max_len = max(lengths)
 
@@ -165,53 +29,175 @@ def truncate(*traces, tolerance=1):
     if max_len > min_len:
         logger.info(f"Truncating {max_len - min_len} frames")
 
-    return tuple(trace[:min_len] for trace in traces)
+    return tuple(trace[:min_len] for trace in arrays)
 
 
-class TraceTimes:
-    def __init__(self, times, trace):
+class Trace:
+    """1D trace"""
+
+    def __init__(self, array, nan=False, monotonic=False, copy=True):
         """
         Parameters
         ----------
-        times : 1D array
-            time of each point in trace, monotonically increasing
-        trace : 1D array
-            trace values, same length as times
+        array : array-like
+            1D array
+        nan : bool
+            whether nans are allowed in the array
+        monotonic : bool
+            whether values monotonically increase
+        copy : bool
+            whether array data is copied
         """
-        if len(times) != len(trace):
-            raise ValueError("times and trace arrays must be the same length")
+        self.array = np.array(array, copy=copy)
+        self.nan = bool(nan)
+        self.monotonic = bool(monotonic)
 
-        if not np.nanmin(np.diff(times)) > 0:
-            raise ValueError("times must be monotically increasing")
+        if self.array.ndim != 1:
+            raise ValueError("Trace must be 1D.")
 
-        self.t0 = np.nanmedian(times)
-        self.tmin = np.nanmin(times)
-        self.tmax = np.nanmax(times)
-        self.times = self.clock(times, verify=False)
-        self.trace = trace
-        self.init()
+        if not self.nan and np.isnan(self.array).any():
+            raise ValueError("Nans found in trace.")
 
-    def init(self):
-        pass
+        if self.monotonic:
+            t = self.array[~self.nan_mask] if self.nan else self.array
+            if np.diff(t).min() < 0:
+                raise ValueError("Values do not monotonically increase.")
 
-    def clock(self, time, verify=True):
+    @property
+    def nan_mask(self):
         """
-        Parameter
-        ---------
-        time : 1D array
-            time on initialized clock
-        verify : bool
-            verify time is within bounds
+        Returns
+        -------
+        1D array (dtype = bool) | None
+            boolean mask indicating nans
+        """
+        if not self.nan:
+            return
+
+        _nan_mask = getattr(self, "_nan_mask", None)
+        if _nan_mask is None:
+            _nan_mask = self._nan_mask = np.isnan(self.array)
+
+        return _nan_mask
+
+    @property
+    def filled(self):
+        """
+        Returns
+        -------
+        Array
+            Array with all nans filled
+        """
+        if self.nan:
+            if self.nan_mask.all():
+                raise ValueError("All values are nan.")
+
+            if self.nan_mask.any():
+                logger.info("Nans in trace. Filling with linear interpolation.")
+
+                new = self.array.copy()
+                new[self.nan_mask] = np.interp(
+                    x=np.nonzero(self.nan_mask)[0],
+                    xp=np.nonzero(~self.nan_mask)[0],
+                    fp=self.array[~self.nan_mask],
+                )
+                return Trace(array=new, nan=False, copy=False, monotonic=self.monotonic)
+
+        logger.info("No nans in trace.")
+        return self
+
+    @property
+    def median(self):
+        ret = getattr(self, "_median", None)
+
+        if ret is None:
+            ret = self._median = np.nanmedian(self.array)
+
+        return ret
+
+    @property
+    def min(self):
+        ret = getattr(self, "_min", None)
+
+        if ret is None:
+            ret = self._min = np.nanmin(self.array)
+
+        return ret
+
+    @property
+    def max(self):
+        ret = getattr(self, "_max", None)
+
+        if ret is None:
+            ret = self._max = np.nanmax(self.array)
+
+        return ret
+
+    def __len__(self):
+        return len(self.array)
+
+    def __getitem__(self, key):
+        ret = self.array[key]
+
+        if ret.ndim > 0:
+            ret = Trace(self.array[key], nan=self.nan, copy=True, monotonic=self.monotonic)
+
+        return ret
+
+
+class Resample:
+    def __init__(self, times, values):
+        """
+        Parameters
+        ----------
+        times : Array
+            trace times
+        values : Array
+            trace values
+        """
+        if not times.monotonic:
+            raise ValueError("Times are not monotonic.")
+
+        # trace values
+        self.values = values
+
+        # initial clock
+        self.times = times
+
+        # centered clock
+        self.centered_times = times.array - times.median
+
+    def clock(self, times):
+        """
+        Parameters
+        ----------
+        times : array-like
+            times on initial clock
+
+        array-like
+            times on centered clock
+        """
+        if np.nanmin(times) < self.times.min:
+            raise OutOfBounds("Provided time is less than registered time values.")
+
+        if np.nanmax(times) > self.times.max:
+            raise OutOfBounds("Provided time is greater than registered time values.")
+
+        return times - self.times.median
+
+    def __call__(self, times):
+        """
+        Parameters
+        ----------
+        times : array-like
+            times on initial clock
 
         Returns
         -------
-            time on internal clock (centered by median for numerical stability)
+        1D array
+            resampled values, same length as times
         """
-        if verify:
-            if np.min(time) < self.tmin or np.max(time) > self.tmax:
-                raise OutOfBounds("Time is out of bounds.")
-
-        return time - self.t0
+        raise NotImplementedError()
 
 
 # class Sample:

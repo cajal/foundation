@@ -1,18 +1,18 @@
 import numpy as np
 from scipy.interpolate import interp1d
-from .traces import fill_nans, TraceTimes
+from .traces import Resample
 from .logging import logger
 
 
-class Nans(TraceTimes):
+class Nans(Resample):
     def __call__(self, start, end):
         """
         Parameters
         ----------
         start : float
-            start time on initialized clock
+            start time on initial clock
         end : float
-            end time on initialized clock
+            end time on initial clock
 
         Returns
         -------
