@@ -1,10 +1,10 @@
 import numpy as np
 from scipy.interpolate import interp1d
-from .traces import Resample
+from .traces import Samples
 from .logging import logger
 
 
-class Nans(Resample):
+class Nans(Samples):
     def __call__(self, start, end):
         """
         Parameters

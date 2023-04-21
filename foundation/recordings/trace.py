@@ -2,12 +2,10 @@ import numpy as np
 import datajoint as dj
 from djutils import link, group, method, row_method, row_property, MissingError, RestrictionError
 from foundation.utils.logging import logger
-from foundation.utils.traces import truncate
+from foundation.utils.trace import truncate
+from foundation.bridges.pipeline import pipe_meso, pipe_eye, pipe_tread
 from foundation.recordings import trial
 
-pipe_meso = dj.create_virtual_module("pipe_meso", "pipeline_meso")
-pipe_eye = dj.create_virtual_module("pipe_eye", "pipeline_eye")
-pipe_tread = dj.create_virtual_module("pipe_tread", "pipeline_treadmill")
 schema = dj.schema("foundation_recordings")
 
 
@@ -20,16 +18,14 @@ class TraceBase:
     """Recording Trace"""
 
     @row_property
-    def times_trace(self):
+    def times_values(self):
         """
         Returns
         -------
-        1D array
-            recording times
-        1D array
-            recording trace
-
-        IMPORTANT : arrays must be the same length
+        times : 1D array
+            trace times
+        values : 1D array
+            trace values, same length as times
         """
         raise NotImplementedError()
 
@@ -43,20 +39,6 @@ class TraceBase:
         """
         raise NotImplementedError()
 
-    @row_property
-    def trial_flips(self):
-        """
-        Returns
-        -------
-        Iterator[tuple[trials.Trial, 1D array]]
-            yields
-                trials.Trial
-                    recording trial
-                1D array
-                    recording times of each stimulus flip
-        """
-        raise NotImplementedError()
-
 
 # -- Trace Types --
 
@@ -65,9 +47,24 @@ class ScanBase(TraceBase):
     """Scan Trials"""
 
     @row_property
+    def scan_key(self):
+        key = ["animal_id", "session", "scan_idx"]
+        return dict(zip(key, self.fetch1(*key)))
+
+    @row_property
     def trials(self):
-        key = trial.TrialsLink.ScanTrials * trial.ScanTrials & self
-        return (trial.Trials & key).trials
+        from foundation.bridges.pipeline import pipe_stim
+
+        scan_trials = pipe_stim.Trial & self
+        keys = (trial.TrialLink.ScanTrial * scan_trials).proj()
+
+        if scan_trials - keys:
+            raise MissingError("Missing trials.")
+
+        if keys - scan_trials:
+            raise RestrictionError("Unexpected trials.")
+
+        return trial.TrialLink & keys
 
 
 @schema
@@ -77,65 +74,22 @@ class MesoActivity(ScanBase, dj.Lookup):
     """
 
     @row_property
-    def times_trace(self):
+    def times_values(self):
         from foundation.recordings.scan import stimulus_times
 
-        # scan key
-        key = ["animal_id", "session", "scan_idx"]
-        key = dict(zip(key, self.fetch1(*key)))
-
-        # times on stimulus clock
-        times = stimulus_times(**key)
+        # scan times on stimulus clock
+        times = stimulus_times(**self.scan_key)
 
         # imaging delay
         delay = (pipe_meso.ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
 
         # activity trace
-        trace = (pipe_meso.Activity.Trace & self).fetch1("trace")
+        values = (pipe_meso.Activity.Trace & self).fetch1("trace")
 
         # trim to same length
-        times, trace = truncate(times, trace, tolerance=1)
+        times, values = truncate(times, values, tolerance=1)
 
-        return times + delay, trace
-
-    @row_property
-    def trial_flips(self):
-        keys = self.trials
-        for key in keys.fetch(dj.key, order_by=keys.primary_key):
-
-            trial = trial.Trial & key
-            flips = trial.flips
-
-            yield trial, flips
-
-
-class ScanBehaviorTraceBase(ScanBase):
-    """Scan Behavior Trace --- stimulus time -> behavior time"""
-
-    @row_property
-    def trial_flips(self):
-        from foundation.recordings.scan import stimulus_times, behavior_times
-        from foundation.utils.splines import CenteredSpline
-
-        # scan key
-        key = ["animal_id", "session", "scan_idx"]
-        key = dict(zip(key, self.fetch1(*key)))
-
-        # times on stimulus and behavior clocks
-        stim_times = stimulus_times(**key)
-        beh_times = behavior_times(**key)
-
-        # stimulus -> behavior time
-        times = CenteredSpline(stim_times, beh_times, k=1, ext=3)
-
-        # yield trials
-        keys = self.trials
-        for key in keys.fetch(dj.key, order_by=keys.primary_key):
-
-            trial = trial.Trial & key
-            flips = times(trial.flips)
-
-            yield trial, flips
+        return times + delay, values
 
 
 @schema
@@ -147,16 +101,18 @@ class ScanPupilType(dj.Lookup):
 
 
 @schema
-class ScanPupil(ScanBehaviorTraceBase, dj.Lookup):
+class ScanPupil(ScanBase, dj.Lookup):
     definition = """
     -> pipe_eye.FittedPupil
     -> ScanPupilType
     """
 
     @row_property
-    def times_trace(self):
-        # times of eye trace on behavior clocks
-        times = (pipe_eye.Eye & self).fetch1("eye_time")
+    def times_values(self):
+        from foundation.recordings.scan import eye_times
+
+        # eye times on stimulus clock
+        times = eye_times(**self.scan_key)
 
         # fetch trace based on pupil type and attribute
         pupil_type, pupil_attr = self.fetch1("pupil_type", "pupil_attribute")
@@ -167,16 +123,16 @@ class ScanPupil(ScanBehaviorTraceBase, dj.Lookup):
 
             if pupil_attr == "radius":
                 # fitted circle radius
-                trace = fits.fetch("radius", order_by="frame_id")
+                values = fits.fetch("radius", order_by="frame_id")
 
             elif pupil_attr in ["center_x", "center_y"]:
                 # fitted circle center
-                traces = fits.fetch("center", order_by="frame_id")
+                center = fits.fetch("center", order_by="frame_id")
 
                 if pupil_attr == "center_x":
-                    trace = np.array([np.nan if t is None else t[0] for t in traces])
+                    values = np.array([np.nan if c is None else c[0] for c in center])
                 else:
-                    trace = np.array([np.nan if t is None else t[1] for t in traces])
+                    values = np.array([np.nan if c is None else c[1] for c in center])
 
             else:
                 # other fitted circle attributes not implemented
@@ -186,19 +142,23 @@ class ScanPupil(ScanBehaviorTraceBase, dj.Lookup):
             # other types not implemented
             raise NotImplementedError()
 
-        return times, trace
+        return times, values
 
 
 @schema
-class ScanTreadmill(ScanBehaviorTraceBase, dj.Lookup):
+class ScanTreadmill(ScanBase, dj.Lookup):
     definition = """
     -> pipe_tread.Treadmill
     """
 
     @row_property
-    def times_trace(self):
-        times, trace = (pipe_tread.Treadmill & self).fetch1("treadmill_time", "treadmill_vel")
-        return times, trace
+    def times_values(self):
+        from foundation.recordings.scan import treadmill_times
+
+        times = treadmill_times(**self.scan_key)
+        values = (pipe_tread.Treadmill & self).fetch1("treadmill_vel")
+
+        return times, values
 
 
 # -- Trace Link --
@@ -209,53 +169,3 @@ class TraceLink:
     links = [MesoActivity, ScanPupil, ScanTreadmill]
     name = "trace"
     comment = "recording trace"
-
-
-# -- Computed Trace --
-
-
-@schema
-class Trace(TraceBase, dj.Computed):
-    definition = """
-    -> TraceLink
-    ---
-    trials              : int unsigned      # number of trials
-    """
-
-    def make(self, key):
-        trials = (TraceLink & key).link.trials
-        key["trials"] = len(trials)
-        self.insert1(key)
-
-    @row_property
-    def times_trace(self):
-        times, trace = (TraceLink & self).link.times_trace
-        return times, trace
-
-    @row_property
-    def trials(self):
-        n = self.fetch1("trials")
-        trials = (TraceLink & self).link.trials
-
-        if n != len(trials):
-            raise MissingError("Trials are missing")
-
-        return trials
-
-    @row_property
-    def trial_flips(self):
-        n = self.fetch1("trials")
-        for trial, flips in (TraceLink & self).link.trial_flips:
-
-            if not (np.diff(flips) > 0).all():
-                raise ValueError("Flips do not monotonically increase.")
-
-            yield trial, flips
-            n -= 1
-
-        if n == 0:
-            return
-        elif n > 0:
-            raise MissingError("Missing trials.")
-        else:
-            raise RestrictionError("Extra trials received.")

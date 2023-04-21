@@ -5,8 +5,8 @@ import datajoint as dj
 from djutils import link, row_property
 from PIL import Image
 from foundation.utils.video import Video
+from foundation.bridges.pipeline import pipe_stim
 
-pipe_stim = dj.create_virtual_module("pipe_stim", "pipeline_stimulus")
 schema = dj.schema("foundation_stimuli")
 
 
@@ -189,7 +189,7 @@ class StimulusLink:
 
 
 @schema
-class Stimulus(StimulusBase, dj.Computed):
+class StimulusFrames(StimulusBase, dj.Computed):
     definition = """
     -> StimulusLink
     ---
