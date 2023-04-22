@@ -71,6 +71,17 @@ class TrialLink:
 # -- Computed Trial --
 
 
+@schema
+class TrialFlips(dj.Computed):
+    definition = """
+    -> TrialLink
+    ---
+    flips       : int unsigned      # number of stimulus flips
+    flip_start  : double            # time of first flip
+    flip_end    : double            # time of last flip
+    """
+
+
 # -------------- Trial Filter --------------
 
 # -- Trial Filter Base --
