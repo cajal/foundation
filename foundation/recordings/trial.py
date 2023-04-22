@@ -81,6 +81,18 @@ class TrialFlips(dj.Computed):
     flip_end    : double            # time of last flip
     """
 
+    def make(self, key):
+        flips = (TrialLink & key).link.flips
+
+        assert np.isfinite(flips).all()
+        assert monotonic(flips)
+
+        key["flips"] = len(flips)
+        key["flip_start"] = flips[0]
+        key["flip_end"] = flips[-1]
+
+        self.insert1(key)
+
 
 # -------------- Trial Filter --------------
 
