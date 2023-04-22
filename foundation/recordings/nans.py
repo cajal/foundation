@@ -62,14 +62,14 @@ class NansLink:
 
 
 @schema
-class FloatNans(dj.Computed):
+class TrialNans(dj.Computed):
     definition = """
     -> trial.TrialLink
     -> trace.TraceLink
     -> resample.OffsetLink
     -> NansLink
     ---
-    nans = NULL         : float     # number of nans
+    nans = NULL         : float     # detected nans
     """
 
     @property

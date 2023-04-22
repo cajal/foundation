@@ -47,40 +47,35 @@ class DurationNans(Nans):
         idx_val = np.nonzero(~nans)[0]
 
         self.center = np.median(times[idx_val])
-
+        self.ctimes = times - self.center
         self.index = interp1d(
-            x=fill_nans(times) - self.center,
-            y=np.arange(times.size),
+            x=fill_nans(self.ctimes),
+            y=np.arange(self.ctimes.size),
             kind="nearest",
         )
 
         left = interp1d(
             x=idx_val,
-            y=times[idx_val] - self.center,
+            y=self.ctimes[idx_val],
             kind="previous",
             bounds_error=False,
             fill_value=np.nan,
         )
         right = interp1d(
             x=idx_val,
-            y=times[idx_val] - self.center,
+            y=self.ctimes[idx_val],
             kind="next",
             bounds_error=False,
             fill_value=np.nan,
         )
-        self.durations = np.zeros_like(times)
-        self.durations[idx_nan] = right(idx_nan) - left(idx_nan)
+        self.nans = np.zeros_like(self.ctimes)
+        self.nans[idx_nan] = right(idx_nan) - left(idx_nan)
 
     def __call__(self, start, end):
         bounds = [
             start - self.center,
             end - self.center,
         ]
-        bounds = self.index(bounds)
-
-        if np.isnan(bounds).any():
-            return
-        else:
-            i, j = map(int, bounds)
-            durations = self.durations[i : j + 1]
-            return self.reduce(durations)
+        i, j = map(int, self.index(bounds))
+        nans = self.nans[i : j + 1]
+        return self.reduce(nans)
