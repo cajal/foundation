@@ -22,8 +22,7 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
     """
     from foundation.bridge.pipeline import pipe_stim
     from foundation.stimulus import video
-
-    # from foundation.recording import trial #TODO
+    from foundation.recording import trial
 
     # scan key
     scan_key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
@@ -50,15 +49,11 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
     video.VideoLink.fill()
     video.VideoFrames.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
-    # # populate trial
-    # trials.ScanTrial.insert(scan_trials.proj(), skip_duplicates=True)
-    # trials.TrialLink.fill()
-    # trials.Trial.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
-
-    # # populate trials
-    # trials.ScanTrials.insert1(scan_key, skip_duplicates=True)
-    # trials.TrialsLink.fill()
-    # trials.Trials.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
+    # populate trial
+    trial.ScanTrial.insert(scan_trials.proj(), skip_duplicates=True)
+    trial.TrialLink.fill()
+    trial.TrialVideo.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
+    trial.TrialFlips.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
 
 # ---------- Loading Functions ----------

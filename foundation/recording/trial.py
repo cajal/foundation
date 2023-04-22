@@ -18,12 +18,12 @@ class TrialBase:
     """Recording Trial"""
 
     @row_property
-    def video_frames(self):
+    def video(self):
         """
         Returns
         -------
-        video.VideoFrames
-            stimulus tuple
+        video.VideoLink
+            tuple from video.VideoLink
         """
         raise NotImplementedError()
 
@@ -33,7 +33,7 @@ class TrialBase:
         Returns
         -------
         1D array
-            stimulus flip times
+            video flip times
         """
         raise NotImplementedError()
 
@@ -48,11 +48,11 @@ class ScanTrial(TrialBase, dj.Lookup):
     """
 
     @row_property
-    def stimulus(self):
+    def video(self):
         trial = pipe_stim.Trial * pipe_stim.Condition & self
         stim_type = trial.fetch1("stimulus_type")
         stim_type = stim_type.split(".")[1]
-        return stimulus.StimulusLink.get(stim_type, trial)
+        return video.VideoLink.get(stim_type, trial)
 
     @row_property
     def flips(self):
@@ -73,17 +73,40 @@ class TrialLink:
 
 
 @schema
+class TrialVideo(dj.Computed):
+    definition = """
+    -> TrialLink
+    ---
+    -> video.VideoLink
+    """
+
+    def make(self, key):
+        try:
+            video = (TrialLink & key).link.video
+
+        except MissingError:
+            logger.warn(f"Missing video. Not populating {key}")
+
+        key["video_id"] = video.fetch1("video_id")
+        self.insert1(key)
+
+
+@schema
 class TrialFlips(dj.Computed):
     definition = """
     -> TrialLink
     ---
-    flips       : int unsigned      # number of stimulus flips
+    flips       : int unsigned      # number of video flips
     flip_start  : double            # time of first flip
     flip_end    : double            # time of last flip
     """
 
     def make(self, key):
-        flips = (TrialLink & key).link.flips
+        try:
+            flips = (TrialLink & key).link.flips
+
+        except MissingError:
+            logger.warn(f"Missing flips. Not populating {key}")
 
         assert np.isfinite(flips).all()
         assert monotonic(flips)
@@ -100,64 +123,64 @@ class TrialFlips(dj.Computed):
 # -- Trial Filter Base --
 
 
-class TrialFilterBase:
-    """Trial Filter"""
+# class TrialFilterBase:
+#     """Trial Filter"""
 
-    @row_method
-    def filter(self, trials):
-        """
-        Parameters
-        ----------
-        trials : Trial
-            Trial tuples
+#     @row_method
+#     def filter(self, trials):
+#         """
+#         Parameters
+#         ----------
+#         trials : Trial
+#             Trial tuples
 
-        Returns
-        -------
-        Trial
-            retricted Trial tuples
-        """
-        raise NotImplementedError()
-
-
-# -- Trial Filter Types --
+#         Returns
+#         -------
+#         Trial
+#             retricted Trial tuples
+#         """
+#         raise NotImplementedError()
 
 
-@method(schema)
-class FlipsEqualsFrames(TrialFilterBase):
-    name = "flips_equals_frames"
-    comment = "flips == frames"
-
-    @row_method
-    def filter(self, trials):
-        key = (trials * stimulus.Stimulus) & "flips = frames"
-        return trials & key.proj()
+# # -- Trial Filter Types --
 
 
-@schema
-class StimulusType(TrialFilterBase, dj.Lookup):
-    definition = """
-    stimulus_type       : varchar(128)  # stimulus type
-    """
+# @method(schema)
+# class FlipsEqualsFrames(TrialFilterBase):
+#     name = "flips_equals_frames"
+#     comment = "flips == frames"
 
-    def filter(self, trials):
-        return trials & (stimulus.StimulusLink & self)
-
-
-# -- Trial Filter Link --
+#     @row_method
+#     def filter(self, trials):
+#         key = (trials * stimulus.Stimulus) & "flips = frames"
+#         return trials & key.proj()
 
 
-@link(schema)
-class TrialFilterLink:
-    links = [FlipsEqualsFrames, StimulusType]
-    name = "trial_filter"
-    comment = "recording trial filter"
+# @schema
+# class StimulusType(TrialFilterBase, dj.Lookup):
+#     definition = """
+#     stimulus_type       : varchar(128)  # stimulus type
+#     """
+
+#     def filter(self, trials):
+#         return trials & (stimulus.StimulusLink & self)
 
 
-# -- Trial Filter Group --
+# # -- Trial Filter Link --
 
 
-@group(schema)
-class TrialFilterGroup:
-    keys = [TrialFilterLink]
-    name = "trial_filters"
-    comment = "recording trial filters"
+# @link(schema)
+# class TrialFilterLink:
+#     links = [FlipsEqualsFrames, StimulusType]
+#     name = "trial_filter"
+#     comment = "recording trial filter"
+
+
+# # -- Trial Filter Group --
+
+
+# @group(schema)
+# class TrialFilterGroup:
+#     keys = [TrialFilterLink]
+#     name = "trial_filters"
+#     comment = "recording trial filters"
