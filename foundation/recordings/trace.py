@@ -30,12 +30,12 @@ class TraceBase:
         raise NotImplementedError()
 
     @row_property
-    def trials(self):
+    def trial_flips(self):
         """
         Returns
         -------
-        trials.Trial
-            tuples from trials.Trial
+        trials.TrialFlips
+            tuples from trials.TrialFlips
         """
         raise NotImplementedError()
 
@@ -52,11 +52,11 @@ class ScanBase(TraceBase):
         return dict(zip(key, self.fetch1(*key)))
 
     @row_property
-    def trials(self):
+    def trial_flips(self):
         from foundation.bridges.pipeline import pipe_stim
 
-        scan_trials = pipe_stim.Trial & self
-        keys = (trial.TrialLink.ScanTrial * scan_trials).proj()
+        scan_trials = pipe_stim.Trial.proj() & self
+        keys = trial.TrialFlips.proj() * trial.TrialLink.ScanTrial * scan_trials
 
         if scan_trials - keys:
             raise MissingError("Missing trials.")
@@ -64,7 +64,7 @@ class ScanBase(TraceBase):
         if keys - scan_trials:
             raise RestrictionError("Unexpected trials.")
 
-        return trial.TrialLink & keys
+        return trial.TrialFlips & keys
 
 
 @schema

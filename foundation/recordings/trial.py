@@ -2,6 +2,7 @@ import numpy as np
 import datajoint as dj
 from djutils import link, group, method, row_method, row_property, MissingError
 from foundation.utils.logging import logger
+from foundation.utils.trace import monotonic
 from foundation.bridges.pipeline import pipe_stim
 from foundation.stimuli import stimulus
 

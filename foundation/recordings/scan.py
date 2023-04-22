@@ -1,6 +1,5 @@
 import numpy as np
 import datajoint as dj
-from scipy.interpolate import interp1d
 
 
 # ---------- Populate Functions ----------
@@ -97,33 +96,7 @@ def pipeline(animal_id, session, scan_idx):
         raise ValueError(f"{pipe} not recognized")
 
 
-def planes(animal_id, session, scan_idx):
-    """
-    Parameters
-    ----------
-    animal_id : int
-        animal id
-    session : int
-        scan session
-    scan_idx : int
-        scan index
-
-    Returns
-    -------
-    int
-        number of scan plane (z-depths)
-    """
-    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    pipe = pipeline(**key)
-
-    n = (pipe.ScanInfo & key).proj(n="nfields div nrois").fetch1("n")
-    if n != len(dj.U("z") & (pipe.ScanInfo.Field & key)):
-        raise ValueError("unexpected number of depths")
-
-    return n
-
-
-def stimulus_times(animal_id, session, scan_idx):
+def scan_times(animal_id, session, scan_idx):
     """
     Parameters
     ----------
@@ -138,37 +111,32 @@ def stimulus_times(animal_id, session, scan_idx):
     -------
     1D array
         start of each scan volume on the stimulus clock
-    """
-    from foundation.bridges.pipeline import pipe_stim
-
-    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    n = planes(**key)
-    times = (pipe_stim.Sync & key).fetch1("frame_times")[::n]
-    return times
-
-
-def behavior_times(animal_id, session, scan_idx):
-    """
-    Parameters
-    ----------
-    animal_id : int
-        animal id
-    session : int
-        scan session
-    scan_idx : int
-        scan index
-
-    Returns
-    -------
     1D array
         start of each scan volume on the behavior clock
     """
     from foundation.bridges.pipeline import pipe_stim
 
+    # scan key
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    n = planes(**key)
-    times = (pipe_stim.BehaviorSync & key).fetch1("frame_times")[::n]
-    return times
+
+    # load pipeline
+    pipe = pipeline(**key)
+
+    # number of planes
+    n = (pipe.ScanInfo & key).proj(n="nfields div nrois").fetch1("n")
+    if n != len(dj.U("z") & (pipe.ScanInfo.Field & key)):
+        raise ValueError("unexpected number of depths")
+
+    # fetch and slice times
+    stim_times = (pipe_stim.Sync & key).fetch1("frame_times", squeeze=True)[::n]
+    beh_times = (pipe_stim.BehaviorSync & key).fetch1("frame_times", squeeze=True)[::n]
+    assert len(stim_times) == len(beh_times)
+
+    # truncate times
+    nframes = (pipe.ScanInfo & key).fetch1("nframes")
+    assert 0 <= len(stim_times) - nframes <= 1
+
+    return stim_times[:nframes], beh_times[:nframes]
 
 
 def eye_times(animal_id, session, scan_idx):
@@ -187,12 +155,12 @@ def eye_times(animal_id, session, scan_idx):
     1D array
         eye trace times on the stimulus clock
     """
+    from scipy.interpolate import interp1d
     from foundation.bridges.pipeline import pipe_eye
 
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    stim_times = stimulus_times(**key)
-    beh_times = behavior_times(**key)
+    stim_times, beh_times = scan_times(**key)
 
     stim_median = np.median(stim_times)
     beh_median = np.median(beh_times)
@@ -230,12 +198,12 @@ def treadmill_times(animal_id, session, scan_idx):
     1D array
         treadmill trace times on the stimulus clock
     """
+    from scipy.interpolate import interp1d
     from foundation.bridges.pipeline import pipe_tread
 
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    stim_times = stimulus_times(**key)
-    beh_times = behavior_times(**key)
+    stim_times, beh_times = scan_times(**key)
 
     stim_median = np.median(stim_times)
     beh_median = np.median(beh_times)
