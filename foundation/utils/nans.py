@@ -52,6 +52,8 @@ class DurationNans(Nans):
             x=fill_nans(self.ctimes),
             y=np.arange(self.ctimes.size),
             kind="nearest",
+            bounds_error=False,
+            fill_value=np.nan,
         )
 
         left = interp1d(
@@ -76,6 +78,11 @@ class DurationNans(Nans):
             start - self.center,
             end - self.center,
         ]
-        i, j = map(int, self.index(bounds))
-        nans = self.nans[i : j + 1]
-        return self.reduce(nans)
+        bounds = self.index(bounds)
+
+        if np.isnan(bounds).any():
+            return
+        else:
+            i, j = map(int, bounds)
+            nans = self.nans[i : j + 1]
+            return self.reduce(nans)
