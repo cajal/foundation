@@ -2,7 +2,6 @@ import numpy as np
 import datajoint as dj
 from djutils import link, group, method, row_method, row_property, MissingError, RestrictionError
 from foundation.utils.logging import logger
-from foundation.utils.trace import truncate
 from foundation.bridge.pipeline import pipe_meso, pipe_eye, pipe_tread
 from foundation.recording import trial
 
@@ -18,14 +17,22 @@ class TraceBase:
     """Recording Trace"""
 
     @row_property
-    def times_values(self):
+    def times(self):
         """
         Returns
         -------
         times : 1D array
             trace times
+        """
+        raise NotImplementedError()
+
+    @row_property
+    def values(self):
+        """
+        Returns
+        -------
         values : 1D array
-            trace values, same length as times
+            trace values
         """
         raise NotImplementedError()
 
@@ -53,7 +60,7 @@ class ScanBase(TraceBase):
 
     @row_property
     def trial_flips(self):
-        from foundation.bridges.pipeline import pipe_stim
+        from foundation.bridge.pipeline import pipe_stim
 
         scan_trials = pipe_stim.Trial.proj() & self
         keys = trial.TrialFlips.proj() * trial.TrialLink.ScanTrial * scan_trials
@@ -74,22 +81,28 @@ class MesoActivity(ScanBase, dj.Lookup):
     """
 
     @row_property
-    def times_values(self):
-        from foundation.recordings.scan import stimulus_times
+    def times(self):
+        """
+        Returns
+        -------
+        times : 1D array
+            trace times
+        """
+        from foundation.recording.scan import scan_times
 
-        # scan times on stimulus clock
-        times = stimulus_times(**self.scan_key)
-
-        # imaging delay
+        times = scan_times(**self.scan_key)[0]
         delay = (pipe_meso.ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
+        return times + delay
 
-        # activity trace
-        values = (pipe_meso.Activity.Trace & self).fetch1("trace")
-
-        # trim to same length
-        times, values = truncate(times, values, tolerance=1)
-
-        return times + delay, values
+    @row_property
+    def values(self):
+        """
+        Returns
+        -------
+        values : 1D array
+            trace values
+        """
+        return (pipe_meso.Activity.Trace & self).fetch1("trace")
 
 
 @schema

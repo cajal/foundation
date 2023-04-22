@@ -5,7 +5,18 @@ import datajoint as dj
 # ---------- Populate Functions ----------
 
 
-def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progress=True):
+def populate_scan(
+    animal_id,
+    session,
+    scan_idx,
+    pipe_version=1,
+    segmentation_method=6,
+    classification_method=2,
+    unit_type="soma",
+    spike_method=6,
+    reserve_jobs=True,
+    display_progress=True,
+):
     """
     Parameters
     ----------
@@ -15,18 +26,35 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
         scan session
     scan_idx : int
         scan index
+    pipe_version : int
+        pipe version
+    segmentation_method : int
+        segmentation method
+    classification_method : int
+        classification method
+    unit_type : str
+        unit classification type
+    spike_method : int
+        spike method
     reserve_jobs : bool
         job reservation for AutoPopulate
     display_progress : bool
         display progress
     """
-    from foundation.bridge.pipeline import pipe_stim
+    from foundation.bridge.pipeline import pipe_stim, pipe_meso
     from foundation.stimulus import video
-    from foundation.recording import trial
+    from foundation.recording import trial, trace
 
-    # scan key
-    scan_key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-    scan_trials = pipe_stim.Trial & scan_key
+    # scan
+    key = dict(
+        animal_id=animal_id,
+        session=session,
+        scan_idx=scan_idx,
+    )
+    pipe = pipeline(**key)
+
+    # scan trials
+    scan_trials = pipe_stim.Trial & key
 
     # stimulus types
     conditions = pipe_stim.Condition & scan_trials
@@ -45,7 +73,7 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
             conds = conditions & dict(stimulus_type=stim_type)
             table.insert(conds.proj(), skip_duplicates=True)
 
-    # populate stimulus
+    # populate video
     video.VideoLink.fill()
     video.VideoFrames.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
@@ -54,6 +82,18 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
     trial.TrialLink.fill()
     trial.TrialVideo.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
     trial.TrialFlips.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
+
+    # fill unit traces
+    _key = dict(
+        key,
+        pipe_version=pipe_version,
+        segmentation_method=segmentation_method,
+        classification_method=classification_method,
+        type=unit_type,
+    )
+    units = pipe.ScanSet.Unit & (pipe.MaskClassification.Type & _key)
+    traces = pipe_meso.Activity.Trace & units.proj() & dict(key, spike_method=spike_method)
+    trace.MesoActivity.insert(traces.proj(), skip_duplicates=True)
 
 
 # ---------- Loading Functions ----------
