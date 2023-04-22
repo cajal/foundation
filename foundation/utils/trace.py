@@ -1,37 +1,53 @@
 import numpy as np
 from scipy.interpolate import interp1d
-from .errors import OutOfBounds
 from .logging import logger
 
 
-def fill_nans(array):
+def fill_nans(trace):
     """Fills nans with linear interpolation
 
     Parameters
     ----------
-    array : 1D array
+    trace : 1D array
         values with nans
 
     Returns
     -------
-    1D array
-        array of same length with interpolated nans
+    1D trace
+        trace with interpolated nans
     """
-    nan = np.isnan(array)
+    nan = np.isnan(trace)
     if nan.all():
         raise ValueError("Cannot fill when all values are nan.")
 
-    out = array.copy()
+    out = trace.copy()
     out[nan] = np.interp(
         x=np.nonzero(nan)[0],
         xp=np.nonzero(~nan)[0],
-        fp=array[~nan],
+        fp=trace[~nan],
     )
     return out
 
 
-def truncate(*arrays, tolerance=1):
-    """Truncates arrays to the same length
+def monotonic(trace):
+    """Determines if trace monotonically increases
+
+    Parameters
+    ----------
+    trace : 1D array
+        trace values
+
+    Returns
+    -------
+    bool
+        whether trace monotonically increases
+    """
+    delt = np.diff(trace)
+    return bool(np.nanmin(delt) > 0)
+
+
+def truncate(*traces, tolerance=1):
+    """Truncates traces to the same length
 
     Parameters
     ----------
@@ -45,7 +61,7 @@ def truncate(*arrays, tolerance=1):
     Tuple[1D array]
         traces of the same length
     """
-    lengths = tuple(map(len, arrays))
+    lengths = tuple(map(len, traces))
     min_len = min(lengths)
     max_len = max(lengths)
 
@@ -55,4 +71,4 @@ def truncate(*arrays, tolerance=1):
     if max_len > min_len:
         logger.info(f"Truncating {max_len - min_len} frames")
 
-    return tuple(array[:min_len] for array in arrays)
+    return tuple(trace[:min_len] for trace in traces)

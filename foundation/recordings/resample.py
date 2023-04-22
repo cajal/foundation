@@ -48,26 +48,6 @@ class RateLink:
     comment = "resampling rate"
 
 
-# -- Computed Rate --
-
-
-@schema
-class Rate(RateBase, dj.Computed):
-    definition = """
-    -> RateLink
-    ---
-    resample_period     : double        # resampling period (seconds)
-    """
-
-    def make(self, key):
-        key["resample_period"] = (RateLink & key).link.period
-        self.insert1(key)
-
-    @row_property
-    def period(self):
-        return self.fetch1("resample_period")
-
-
 # ---------- Offset ----------
 
 # -- Offset Base --
@@ -108,23 +88,3 @@ class OffsetLink:
     links = [ZeroOffset]
     name = "offset"
     comment = "resampling offset"
-
-
-# -- Computed Offset --
-
-
-@schema
-class Offset(OffsetBase, dj.Computed):
-    definition = """
-    -> OffsetLink
-    ---
-    resample_offset     : double        # resampling offset (seconds)
-    """
-
-    def make(self, key):
-        key["resample_offset"] = (OffsetLink & key).link.offset
-        self.insert1(key)
-
-    @row_property
-    def offset(self):
-        return self.fetch1("resample_offset")
