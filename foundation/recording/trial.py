@@ -6,7 +6,7 @@ from foundation.utils.trace import monotonic
 from foundation.bridges.pipeline import pipe_stim
 from foundation.stimuli import stimulus
 
-schema = dj.schema("foundation_recordings")
+schema = dj.schema("foundation_recording")
 
 
 # -------------- Trial --------------

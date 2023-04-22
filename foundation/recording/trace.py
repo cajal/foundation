@@ -6,7 +6,7 @@ from foundation.utils.trace import truncate
 from foundation.bridges.pipeline import pipe_meso, pipe_eye, pipe_tread
 from foundation.recordings import trial
 
-schema = dj.schema("foundation_recordings")
+schema = dj.schema("foundation_recording")
 
 
 # -------------- Trace --------------

@@ -2,7 +2,7 @@ import datajoint as dj
 from djutils import link, method, row_property
 
 
-schema = dj.schema("foundation_recordings")
+schema = dj.schema("foundation_recording")
 
 
 # ---------- Rate ----------

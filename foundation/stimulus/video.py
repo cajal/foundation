@@ -7,19 +7,19 @@ from PIL import Image
 from foundation.utils.video import Video
 from foundation.bridges.pipeline import pipe_stim
 
-schema = dj.schema("foundation_stimuli")
+schema = dj.schema("foundation_stimulus")
 
 
-# -------------- Stimulus --------------
+# -------------- Video --------------
 
-# -- Stimulus Base --
+# -- Video Base --
 
 
-class StimulusBase:
+class VideoBase:
     """Stimlus Frames"""
 
     @row_property
-    def frames(self):
+    def video(self):
         """
         Returns
         -------
@@ -28,17 +28,17 @@ class StimulusBase:
         raise NotImplementedError()
 
 
-# -- Stimulus Types --
+# -- Video Types --
 
 
 @schema
-class Clip(StimulusBase, dj.Lookup):
+class Clip(VideoBase, dj.Lookup):
     definition = """
     -> pipe_stim.Clip
     """
 
     @row_property
-    def frames(self):
+    def video(self):
         clip = pipe_stim.Movie * pipe_stim.Movie.Clip * pipe_stim.Clip & self
         clip, start, end, fps = clip.fetch1("clip", "skip_time", "cut_after", "frame_rate")
 
@@ -56,44 +56,44 @@ class Clip(StimulusBase, dj.Lookup):
             if i == end:
                 break
 
-            frame = frame.to_image().convert(mode="L")  # TODO: currently assumes all clips are grayscale
+            frame = frame.to_image().convert(mode="L")
             frames.append(frame)
 
         return Video(frames)
 
 
 @schema
-class Monet2(StimulusBase, dj.Lookup):
+class Monet2(VideoBase, dj.Lookup):
     definition = """
     -> pipe_stim.Monet2
     """
 
     @row_property
-    def frames(self):
+    def video(self):
         movie = (pipe_stim.Monet2 & self).fetch1("movie").squeeze(2)
         return Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
 
 
 @schema
-class Trippy(StimulusBase, dj.Lookup):
+class Trippy(VideoBase, dj.Lookup):
     definition = """
     -> pipe_stim.Trippy
     """
 
     @row_property
-    def frames(self):
+    def video(self):
         movie = (stimulus.Trippy & self).fetch1("movie")
         return Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
 
 
 @schema
-class GaborSequence(StimulusBase, dj.Lookup):
+class GaborSequence(VideoBase, dj.Lookup):
     definition = """
     -> pipe_stim.GaborSequence
     """
 
     @row_property
-    def frames(self):
+    def video(self):
         gabor = dj.create_virtual_module("gabor", "pipeline_gabor")
         sequence = (pipe_stim.GaborSequence & self).fetch1()
 
@@ -104,13 +104,13 @@ class GaborSequence(StimulusBase, dj.Lookup):
 
 
 @schema
-class DotSequence(StimulusBase, dj.Lookup):
+class DotSequence(VideoBase, dj.Lookup):
     definition = """
     -> pipe_stim.DotSequence
     """
 
     @row_property
-    def frames(self):
+    def video(self):
         dot = dj.create_virtual_module("dot", "pipeline_dot")
         sequence = (pipe_stim.DotSequence & self).fetch1()
 
@@ -125,13 +125,13 @@ class DotSequence(StimulusBase, dj.Lookup):
 
 
 @schema
-class RdkSequence(StimulusBase, dj.Lookup):
+class RdkSequence(VideoBase, dj.Lookup):
     definition = """
     -> pipe_stim.RdkSequence
     """
 
     @row_property
-    def frames(self):
+    def video(self):
         rdk = dj.create_virtual_module("rdk", "pipeline_rdk")
         sequence = (pipe_stim.RdkSequence & self).fetch1()
 
@@ -152,13 +152,13 @@ class RdkSequence(StimulusBase, dj.Lookup):
 
 
 @schema
-class Frame(StimulusBase, dj.Lookup):
+class Frame(VideoBase, dj.Lookup):
     definition = """
     -> pipe_stim.Frame
     """
 
     @row_property
-    def frames(self):
+    def video(self):
         tup = pipe_stim.StaticImage.Image * pipe_stim.Frame & self
         image, pre_blank = tup.fetch1("image", "pre_blank_period")
         image = Image.fromarray(image)
@@ -175,23 +175,23 @@ class Frame(StimulusBase, dj.Lookup):
             return Video([image, blank])
 
 
-# -- Stimulus Link --
+# -- Video Link --
 
 
 @link(schema)
-class StimulusLink:
+class VideoLink:
     links = [Clip, Monet2, Trippy, GaborSequence, DotSequence, RdkSequence, Frame]
-    name = "stimulus"
-    comment = "stimulus frames"
+    name = "video"
+    comment = "video stimulus"
 
 
-# -- Computed Stimulus --
+# -- Computed Video --
 
 
 @schema
-class StimulusFrames(StimulusBase, dj.Computed):
+class VideoFrames(VideoBase, dj.Computed):
     definition = """
-    -> StimulusLink
+    -> VideoLink
     ---
     frames      : int unsigned  # number of frames
     height      : int unsigned  # frame height
@@ -201,7 +201,7 @@ class StimulusFrames(StimulusBase, dj.Computed):
     """
 
     def make(self, key):
-        frames = (StimulusLink & key).link.frames
+        frames = (VideoLink & key).link.video
 
         key["frames"] = len(frames)
         key["height"] = frames.height
@@ -212,14 +212,14 @@ class StimulusFrames(StimulusBase, dj.Computed):
         self.insert1(key)
 
     @row_property
-    def frames(self):
+    def video(self):
         """
         Returns
         -------
         Video
         """
         T, H, W, C, mode = self.fetch1("frames", "height", "width", "channels", "mode")
-        frames = (StimulusLink & self).link.frames
+        frames = (VideoLink & self).link.video
 
         assert len(frames) == T
         assert frames.height == H

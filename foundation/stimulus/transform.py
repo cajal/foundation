@@ -5,7 +5,7 @@ from foundation.utils.video import Video
 from foundation.utils.logging import logger
 
 
-schema = dj.schema("foundation_stimuli")
+schema = dj.schema("foundation_stimulus")
 
 
 # ---------- Transform Base ----------

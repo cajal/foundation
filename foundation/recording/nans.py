@@ -6,7 +6,7 @@ from foundation.utils.logging import logger
 from foundation.recordings import trial, trace, resample
 
 
-schema = dj.schema("foundation_recordings")
+schema = dj.schema("foundation_recording")
 
 
 # -------------- Nan --------------
