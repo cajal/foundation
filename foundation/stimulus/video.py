@@ -5,7 +5,7 @@ import datajoint as dj
 from djutils import link, row_property
 from PIL import Image
 from foundation.utils.video import Video
-from foundation.bridges.pipeline import pipe_stim
+from foundation.bridge.pipeline import pipe_stim
 
 schema = dj.schema("foundation_stimulus")
 

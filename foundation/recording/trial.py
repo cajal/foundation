@@ -3,8 +3,8 @@ import datajoint as dj
 from djutils import link, group, method, row_method, row_property, MissingError
 from foundation.utils.logging import logger
 from foundation.utils.trace import monotonic
-from foundation.bridges.pipeline import pipe_stim
-from foundation.stimuli import stimulus
+from foundation.bridge.pipeline import pipe_stim
+from foundation.stimulus import video
 
 schema = dj.schema("foundation_recording")
 
@@ -18,11 +18,11 @@ class TrialBase:
     """Recording Trial"""
 
     @row_property
-    def stimulus(self):
+    def video_frames(self):
         """
         Returns
         -------
-        stimulus.Stimulus
+        video.VideoFrames
             stimulus tuple
         """
         raise NotImplementedError()

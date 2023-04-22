@@ -3,7 +3,7 @@ import datajoint as dj
 from djutils import link, method, row_method
 from tqdm import tqdm
 from foundation.utils.logging import logger
-from foundation.recordings import trial, trace, resample
+from foundation.recording import trial, trace, resample
 
 
 schema = dj.schema("foundation_recording")

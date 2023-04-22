@@ -3,8 +3,8 @@ import datajoint as dj
 from djutils import link, group, method, row_method, row_property, MissingError, RestrictionError
 from foundation.utils.logging import logger
 from foundation.utils.trace import truncate
-from foundation.bridges.pipeline import pipe_meso, pipe_eye, pipe_tread
-from foundation.recordings import trial
+from foundation.bridge.pipeline import pipe_meso, pipe_eye, pipe_tread
+from foundation.recording import trial
 
 schema = dj.schema("foundation_recording")
 

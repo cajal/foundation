@@ -20,9 +20,10 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
     display_progress : bool
         display progress
     """
-    from foundation.bridges.pipeline import pipe_stim
-    from foundation.stimuli import stimulus
-    from foundation.recordings import trials
+    from foundation.bridge.pipeline import pipe_stim
+    from foundation.stimulus import video
+
+    # from foundation.recording import trial #TODO
 
     # scan key
     scan_key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
@@ -37,7 +38,7 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
     for stim_type in stim_types:
 
         table = stim_type.split(".")[1]
-        table = getattr(stimulus, table, None)
+        table = getattr(video, table, None)
 
         if table is None:
             raise NotImplementedError(f"Condition {stim_type} is not yet implemented")
@@ -46,18 +47,18 @@ def populate_scan(animal_id, session, scan_idx, reserve_jobs=True, display_progr
             table.insert(conds.proj(), skip_duplicates=True)
 
     # populate stimulus
-    stimulus.StimulusLink.fill()
-    stimulus.Stimulus.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
+    video.VideoLink.fill()
+    video.VideoFrames.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
-    # populate trial
-    trials.ScanTrial.insert(scan_trials.proj(), skip_duplicates=True)
-    trials.TrialLink.fill()
-    trials.Trial.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
+    # # populate trial
+    # trials.ScanTrial.insert(scan_trials.proj(), skip_duplicates=True)
+    # trials.TrialLink.fill()
+    # trials.Trial.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
-    # populate trials
-    trials.ScanTrials.insert1(scan_key, skip_duplicates=True)
-    trials.TrialsLink.fill()
-    trials.Trials.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
+    # # populate trials
+    # trials.ScanTrials.insert1(scan_key, skip_duplicates=True)
+    # trials.TrialsLink.fill()
+    # trials.Trials.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
 
 # ---------- Loading Functions ----------
@@ -79,7 +80,7 @@ def pipeline(animal_id, session, scan_idx):
     dj.schemas.VirtualModule
         pipeline_meso | pipeline_reso
     """
-    from foundation.bridges.pipeline import pipe_fuse, pipe_meso, pipe_reso
+    from foundation.bridge.pipeline import pipe_fuse, pipe_meso, pipe_reso
 
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
@@ -114,7 +115,7 @@ def scan_times(animal_id, session, scan_idx):
     1D array
         start of each scan volume on the behavior clock
     """
-    from foundation.bridges.pipeline import pipe_stim
+    from foundation.bridge.pipeline import pipe_stim
 
     # scan key
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
@@ -156,7 +157,7 @@ def eye_times(animal_id, session, scan_idx):
         eye trace times on the stimulus clock
     """
     from scipy.interpolate import interp1d
-    from foundation.bridges.pipeline import pipe_eye
+    from foundation.bridge.pipeline import pipe_eye
 
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
@@ -199,7 +200,7 @@ def treadmill_times(animal_id, session, scan_idx):
         treadmill trace times on the stimulus clock
     """
     from scipy.interpolate import interp1d
-    from foundation.bridges.pipeline import pipe_tread
+    from foundation.bridge.pipeline import pipe_tread
 
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
