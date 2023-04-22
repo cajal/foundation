@@ -15,7 +15,7 @@ schema = dj.schema("foundation_recordings")
 
 
 class NansBase:
-    """Trace Nans"""
+    """Nan Detector"""
 
     @row_method
     def nans(self, times, values):
@@ -64,8 +64,8 @@ class NansLink:
 @schema
 class TrialNans(dj.Computed):
     definition = """
-    -> trial.TrialLink
     -> trace.TraceLink
+    -> trial.TrialLink
     -> resample.OffsetLink
     -> NansLink
     ---

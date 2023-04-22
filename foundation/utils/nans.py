@@ -16,7 +16,7 @@ class Nans:
 
         Returns
         -------
-        int
+        float
             Nans detected between start and end
         """
         raise NotImplementedError()
@@ -30,7 +30,7 @@ class DurationNans(Nans):
         Parameters
         -------
         times : 1D array
-            trace times
+            trace times, monotonically increasing
         values : 1D array
             trace values, same length as times
         """
@@ -55,7 +55,6 @@ class DurationNans(Nans):
             bounds_error=False,
             fill_value=np.nan,
         )
-
         left = interp1d(
             x=idx_val,
             y=self.ctimes[idx_val],
