@@ -1,9 +1,9 @@
 import numpy as np
 import datajoint as dj
-from djutils import link, group, method, row_method, row_property, MissingError, RestrictionError
+from djutils import link, row_property, MissingError, RestrictionError
 from foundation.utils.logging import logger
 from foundation.bridge.pipeline import pipe_meso, pipe_eye, pipe_tread
-from foundation.recording import trial
+from foundation.recording import trial, resample
 
 schema = dj.schema("foundation_recording")
 
@@ -137,15 +137,17 @@ class ScanPupil(ScanBase, dj.Lookup):
 
             if pupil_attr == "radius":
                 # fitted circle radius
-                values = fits.fetch("radius", order_by="frame_id")
+                return fits.fetch("radius", order_by="frame_id")
 
             elif pupil_attr in ["center_x", "center_y"]:
                 # fitted circle center
                 center = fits.fetch("center", order_by="frame_id")
 
                 if pupil_attr == "center_x":
+                    # circle center x
                     return np.array([np.nan if c is None else c[0] for c in center])
                 else:
+                    # circle center y
                     return np.array([np.nan if c is None else c[1] for c in center])
 
             else:
@@ -182,3 +184,46 @@ class TraceLink:
     links = [MesoActivity, ScanPupil, ScanTreadmill]
     name = "trace"
     comment = "recording trace"
+
+
+# -- Trace Link --
+
+
+@schema
+class TraceGap(dj.Computed):
+    definition = """
+    -> TraceLink
+    -> trial.TrialLink
+    -> resample.OffsetLink
+    ---
+    gap = NULL      : float     # nan time gap
+    """
+
+    @property
+    def key_source(self):
+        return TraceLink.proj() * resample.OffsetLink.proj() & [
+            TraceLink.ScanPupil * ScanPupilType & {"pupil_type": "circle", "pupil_attribute": "radius"},
+            TraceLink.ScanTreadmill,
+        ]
+
+    def make(self, key):
+        from foundation.utils.trace import Gap
+
+        try:
+            trace_link = (TraceLink & key).link
+            times = trace_link.times
+            values = trace_link.values
+            trial_flips = trace_link.trial_flips
+
+        except MissingError:
+            logger.warn(f"Missing trace data. Not populating {key}")
+            return
+
+        keys = []
+        gap = Gap(times, values)
+        trials = trial_flips.fetch(dj.key, "flip_start", "flip_end", order_by=trial_flips.primary_key)
+        for trial_key, start, end in zip(*trials):
+            trial_gap = dict(gap=gap(start, end), **key, **trial_key)
+            keys.append(trial_gap)
+
+        self.insert(keys)

@@ -38,7 +38,7 @@ class Video:
         if self.homogenous:
             return self.frames[0].mode
         else:
-            logger.warn("Only supported for homogenous videos.")
+            logger.warning("Only supported for homogenous videos.")
 
     @property
     def height(self):
@@ -51,7 +51,7 @@ class Video:
         if self.homogenous:
             return self.frames[0].height
         else:
-            logger.warn("Only supported for homogenous videos.")
+            logger.warning("Only supported for homogenous videos.")
 
     @property
     def width(self):
@@ -64,7 +64,7 @@ class Video:
         if self.homogenous:
             return self.frames[0].width
         else:
-            logger.warn("Only supported for homogenous videos.")
+            logger.warning("Only supported for homogenous videos.")
 
     @property
     def channels(self):
@@ -75,7 +75,7 @@ class Video:
             frame width
         """
         if not self.homogenous:
-            logger.warn("Only supported for homogenous videos.")
+            logger.warning("Only supported for homogenous videos.")
             return
 
         if self.mode == "L":
@@ -93,7 +93,7 @@ class Video:
             dtype = np.uint8
         """
         if not self.homogenous:
-            logger.warn("Only supported for homogenous videos.")
+            logger.warning("Only supported for homogenous videos.")
             return
 
         if self.mode == "L":

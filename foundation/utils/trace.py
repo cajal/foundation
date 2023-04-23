@@ -61,11 +61,6 @@ class Gap:
         if not monotonic(times):
             raise ValueError("Times do not monotonically increase.")
 
-        if reduce == "max":
-            self.reduce = np.max
-        else:
-            raise NotImplementedError(f"Reduce type '{reduce}' is not implemented.")
-
         nans = np.isnan(times) | np.isnan(values)
         idx_nan = np.nonzero(nans)[0]
         idx_val = np.nonzero(~nans)[0]
@@ -107,8 +102,10 @@ class Gap:
 
         Returns
         -------
-        float
+        float | None
             maximum gap in time between nans in trace times or values
+                or
+            None if 'start' or 'end' is out of bounds
         """
         bounds = [
             start - self.center,

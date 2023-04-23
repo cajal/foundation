@@ -85,7 +85,7 @@ class TrialVideo(dj.Computed):
             video = (TrialLink & key).link.video
 
         except MissingError:
-            logger.warn(f"Missing video. Not populating {key}")
+            logger.warning(f"Missing video. Not populating {key}")
 
         key["video_id"] = video.fetch1("video_id")
         self.insert1(key)
@@ -106,7 +106,7 @@ class TrialFlips(dj.Computed):
             flips = (TrialLink & key).link.flips
 
         except MissingError:
-            logger.warn(f"Missing flips. Not populating {key}")
+            logger.warning(f"Missing flips. Not populating {key}")
 
         assert np.isfinite(flips).all()
         assert monotonic(flips)
