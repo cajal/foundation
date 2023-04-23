@@ -2,9 +2,9 @@ import numpy as np
 import datajoint as dj
 from djutils import link, group, method, row_method, row_property, MissingError
 from foundation.utils.logging import logger
-from foundation.utils.trace import monotonic
 from foundation.bridge.pipeline import pipe_stim
 from foundation.stimulus import video
+from foundation.recording import resample
 
 schema = dj.schema("foundation_recording")
 
@@ -102,6 +102,8 @@ class TrialFlips(dj.Computed):
     """
 
     def make(self, key):
+        from foundation.utils.trace import monotonic
+
         try:
             flips = (TrialLink & key).link.flips
 
@@ -114,6 +116,48 @@ class TrialFlips(dj.Computed):
         key["flips"] = len(flips)
         key["flip_start"] = flips[0]
         key["flip_end"] = flips[-1]
+
+        self.insert1(key)
+
+
+@schema
+class TrialSamples(dj.Computed):
+    definition = """
+    -> TrialLink
+    -> resample.RateLink
+    ---
+    samples         : int unsigned      # number of samples
+    video_index     : longblob          # video frame index for each sample
+    """
+
+    @property
+    def key_source(self):
+        key = TrialFlips * TrialVideo * video.VideoFrames & "frames = flips"
+        return TrialFlips.proj() * resample.RateLink.proj() & key
+
+    def make(self, key):
+        from scipy.interpolate import interp1d
+
+        try:
+            flips = (TrialLink & key).link.flips
+            period = (resample.RateLink & key).link.period
+
+        except MissingError:
+            logger.warning(f"Missing data. Not populating {key}")
+            return
+
+        start = flips[0]
+        end = flips[-1]
+        key["samples"] = round((end - start) / period) + 1
+
+        index = interp1d(
+            x=flips - start,
+            y=np.arange(flips.size),
+            kind="nearest",
+            fill_value="extrapolate",
+            bounds_error=False,
+        )
+        key["video_index"] = index(np.arange(key["samples"]) * period).astype(int)
 
         self.insert1(key)
 

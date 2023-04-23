@@ -16,8 +16,6 @@ def populate_scan(
     unit_type="soma",
     spike_method=6,
     tracking_method=2,
-    pupil_type=["circle"],
-    pupil_attribute=["radius", "center_x", "center_y"],
     reserve_jobs=True,
     display_progress=True,
 ):
@@ -73,6 +71,7 @@ def populate_scan(
     trial.TrialLink.fill()
     trial.TrialVideo.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
     trial.TrialFlips.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
+    trial.TrialSamples.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
     # fill unit traces
     _key = dict(
@@ -87,10 +86,8 @@ def populate_scan(
     trace.MesoActivity.insert(traces.proj(), skip_duplicates=True)
 
     # fill pupil traces
-    _key = [
-        dict(key, tracking_method=tracking_method, pupil_type=x, pupil_attribute=y)
-        for x, y in product(pupil_type, pupil_attribute)
-    ]
+    pupil_types = ["radius", "center_x", "center_y"]
+    _key = [dict(key, tracking_method=tracking_method, pupil_type=p) for p in pupil_types]
     trace.ScanPupil.insert(_key, skip_duplicates=True)
 
     # fill treadmill trace

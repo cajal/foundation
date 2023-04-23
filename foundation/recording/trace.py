@@ -108,8 +108,7 @@ class MesoActivity(ScanBase, dj.Lookup):
 @schema
 class ScanPupilType(dj.Lookup):
     definition = """
-    pupil_type          : varchar(64)   # fitted scan pupil type
-    pupil_attribute     : varchar(64)   # fitted scan pupil attribute
+    pupil_type      : varchar(64)   # fitted scan pupil type
     """
 
 
@@ -128,35 +127,22 @@ class ScanPupil(ScanBase, dj.Lookup):
 
     @row_property
     def values(self):
-        # fetch trace based on pupil type and attribute
-        pupil_type, pupil_attr = self.fetch1("pupil_type", "pupil_attribute")
+        fits = pipe_eye.FittedPupil.Circle & self
+        pupil_type = self.fetch1("pupil_type")
 
-        if pupil_type == "circle":
-            # fitted pupil circle
-            fits = pipe_eye.FittedPupil.Circle & self
+        if pupil_type == "radius":
+            return fits.fetch("radius", order_by="frame_id")
 
-            if pupil_attr == "radius":
-                # fitted circle radius
-                return fits.fetch("radius", order_by="frame_id")
+        elif pupil_type in ["center_x", "center_y"]:
 
-            elif pupil_attr in ["center_x", "center_y"]:
-                # fitted circle center
-                center = fits.fetch("center", order_by="frame_id")
-
-                if pupil_attr == "center_x":
-                    # circle center x
-                    return np.array([np.nan if c is None else c[0] for c in center])
-                else:
-                    # circle center y
-                    return np.array([np.nan if c is None else c[1] for c in center])
-
+            center = fits.fetch("center", order_by="frame_id")
+            if pupil_type == "center_x":
+                return np.array([np.nan if c is None else c[0] for c in center])
             else:
-                # other fitted circle attributes not implemented
-                raise NotImplementedError()
+                return np.array([np.nan if c is None else c[1] for c in center])
 
         else:
-            # other types not implemented
-            raise NotImplementedError()
+            raise NotImplementedError(f"Pupil type '{pupil_type}' not implemented.")
 
 
 @schema
@@ -202,7 +188,7 @@ class TraceGap(dj.Computed):
     @property
     def key_source(self):
         return TraceLink.proj() * resample.OffsetLink.proj() & [
-            TraceLink.ScanPupil * ScanPupilType & {"pupil_type": "circle", "pupil_attribute": "radius"},
+            TraceLink.ScanPupil * ScanPupilType & {"pupil_type": "radius"},
             TraceLink.ScanTreadmill,
         ]
 
