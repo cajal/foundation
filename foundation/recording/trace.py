@@ -186,7 +186,7 @@ class TraceLink:
     comment = "recording trace"
 
 
-# -- Trace Link --
+# -- Computed Trace --
 
 
 @schema
@@ -211,18 +211,24 @@ class TraceGap(dj.Computed):
 
         try:
             trace_link = (TraceLink & key).link
+            trial_flips = trace_link.trial_flips
             times = trace_link.times
             values = trace_link.values
-            trial_flips = trace_link.trial_flips
+
+            offset_link = (resample.OffsetLink & key).link
+            offset = offset_link.offset
 
         except MissingError:
             logger.warn(f"Missing trace data. Not populating {key}")
             return
 
-        keys = []
-        gap = Gap(times, values)
         trials = trial_flips.fetch(dj.key, "flip_start", "flip_end", order_by=trial_flips.primary_key)
+        gap = Gap(times, values)
+        keys = []
         for trial_key, start, end in zip(*trials):
+
+            start = start + offset
+            end = end + offset
             trial_gap = dict(gap=gap(start, end), **key, **trial_key)
             keys.append(trial_gap)
 
