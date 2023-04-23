@@ -102,7 +102,7 @@ class MesoActivity(ScanBase, dj.Lookup):
         values : 1D array
             trace values
         """
-        return (pipe_meso.Activity.Trace & self).fetch1("trace")
+        return (pipe_meso.Activity.Trace & self).fetch1("trace").clip(0)
 
 
 @schema
