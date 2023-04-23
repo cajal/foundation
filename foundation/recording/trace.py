@@ -121,12 +121,13 @@ class ScanPupil(ScanBase, dj.Lookup):
     """
 
     @row_property
-    def times_values(self):
-        from foundation.recordings.scan import eye_times
+    def times(self):
+        from foundation.recording.scan import eye_times
 
-        # eye times on stimulus clock
-        times = eye_times(**self.scan_key)
+        return eye_times(**self.scan_key)
 
+    @row_property
+    def values(self):
         # fetch trace based on pupil type and attribute
         pupil_type, pupil_attr = self.fetch1("pupil_type", "pupil_attribute")
 
@@ -143,9 +144,9 @@ class ScanPupil(ScanBase, dj.Lookup):
                 center = fits.fetch("center", order_by="frame_id")
 
                 if pupil_attr == "center_x":
-                    values = np.array([np.nan if c is None else c[0] for c in center])
+                    return np.array([np.nan if c is None else c[0] for c in center])
                 else:
-                    values = np.array([np.nan if c is None else c[1] for c in center])
+                    return np.array([np.nan if c is None else c[1] for c in center])
 
             else:
                 # other fitted circle attributes not implemented
@@ -155,8 +156,6 @@ class ScanPupil(ScanBase, dj.Lookup):
             # other types not implemented
             raise NotImplementedError()
 
-        return times, values
-
 
 @schema
 class ScanTreadmill(ScanBase, dj.Lookup):
@@ -165,13 +164,14 @@ class ScanTreadmill(ScanBase, dj.Lookup):
     """
 
     @row_property
-    def times_values(self):
-        from foundation.recordings.scan import treadmill_times
+    def times(self):
+        from foundation.recording.scan import treadmill_times
 
-        times = treadmill_times(**self.scan_key)
-        values = (pipe_tread.Treadmill & self).fetch1("treadmill_vel")
+        return treadmill_times(**self.scan_key)
 
-        return times, values
+    @row_property
+    def values(self):
+        return (pipe_tread.Treadmill & self).fetch1("treadmill_vel")
 
 
 # -- Trace Link --

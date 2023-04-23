@@ -1,5 +1,6 @@
 import numpy as np
 import datajoint as dj
+from itertools import product
 
 
 # ---------- Populate Functions ----------
@@ -14,6 +15,9 @@ def populate_scan(
     classification_method=2,
     unit_type="soma",
     spike_method=6,
+    tracking_method=2,
+    pupil_type=["circle"],
+    pupil_attribute=["radius", "center_x", "center_y"],
     reserve_jobs=True,
     display_progress=True,
 ):
@@ -26,20 +30,7 @@ def populate_scan(
         scan session
     scan_idx : int
         scan index
-    pipe_version : int
-        pipe version
-    segmentation_method : int
-        segmentation method
-    classification_method : int
-        classification method
-    unit_type : str
-        unit classification type
-    spike_method : int
-        spike method
-    reserve_jobs : bool
-        job reservation for AutoPopulate
-    display_progress : bool
-        display progress
+    ...
     """
     from foundation.bridge.pipeline import pipe_stim, pipe_meso
     from foundation.stimulus import video
@@ -94,6 +85,19 @@ def populate_scan(
     units = pipe.ScanSet.Unit & (pipe.MaskClassification.Type & _key)
     traces = pipe_meso.Activity.Trace & units.proj() & dict(key, spike_method=spike_method)
     trace.MesoActivity.insert(traces.proj(), skip_duplicates=True)
+
+    # fill pupil traces
+    _key = [
+        dict(key, tracking_method=tracking_method, pupil_type=x, pupil_attribute=y)
+        for x, y in product(pupil_type, pupil_attribute)
+    ]
+    trace.ScanPupil.insert(_key, skip_duplicates=True)
+
+    # fill treadmill trace
+    trace.ScanTreadmill.insert1(key, skip_duplicates=True)
+
+    # populate trackes
+    trace.TraceLink.fill()
 
 
 # ---------- Loading Functions ----------
