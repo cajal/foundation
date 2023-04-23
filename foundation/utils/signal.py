@@ -18,7 +18,7 @@ def lowpass_filter(source_period, target_period, filter_type="hamming"):
         lowpass filter
     """
     if target_period < source_period:
-        raise ValueError("target_period must be >= source_period")
+        return
 
     if filter_type == "hamming":
         ratio = round(target_period / source_period * 10) // 10

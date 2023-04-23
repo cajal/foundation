@@ -1,5 +1,5 @@
 import datajoint as dj
-from djutils import link, method, row_property
+from djutils import link, method, row_property, row_method
 
 
 schema = dj.schema("foundation_recording")
@@ -88,3 +88,56 @@ class OffsetLink:
     links = [ZeroOffset]
     name = "offset"
     comment = "resampling offset"
+
+
+# ---------- Resample ----------
+
+# -- Resample Base --
+
+
+class ResampleBase:
+    """Trace Resampling"""
+
+    @row_method
+    def resampler(self, times, values, target_period):
+        """
+        Parameters
+        -------
+        times : 1D array
+            trace times, monotonically increasing
+        values : 1D array
+            trace values, same length as times
+        target_period : float
+            target sampling period
+
+        Returns
+        -------
+        foundation.utils.trace.Resampler
+            trace resampler
+        """
+        raise NotImplementedError()
+
+
+# -- Resample Types --
+
+
+@method(schema)
+class HammingResample(ResampleBase):
+    name = "hamming_resample"
+    comment = "hamming resampler"
+
+    @row_method
+    def resampler(self, times, values, target_period):
+        from foundation.utils.trace import HammingResample
+
+        return HammingResample(times, values, target_period)
+
+
+# -- Resample Link --
+
+
+@link(schema)
+class ResampleLink:
+    links = [HammingResample]
+    name = "resample"
+    comment = "trace resampling"

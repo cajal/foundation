@@ -212,8 +212,7 @@ class TraceGap(dj.Computed):
         try:
             trace_link = (TraceLink & key).link
             trial_flips = trace_link.trial_flips
-            times = trace_link.times
-            values = trace_link.values
+            gap = Gap(trace_link.times, trace_link.values)
 
             offset_link = (resample.OffsetLink & key).link
             offset = offset_link.offset
@@ -223,13 +222,56 @@ class TraceGap(dj.Computed):
             return
 
         trials = trial_flips.fetch(dj.key, "flip_start", "flip_end", order_by=trial_flips.primary_key)
-        gap = Gap(times, values)
         keys = []
         for trial_key, start, end in zip(*trials):
 
-            start = start + offset
-            end = end + offset
-            trial_gap = dict(gap=gap(start, end), **key, **trial_key)
-            keys.append(trial_gap)
+            k = dict(gap=gap(start + offset, end + offset), **key, **trial_key)
+            keys.append(k)
+
+        self.insert(keys)
+
+
+@schema
+class ResampledTrace(dj.Computed):
+    definition = """
+    -> TraceLink
+    -> trial.TrialLink
+    -> resample.RateLink
+    -> resample.OffsetLink
+    -> resample.ResampleLink
+    ---
+    trace = NULL        : longblob      # resampled trace
+    """
+
+    @property
+    def key_source(self):
+        return TraceLink.proj() * resample.RateLink.proj() * resample.OffsetLink.proj() * resample.ResampleLink.proj()
+
+    def make(self, key):
+        try:
+            trace_link = (TraceLink & key).link
+            trial_flips = trace_link.trial_flips
+            times = trace_link.times
+            values = trace_link.values
+
+            rate_link = (resample.RateLink & key).link
+            target_period = rate_link.period
+
+            offset_link = (resample.OffsetLink & key).link
+            offset = offset_link.offset
+
+            resamp_link = (resample.ResampleLink & key).link
+            resampler = resamp_link.resampler(times, values, target_period)
+
+        except MissingError:
+            logger.warn(f"Missing data. Not populating {key}")
+            return
+
+        trials = trial_flips.fetch(dj.key, "flip_start", "flip_end", order_by=trial_flips.primary_key)
+        keys = []
+        for trial_key, start, end in zip(*trials):
+
+            k = dict(trace=resampler(start + offset, end + offset), **key, **trial_key)
+            keys.append(k)
 
         self.insert(keys)
