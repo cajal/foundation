@@ -198,13 +198,17 @@ def eye_times(animal_id, session, scan_idx):
     from scipy.interpolate import interp1d
     from foundation.bridge.pipeline import pipe_eye
 
+    # scan key
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
+    # scan times on stimulus and beahvior clocks
     stim_times, beh_times = scan_times(**key)
 
+    # median times
     stim_median = np.median(stim_times)
     beh_median = np.median(beh_times)
 
+    # behavior -> stimulus clock
     beh_to_stim = interp1d(
         x=beh_times - beh_median,
         y=stim_times - stim_median,
@@ -214,6 +218,7 @@ def eye_times(animal_id, session, scan_idx):
         copy=False,
     )
 
+    # convert times
     raw = (pipe_eye.Eye & key).fetch1("eye_time")
     nans = np.isnan(raw)
     times = np.full_like(raw, np.nan)
@@ -241,13 +246,17 @@ def treadmill_times(animal_id, session, scan_idx):
     from scipy.interpolate import interp1d
     from foundation.bridge.pipeline import pipe_tread
 
+    # scan key
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
+    # scan times on stimulus and beahvior clocks
     stim_times, beh_times = scan_times(**key)
 
+    # median times
     stim_median = np.median(stim_times)
     beh_median = np.median(beh_times)
 
+    # behavior -> stimulus clock
     beh_to_stim = interp1d(
         x=beh_times - beh_median,
         y=stim_times - stim_median,
@@ -257,6 +266,7 @@ def treadmill_times(animal_id, session, scan_idx):
         copy=False,
     )
 
+    # convert times
     raw = (pipe_tread.Treadmill & key).fetch1("treadmill_time")
     nans = np.isnan(raw)
     times = np.full_like(raw, np.nan)

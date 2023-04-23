@@ -219,7 +219,7 @@ class TraceGap(dj.Computed):
             offset = offset_link.offset
 
         except MissingError:
-            logger.warn(f"Missing trace data. Not populating {key}")
+            logger.warn(f"Missing data. Not populating {key}")
             return
 
         trials = trial_flips.fetch(dj.key, "flip_start", "flip_end", order_by=trial_flips.primary_key)
