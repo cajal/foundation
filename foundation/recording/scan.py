@@ -70,8 +70,7 @@ def populate_scan(
     trial.ScanTrial.insert(scan_trials.proj(), skip_duplicates=True)
     trial.TrialLink.fill()
     trial.TrialVideo.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
-    trial.TrialFlips.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
-    trial.TrialSamples.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
+    trial.TrialResample.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
     # fill unit traces
     _key = dict(

@@ -105,35 +105,6 @@ class TrialVideo(dj.Computed):
         self.insert1(key)
 
 
-# @schema
-# class TrialFlips(dj.Computed):
-#     definition = """
-#     -> TrialLink
-#     ---
-#     flips       : int unsigned      # number of video flips
-#     flip_start  : double            # time of first flip
-#     flip_end    : double            # time of last flip
-#     """
-
-#     def make(self, key):
-#         from foundation.utils.trace import monotonic
-
-#         try:
-#             flips = (TrialLink & key).link.flips
-
-#         except MissingError:
-#             logger.warning(f"Missing flips. Not populating {key}")
-
-#         assert np.isfinite(flips).all()
-#         assert monotonic(flips)
-
-#         key["flips"] = len(flips)
-#         key["flip_start"] = flips[0]
-#         key["flip_end"] = flips[-1]
-
-#         self.insert1(key)
-
-
 @schema
 class TrialResample(dj.Computed):
     definition = """
