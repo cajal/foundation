@@ -133,7 +133,7 @@ class TrialSamples(dj.Computed):
     @property
     def key_source(self):
         key = TrialFlips * TrialVideo * video.VideoInfo & "frames = flips"
-        return TrialFlips.proj() * resample.RateLink.proj() & key
+        return TrialLink.proj() * resample.RateLink.proj() & key
 
     def make(self, key):
         from scipy.interpolate import interp1d
