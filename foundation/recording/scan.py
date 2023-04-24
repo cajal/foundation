@@ -64,7 +64,7 @@ def populate_scan(
 
     # populate video
     video.VideoLink.fill()
-    video.VideoFrames.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
+    video.VideoInfo.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
     # populate trial
     trial.ScanTrial.insert(scan_trials.proj(), skip_duplicates=True)

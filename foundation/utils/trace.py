@@ -182,7 +182,7 @@ class HammingResample(Resample):
         # filter trace values hamming window
         if self.target_period > self.source_period:
             logger.info("Target period is greater than source period. Filtering trace with Hamming window.")
-            r = round(self.target_period / self.source_period * 10) // 10
+            r = round(self.target_period / self.source_period)
             h = windows.hamming(r * 2 + 1)
             f = h / h.sum()
             v = np.convolve(v, f, mode="same")

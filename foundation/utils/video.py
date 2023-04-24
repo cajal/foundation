@@ -3,23 +3,22 @@ from .logging import logger
 
 
 class Video:
-    def __init__(self, frames, homogenous=True):
+    def __init__(self, frames, fixed=True):
         """
         Parameters
         ----------
         frames : Sequence[PIL.Image]
             stimulus frames
-        homogenous : bool
-            all frames are the same mode, height, and width
+        fixed : bool
+            fixed frame rate
         """
         self.frames = tuple(frames)
-        self.homogenous = bool(homogenous)
+        self.fixed = bool(fixed)
 
-        if self.homogenous:
-            for frame in self.frames[1:]:
-                assert frame.mode == self.frames[0].mode
-                assert frame.height == self.frames[0].height
-                assert frame.width == self.frames[0].width
+        for frame in self.frames[1:]:
+            assert frame.mode == self.frames[0].mode
+            assert frame.height == self.frames[0].height
+            assert frame.width == self.frames[0].width
 
     def __len__(self):
         return len(self.frames)
@@ -35,10 +34,7 @@ class Video:
         str | None
             frame mode
         """
-        if self.homogenous:
-            return self.frames[0].mode
-        else:
-            logger.warning("Only supported for homogenous videos.")
+        return self.frames[0].mode
 
     @property
     def height(self):
@@ -48,10 +44,7 @@ class Video:
         int | None
             frame height
         """
-        if self.homogenous:
-            return self.frames[0].height
-        else:
-            logger.warning("Only supported for homogenous videos.")
+        return self.frames[0].height
 
     @property
     def width(self):
@@ -61,10 +54,7 @@ class Video:
         int | None
             frame width
         """
-        if self.homogenous:
-            return self.frames[0].width
-        else:
-            logger.warning("Only supported for homogenous videos.")
+        return self.frames[0].width
 
     @property
     def channels(self):
@@ -74,10 +64,6 @@ class Video:
         int | None
             frame width
         """
-        if not self.homogenous:
-            logger.warning("Only supported for homogenous videos.")
-            return
-
         if self.mode == "L":
             return 1
         else:
@@ -92,10 +78,6 @@ class Video:
             shape = [frames, height, width, channels]
             dtype = np.uint8
         """
-        if not self.homogenous:
-            logger.warning("Only supported for homogenous videos.")
-            return
-
         if self.mode == "L":
             frames = np.stack([np.array(frame) for frame in self.frames], 0)
             return frames[:, :, :, None]
@@ -114,4 +96,4 @@ class Video:
         Video
             new video with tranformed frames
         """
-        return Video(map(transform, self.frames), self.homogenous)
+        return Video(map(transform, self.frames), self.fixed)

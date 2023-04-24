@@ -170,9 +170,9 @@ class Frame(VideoBase, dj.Lookup):
             raise NotImplementedError(f"Image mode {mode} not implemented")
 
         if pre_blank > 0:
-            return Video([blank, image, blank])
+            return Video([blank, image, blank], fixed=False)
         else:
-            return Video([image, blank])
+            return Video([image, blank], fixed=False)
 
 
 # -- Video Link --
@@ -189,15 +189,16 @@ class VideoLink:
 
 
 @schema
-class VideoFrames(VideoBase, dj.Computed):
+class VideoInfo(dj.Computed):
     definition = """
     -> VideoLink
     ---
-    frames      : int unsigned  # number of frames
-    height      : int unsigned  # frame height
-    width       : int unsigned  # frame height
-    channels    : int unsigned  # number of channels
-    mode        : varchar(16)   # stimulus mode
+    frames      : int unsigned  # video frames
+    height      : int unsigned  # video height
+    width       : int unsigned  # video width
+    channels    : int unsigned  # video channels
+    mode        : varchar(16)   # video mode
+    fixed       : bool          # fixed frame rate
     """
 
     def make(self, key):
@@ -208,23 +209,6 @@ class VideoFrames(VideoBase, dj.Computed):
         key["width"] = frames.width
         key["channels"] = frames.channels
         key["mode"] = frames.mode
+        key["fixed"] = frames.fixed
 
         self.insert1(key)
-
-    @row_property
-    def video(self):
-        """
-        Returns
-        -------
-        Video
-        """
-        T, H, W, C, mode = self.fetch1("frames", "height", "width", "channels", "mode")
-        frames = (VideoLink & self).link.video
-
-        assert len(frames) == T
-        assert frames.height == H
-        assert frames.width == W
-        assert frames.channels == C
-        assert frames.mode == mode
-
-        return frames

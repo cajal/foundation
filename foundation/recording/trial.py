@@ -132,7 +132,7 @@ class TrialSamples(dj.Computed):
 
     @property
     def key_source(self):
-        key = TrialFlips * TrialVideo * video.VideoFrames & "frames = flips"
+        key = TrialFlips * TrialVideo * video.VideoInfo & "frames = flips"
         return TrialFlips.proj() * resample.RateLink.proj() & key
 
     def make(self, key):
@@ -141,23 +141,28 @@ class TrialSamples(dj.Computed):
         try:
             flips = (TrialLink & key).link.flips
             period = (resample.RateLink & key).link.period
+            fixed = (video.VideoInfo * TrialVideo & key).fetch1("fixed")
 
         except MissingError:
             logger.warning(f"Missing data. Not populating {key}")
             return
 
+        # start and end flip times
         start = flips[0]
         end = flips[-1]
-        key["samples"] = round((end - start) / period) + 1
 
+        # nearest flip if fixed, else previous flip
         index = interp1d(
             x=flips - start,
             y=np.arange(flips.size),
-            kind="nearest",
+            kind="nearest" if fixed else "previous",
             fill_value="extrapolate",
             bounds_error=False,
         )
-        key["video_index"] = index(np.arange(key["samples"]) * period).astype(int)
+
+        # interpolate samples
+        key["samples"] = round((end - start) / period) + 1
+        key["video_index"] = index(np.arange(key["samples"]) * period)
 
         self.insert1(key)
 
