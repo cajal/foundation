@@ -123,7 +123,8 @@ class TrialFlips(dj.Computed):
 @schema
 class TrialSamples(dj.Computed):
     definition = """
-    -> TrialLink
+    -> TrialVideo
+    -> TrialFlips
     -> resample.RateLink
     ---
     samples         : int unsigned      # number of samples
@@ -141,15 +142,16 @@ class TrialSamples(dj.Computed):
         try:
             flips = (TrialLink & key).link.flips
             period = (resample.RateLink & key).link.period
-            fixed = (video.VideoInfo * TrialVideo & key).fetch1("fixed")
 
         except MissingError:
             logger.warning(f"Missing data. Not populating {key}")
             return
 
         # start and end flip times
-        start = flips[0]
-        end = flips[-1]
+        start, end = (TrialFlips & key).fetch1("flip_start", "flip_end")
+
+        # fixed frame rate
+        fixed = (video.VideoInfo * TrialVideo & key).fetch1("fixed")
 
         # nearest flip if fixed, else previous flip
         index = interp1d(
