@@ -78,37 +78,21 @@ class TrialVideo(dj.Computed):
     -> TrialLink
     ---
     -> video.VideoLink
-    """
-
-    def make(self, key):
-        try:
-            video = (TrialLink & key).link.video
-
-        except MissingError:
-            logger.warning(f"Missing video. Not populating {key}")
-
-        key["video_id"] = video.fetch1("video_id")
-        self.insert1(key)
-
-
-@schema
-class TrialFlips(dj.Computed):
-    definition = """
-    -> TrialLink
-    ---
-    flips       : int unsigned      # number of video flips
-    flip_start  : double            # time of first flip
-    flip_end    : double            # time of last flip
+    flips           : int unsigned      # number of video flips
+    flip_start      : double            # time of first flip
+    flip_end        : double            # time of last flip
     """
 
     def make(self, key):
         from foundation.utils.trace import monotonic
 
         try:
-            flips = (TrialLink & key).link.flips
+            trial_link = (TrialLink & key).link
+            video = trial_link.video
+            flips = trial_link.flips
 
         except MissingError:
-            logger.warning(f"Missing flips. Not populating {key}")
+            logger.warning(f"Missing data. Not populating {key}")
 
         assert np.isfinite(flips).all()
         assert monotonic(flips)
@@ -116,15 +100,44 @@ class TrialFlips(dj.Computed):
         key["flips"] = len(flips)
         key["flip_start"] = flips[0]
         key["flip_end"] = flips[-1]
+        key["video_id"] = video.fetch1("video_id")
 
         self.insert1(key)
 
 
+# @schema
+# class TrialFlips(dj.Computed):
+#     definition = """
+#     -> TrialLink
+#     ---
+#     flips       : int unsigned      # number of video flips
+#     flip_start  : double            # time of first flip
+#     flip_end    : double            # time of last flip
+#     """
+
+#     def make(self, key):
+#         from foundation.utils.trace import monotonic
+
+#         try:
+#             flips = (TrialLink & key).link.flips
+
+#         except MissingError:
+#             logger.warning(f"Missing flips. Not populating {key}")
+
+#         assert np.isfinite(flips).all()
+#         assert monotonic(flips)
+
+#         key["flips"] = len(flips)
+#         key["flip_start"] = flips[0]
+#         key["flip_end"] = flips[-1]
+
+#         self.insert1(key)
+
+
 @schema
-class TrialSamples(dj.Computed):
+class TrialResample(dj.Computed):
     definition = """
     -> TrialVideo
-    -> TrialFlips
     -> resample.RateLink
     ---
     samples         : int unsigned      # number of samples
@@ -133,8 +146,8 @@ class TrialSamples(dj.Computed):
 
     @property
     def key_source(self):
-        key = TrialFlips * TrialVideo * video.VideoInfo & "frames = flips"
-        return TrialLink.proj() * resample.RateLink.proj() & key
+        key = TrialVideo * video.VideoInfo & "frames = flips"
+        return TrialVideo.proj() * resample.RateLink.proj() & key
 
     def make(self, key):
         from scipy.interpolate import interp1d
@@ -147,11 +160,9 @@ class TrialSamples(dj.Computed):
             logger.warning(f"Missing data. Not populating {key}")
             return
 
-        # start and end flip times
-        start, end = (TrialFlips & key).fetch1("flip_start", "flip_end")
-
-        # fixed frame rate
-        fixed = (video.VideoInfo * TrialVideo & key).fetch1("fixed")
+        # start and end flip times, fixed frame rate
+        info = video.VideoInfo * TrialVideo & key
+        start, end, fixed = info.fetch1("flip_start", "flip_end", "fixed")
 
         # nearest flip if fixed, else previous flip
         index = interp1d(
