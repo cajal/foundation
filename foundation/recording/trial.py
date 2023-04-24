@@ -153,7 +153,7 @@ class TrialSamples(dj.Computed):
 
         # nearest flip if fixed, else previous flip
         index = interp1d(
-            x=flips - start,
+            x=(flips - start) / period,
             y=np.arange(flips.size),
             kind="nearest" if fixed else "previous",
             fill_value="extrapolate",
@@ -162,7 +162,7 @@ class TrialSamples(dj.Computed):
 
         # interpolate samples
         key["samples"] = round((end - start) / period) + 1
-        key["video_index"] = index(np.arange(key["samples"]) * period)
+        key["video_index"] = index(np.arange(key["samples"])).astype(int)
 
         self.insert1(key)
 
