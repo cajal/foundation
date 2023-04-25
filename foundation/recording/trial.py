@@ -1,7 +1,6 @@
 import numpy as np
 import datajoint as dj
-from djutils import link, group, method, row_method, row_property, MissingError
-from foundation.utils.logging import logger
+from djutils import link, row_property, skip_missing
 from foundation.bridge.pipeline import pipe_stim
 from foundation.stimulus import video
 from foundation.recording import resample
@@ -16,6 +15,18 @@ schema = dj.schema("foundation_recording")
 
 class TrialBase:
     """Recording Trial"""
+
+    @row_property
+    def bounds(self):
+        """
+        Returns
+        -------
+        float
+            trial start time (seconds)
+        float
+            trial end time (seconds)
+        """
+        raise NotImplementedError()
 
     @row_property
     def video(self):
@@ -48,6 +59,11 @@ class ScanTrial(TrialBase, dj.Lookup):
     """
 
     @row_property
+    def bounds(self):
+        flips = self.flips
+        return self.flips[0], self.flips[-1]
+
+    @row_property
     def video(self):
         trial = pipe_stim.Trial * pipe_stim.Condition & self
         stim_type = trial.fetch1("stimulus_type")
@@ -73,67 +89,77 @@ class TrialLink:
 
 
 @schema
+class TrialBounds(dj.Computed):
+    definition = """
+    -> TrialLink
+    ---
+    start       : double        # trial start time (seconds)
+    end         : double        # trial end time (seconds)
+    """
+
+    @skip_missing
+    def make(self, key):
+        key["start"], key["end"] = (TrialLink & key).link.bounds
+        self.insert1(key)
+
+
+@schema
+class TrialSamples(dj.Computed):
+    definition = """
+    -> TrialBounds
+    -> resample.RateLink
+    ---
+    samples     : int unsigned  # number of trial samples
+    """
+
+    @skip_missing
+    def make(self, key):
+        start, end = (TrialBounds & key).fetch1("start", "end")
+        period = (resample.RateLink & key).link.period
+        key["samples"] = round((end - start) / period) + 1
+        self.insert1(key)
+
+
+@schema
 class TrialVideo(dj.Computed):
     definition = """
     -> TrialLink
     ---
     -> video.VideoLink
-    flips           : int unsigned      # number of video flips
-    flip_start      : double            # time of first flip
-    flip_end        : double            # time of last flip
     """
 
+    @skip_missing
     def make(self, key):
-        from foundation.utils.trace import monotonic
-
-        try:
-            trial_link = (TrialLink & key).link
-            video = trial_link.video
-            flips = trial_link.flips
-
-        except MissingError:
-            logger.warning(f"Missing data. Not populating {key}")
-
-        assert np.isfinite(flips).all()
-        assert monotonic(flips)
-
-        key["flips"] = len(flips)
-        key["flip_start"] = flips[0]
-        key["flip_end"] = flips[-1]
-        key["video_id"] = video.fetch1("video_id")
-
+        key["video_id"] = (TrialLink & key).link.video.fetch1("video_id")
         self.insert1(key)
 
 
 @schema
-class TrialResample(dj.Computed):
+class VideoSamples(dj.Computed):
     definition = """
     -> TrialVideo
-    -> resample.RateLink
+    -> TrialSamples
     ---
-    samples         : int unsigned      # number of samples
-    video_index     : longblob          # video frame index for each sample
+    video_index     : longblob      # video frame index for each sample
     """
 
-    @property
-    def key_source(self):
-        key = TrialVideo * video.VideoInfo & "frames = flips"
-        return TrialVideo.proj() * resample.RateLink.proj() & key
-
+    @skip_missing
     def make(self, key):
         from scipy.interpolate import interp1d
+        from foundation.utils.trace import monotonic
 
-        try:
-            flips = (TrialLink & key).link.flips
-            period = (resample.RateLink & key).link.period
+        # flip times and sampling period
+        flips = (TrialLink & key).link.flips
+        period = (resample.RateLink & key).link.period
 
-        except MissingError:
-            logger.warning(f"Missing data. Not populating {key}")
-            return
+        assert np.isfinite(flips).all()
+        assert monotonic(flips)
 
-        # start and end flip times, fixed frame rate
-        info = video.VideoInfo * TrialVideo & key
-        start, end, fixed = info.fetch1("flip_start", "flip_end", "fixed")
+        # video and trial info
+        info = video.VideoInfo * TrialVideo * TrialSamples * TrialBounds & key
+        start, samples, fixed, frames = info.fetch1("start", "samples", "fixed", "frames")
+
+        assert frames == len(flips)
 
         # nearest flip if fixed, else previous flip
         index = interp1d(
@@ -144,11 +170,87 @@ class TrialResample(dj.Computed):
             bounds_error=False,
         )
 
-        # interpolate samples
-        key["samples"] = round((end - start) / period) + 1
-        key["video_index"] = index(np.arange(key["samples"])).astype(int)
-
+        key["video_index"] = index(np.arange(samples)).astype(int)
         self.insert1(key)
+
+
+# @schema
+# class TrialVideo(dj.Computed):
+#     definition = """
+#     -> TrialLink
+#     ---
+#     -> video.VideoLink
+#     flips           : int unsigned      # number of video flips
+#     flip_start      : double            # time of first flip
+#     flip_end        : double            # time of last flip
+#     """
+
+#     def make(self, key):
+#         from foundation.utils.trace import monotonic
+
+#         try:
+#             trial_link = (TrialLink & key).link
+#             video = trial_link.video
+#             flips = trial_link.flips
+
+#         except MissingError:
+#             logger.warning(f"Missing data. Not populating {key}")
+
+#         assert np.isfinite(flips).all()
+#         assert monotonic(flips)
+
+#         key["flips"] = len(flips)
+#         key["flip_start"] = flips[0]
+#         key["flip_end"] = flips[-1]
+#         key["video_id"] = video.fetch1("video_id")
+
+#         self.insert1(key)
+
+
+# @schema
+# class TrialResample(dj.Computed):
+#     definition = """
+#     -> TrialVideo
+#     -> resample.RateLink
+#     ---
+#     samples         : int unsigned      # number of samples
+#     video_index     : longblob          # video frame index for each sample
+#     """
+
+#     @property
+#     def key_source(self):
+#         key = TrialVideo * video.VideoInfo & "frames = flips"
+#         return TrialVideo.proj() * resample.RateLink.proj() & key
+
+#     def make(self, key):
+#         from scipy.interpolate import interp1d
+
+#         try:
+#             flips = (TrialLink & key).link.flips
+#             period = (resample.RateLink & key).link.period
+
+#         except MissingError:
+#             logger.warning(f"Missing data. Not populating {key}")
+#             return
+
+#         # start and end flip times, fixed frame rate
+#         info = video.VideoInfo * TrialVideo & key
+#         start, end, fixed = info.fetch1("flip_start", "flip_end", "fixed")
+
+#         # nearest flip if fixed, else previous flip
+#         index = interp1d(
+#             x=(flips - start) / period,
+#             y=np.arange(flips.size),
+#             kind="nearest" if fixed else "previous",
+#             fill_value="extrapolate",
+#             bounds_error=False,
+#         )
+
+#         # interpolate samples
+#         key["samples"] = round((end - start) / period) + 1
+#         key["video_index"] = index(np.arange(key["samples"])).astype(int)
+
+#         self.insert1(key)
 
 
 # -------------- Trial Filter --------------
