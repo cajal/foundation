@@ -181,10 +181,8 @@ class Hamming(Trace):
     """Hamming filtered trace"""
 
     def init(self):
-        nans = np.isnan(self.times) | np.isnan(self.times)
-
-        self._x = self.transform_times(self.times[~nans])
-        self._y = self.transform_values(self.values[~nans])
+        self._x = fill_nans(self.transform_times(self.times))
+        self._y = fill_nans(self.transform_values(self.values))
 
         if self.target_period > self.source_period:
             logger.info("Target period is greater than source period. Filtering trace with Hamming window.")
