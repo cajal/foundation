@@ -51,91 +51,13 @@ def monotonic(trace):
     return bool(np.nanmin(delt) > 0)
 
 
-# ------- Trace Gap -------
+# ------- Trace Base -------
 
 
-class Gap:
-    """Nan time gap"""
+class Trace:
+    """Trace Base"""
 
-    def __init__(self, times, values):
-        """
-        Parameters
-        -------
-        times : 1D array
-            trace times, monotonically increasing
-        values : 1D array
-            trace values, same length as times
-        """
-        if not monotonic(times):
-            raise ValueError("Times do not monotonically increase.")
-
-        nans = np.isnan(times) | np.isnan(values)
-        idx_nan = np.nonzero(nans)[0]
-        idx_val = np.nonzero(~nans)[0]
-
-        self.center = np.median(times[idx_val])
-        self.ctimes = times - self.center
-        self.index = interp1d(
-            x=fill_nans(self.ctimes),
-            y=np.arange(self.ctimes.size),
-            kind="nearest",
-            bounds_error=False,
-            fill_value=np.nan,
-        )
-        left = interp1d(
-            x=idx_val,
-            y=self.ctimes[idx_val],
-            kind="previous",
-            bounds_error=False,
-            fill_value=np.nan,
-        )
-        right = interp1d(
-            x=idx_val,
-            y=self.ctimes[idx_val],
-            kind="next",
-            bounds_error=False,
-            fill_value=np.nan,
-        )
-        self.gaps = np.zeros_like(self.ctimes)
-        self.gaps[idx_nan] = right(idx_nan) - left(idx_nan)
-
-    def __call__(self, start, end):
-        """
-        Parameters
-        ----------
-        start : float
-            start time
-        end : float
-            end time
-
-        Returns
-        -------
-        float | None
-            maximum gap in time between nans in trace times or values
-                or
-            None if 'start' or 'end' is out of bounds
-        """
-        bounds = [
-            start - self.center,
-            end - self.center,
-        ]
-        bounds = self.index(bounds)
-
-        if np.isnan(bounds).any():
-            return
-        else:
-            i, j = map(int, bounds)
-            gap = self.gaps[i : j + 1].max()
-            return float(gap)
-
-
-# ------- Trace Resampling -------
-
-
-class Resample:
-    """Trace Resampler"""
-
-    def __init__(self, times, values, target_period):
+    def __init__(self, times, values, target_period, dtype=np.float32):
         """
         Parameters
         -------
@@ -145,69 +67,138 @@ class Resample:
             trace values, same length as times
         target_period : float
             target sampling period
+        dtype : data-type
+            output data type
         """
+        if not times.ndim == values.ndim == 1:
+            raise ValueError("Times and Values must be 1D")
+
+        if times.size != values.size:
+            raise ValueError("Times and Values are not the same size")
+
         if not monotonic(times):
             raise ValueError("Times do not monotonically increase.")
 
         self.times = times
         self.values = values
+        self.dtype = dtype
+
+        self.median_time = np.nanmedian(times)
+        self.median_value = np.nanmedian(values)
+
         self.target_period = target_period
         self.source_period = np.nanmedian(np.diff(times))
 
-    def __call__(self, start, end):
+        self.init()
+
+        self.interp = interp1d(
+            x=self.x,
+            y=self.y,
+            kind=self.kind,
+            bounds_error=False,
+            fill_value=np.nan,
+        )
+
+    def init(self):
+        pass
+
+    @property
+    def x(self):
+        return self.transform_times(self.times)
+
+    @property
+    def y(self):
+        return self.transform_values(self.values)
+
+    @property
+    def kind(self):
+        return "linear"
+
+    def transform_times(self, times, inverse=False):
+        if inverse:
+            return times + self.median_time
+        else:
+            return times - self.median_time
+
+    def transform_values(self, values, inverse=False):
+        if inverse:
+            return values + self.median_value
+        else:
+            return values - self.median_value
+
+    def __call__(self, start, samples):
         """
         Parameters
         ----------
         start : float
             start time
-        end : float
-            end time
+        samples : int
+            number of samples
 
         Returns
         -------
         1D array | None
         """
-        raise NotImplementedError()
-
-
-class HammingResample(Resample):
-    """Resample a hamming filtered trace"""
-
-    def __init__(self, times, values, target_period):
-        super().__init__(times, values, target_period)
-
-        # fill nans in trace values
-        v = fill_nans(self.values)
-
-        # filter trace values hamming window
-        if self.target_period > self.source_period:
-            logger.info("Target period is greater than source period. Filtering trace with Hamming window.")
-            r = round(self.target_period / self.source_period)
-            h = windows.hamming(r * 2 + 1)
-            f = h / h.sum()
-            v = np.convolve(v, f, mode="same")
-
-        # mask for non-nan times
-        mask = ~np.isnan(self.times)
-
-        # center time
-        self.center = np.median(self.times[mask])
-
-        # linear trace interpolation
-        self.trace = interp1d(
-            x=self.times[mask] - self.center,
-            y=v[mask],
-            kind="linear",
-            bounds_error=False,
-            fill_value=np.nan,
-        )
-
-    def __call__(self, start, end):
-        n = round((end - start) / self.target_period) + 1
-        s = start - self.center
-        y = self.trace(s + np.arange(n) * self.target_period)
+        x = self.transform_times(start) + self.target_period * np.arange(samples)
+        y = self.transform_values(self.interp(x), inverse=True)
 
         if np.isnan(y).any():
             return
         else:
-            return y.astype(np.float32)
+            return y.astype(self.dtype)
+
+
+# ------- Trace Types -------
+
+
+class Nans(Trace):
+    """Trace Nans"""
+
+    @property
+    def x(self):
+        return fill_nans(self.transform_times(self.times))
+
+    @property
+    def y(self):
+        nans = np.isnan(self.times) | np.isnan(self.values)
+        y = np.zeros_like(self.values)
+        y[nans] = 1
+        return y
+
+    def transform_values(self, values, inverse=False):
+        return values
+
+    def __call__(self, start, samples):
+        samples = super().__call__(start, samples)
+
+        if samples is None:
+            return
+        else:
+            return samples > 0
+
+
+class Hamming(Trace):
+    """Hamming filtered trace"""
+
+    def init(self):
+        nans = np.isnan(self.times) | np.isnan(self.times)
+
+        self._x = self.transform_times(self.times[~nans])
+        self._y = self.transform_values(self.values[~nans])
+
+        if self.target_period > self.source_period:
+            logger.info("Target period is greater than source period. Filtering trace with Hamming window.")
+
+            r = round(self.target_period / self.source_period)
+            h = windows.hamming(r * 2 + 1)
+            f = h / h.sum()
+
+            self._y = np.convolve(self._y, f, mode="same")
+
+    @property
+    def x(self):
+        return self._x
+
+    @property
+    def y(self):
+        return self._y

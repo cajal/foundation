@@ -1,8 +1,7 @@
 import numpy as np
 import datajoint as dj
-from djutils import link, row_property, MissingError, RestrictionError
-from foundation.utils.logging import logger
-from foundation.bridge.pipeline import pipe_meso, pipe_eye, pipe_tread
+from djutils import link, group, merge, row_property, skip_missing
+from foundation.bridge.pipeline import pipe_stim, pipe_meso, pipe_eye, pipe_tread
 from foundation.recording import trial, resample
 
 schema = dj.schema("foundation_recording")
@@ -37,12 +36,12 @@ class TraceBase:
         raise NotImplementedError()
 
     @row_property
-    def trial_flips(self):
+    def trials(self):
         """
         Returns
         -------
-        trials.TrialFlips
-            tuples from trials.TrialFlips
+        trial.TrialLink
+            tuples from trial.TrialLink
         """
         raise NotImplementedError()
 
@@ -59,19 +58,9 @@ class ScanBase(TraceBase):
         return dict(zip(key, self.fetch1(*key)))
 
     @row_property
-    def trial_flips(self):
-        from foundation.bridge.pipeline import pipe_stim
-
+    def trials(self):
         scan_trials = pipe_stim.Trial.proj() & self
-        keys = trial.TrialFlips.proj() * trial.TrialLink.ScanTrial * scan_trials
-
-        if scan_trials - keys:
-            raise MissingError("Missing trials.")
-
-        if keys - scan_trials:
-            raise RestrictionError("Unexpected trials.")
-
-        return trial.TrialFlips & keys
+        return trial.TrialLink & merge(scan_trials, trial.TrialLink.ScanTrial)
 
 
 @schema
@@ -172,17 +161,24 @@ class TraceLink:
     comment = "recording trace"
 
 
+@group(schema)
+class TraceSet:
+    keys = [TraceLink]
+    name = "traces"
+    comment = "set of recording traces"
+
+
 # -- Computed Trace --
 
 
 @schema
-class TraceGap(dj.Computed):
+class TraceNans(dj.Computed):
     definition = """
     -> TraceLink
-    -> trial.TrialLink
+    -> trial.TrialSamples
     -> resample.OffsetLink
     ---
-    gap = NULL      : float     # nan time gap
+    nans = NULL     : int       # number of NaNs
     """
 
     @property
@@ -192,37 +188,38 @@ class TraceGap(dj.Computed):
             TraceLink.ScanTreadmill,
         ]
 
+    @skip_missing
     def make(self, key):
-        from foundation.utils.trace import Gap
+        from foundation.utils.trace import Nans
 
-        try:
-            trace_link = (TraceLink & key).link
-            trial_flips = trace_link.trial_flips
-            gap = Gap(trace_link.times, trace_link.values)
+        period = (resample.RateLink & key).link.period
+        offset = (resample.OffsetLink & key).link.offset
+        trace_link = (TraceLink & key).link
 
-            offset_link = (resample.OffsetLink & key).link
-            offset = offset_link.offset
-
-        except MissingError:
-            logger.warn(f"Missing data. Not populating {key}")
-            return
-
-        trials = trial_flips.fetch(dj.key, "flip_start", "flip_end", order_by=trial_flips.primary_key)
+        nans = Nans(trace_link.times, trace_link.values, period)
+        trials = merge(trace_link.trials, trial.TrialBounds, trial.TrialSamples)
+        trials = trials.fetch(dj.key, "start", "samples", order_by=trials.primary_key)
         keys = []
-        for trial_key, start, end in zip(*trials):
 
-            k = dict(gap=gap(start + offset, end + offset), **key, **trial_key)
-            keys.append(k)
+        for trial_key, start, samples in zip(*trials):
+
+            _nans = nans(start + offset, samples)
+
+            if _nans is None:
+                _key = dict(nans=None, **key, **trial_key)
+            else:
+                _key = dict(nans=_nans.sum(), **key, **trial_key)
+
+            keys.append(_key)
 
         self.insert(keys)
 
 
 @schema
-class ResampledTrace(dj.Computed):
+class TraceSamples(dj.Computed):
     definition = """
     -> TraceLink
-    -> trial.TrialLink
-    -> resample.RateLink
+    -> trial.TrialSamples
     -> resample.OffsetLink
     -> resample.ResampleLink
     ---
@@ -231,33 +228,29 @@ class ResampledTrace(dj.Computed):
 
     @property
     def key_source(self):
-        return TraceLink.proj() * resample.RateLink.proj() * resample.OffsetLink.proj() * resample.ResampleLink.proj()
+        return TraceLink.proj() * resample.OffsetLink.proj() * resample.ResampleLink.proj()
 
+    @skip_missing
     def make(self, key):
-        try:
-            trace_link = (TraceLink & key).link
-            trial_flips = trace_link.trial_flips
-            times = trace_link.times
-            values = trace_link.values
+        period = (resample.RateLink & key).link.period
+        offset = (resample.OffsetLink & key).link.offset
+        resampler = (resample.ResampleLink & key).link.resampler
+        trace_link = (TraceLink & key).link
 
-            rate_link = (resample.RateLink & key).link
-            target_period = rate_link.period
-
-            offset_link = (resample.OffsetLink & key).link
-            offset = offset_link.offset
-
-            resamp_link = (resample.ResampleLink & key).link
-            resampler = resamp_link.resampler(times, values, target_period)
-
-        except MissingError:
-            logger.warn(f"Missing data. Not populating {key}")
-            return
-
-        trials = trial_flips.fetch(dj.key, "flip_start", "flip_end", order_by=trial_flips.primary_key)
+        trace = resampler(trace_link.times, trace_link.values, period)
+        trials = merge(trace_link.trials, trial.TrialBounds, trial.TrialSamples)
+        trials = trials.fetch(dj.key, "start", "samples", order_by=trials.primary_key)
         keys = []
-        for trial_key, start, end in zip(*trials):
 
-            k = dict(trace=resampler(start + offset, end + offset), **key, **trial_key)
-            keys.append(k)
+        for trial_key, start, samples in zip(*trials):
+
+            _trace = trace(start + offset, samples)
+
+            if _trace is None:
+                _key = dict(trace=None, **key, **trial_key)
+            else:
+                _key = dict(trace=_trace, **key, **trial_key)
+
+            keys.append(_key)
 
         self.insert(keys)
