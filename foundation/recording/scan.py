@@ -73,28 +73,30 @@ def populate_scan(
     trial.TrialVideo.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
     trial.VideoSamples.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
-    # # fill unit traces
-    # _key = dict(
-    #     key,
-    #     pipe_version=pipe_version,
-    #     segmentation_method=segmentation_method,
-    #     classification_method=classification_method,
-    #     type=unit_type,
-    # )
-    # units = pipe.ScanSet.Unit & (pipe.MaskClassification.Type & _key)
-    # traces = pipe_meso.Activity.Trace & units.proj() & dict(key, spike_method=spike_method)
-    # trace.MesoActivity.insert(traces.proj(), skip_duplicates=True)
+    # fill unit traces
+    _key = dict(
+        key,
+        pipe_version=pipe_version,
+        segmentation_method=segmentation_method,
+        classification_method=classification_method,
+        type=unit_type,
+    )
+    units = pipe.ScanSet.Unit & (pipe.MaskClassification.Type & _key)
+    traces = pipe_meso.Activity.Trace & units.proj() & dict(key, spike_method=spike_method)
+    trace.MesoActivity.insert(traces.proj(), skip_duplicates=True)
 
-    # # fill pupil traces
-    # pupil_types = ["radius", "center_x", "center_y"]
-    # _key = [dict(key, tracking_method=tracking_method, pupil_type=p) for p in pupil_types]
-    # trace.ScanPupil.insert(_key, skip_duplicates=True)
+    # fill pupil traces
+    pupil_types = ["radius", "center_x", "center_y"]
+    _key = [dict(key, tracking_method=tracking_method, pupil_type=p) for p in pupil_types]
+    trace.ScanPupil.insert(_key, skip_duplicates=True)
 
-    # # fill treadmill trace
-    # trace.ScanTreadmill.insert1(key, skip_duplicates=True)
+    # fill treadmill trace
+    trace.ScanTreadmill.insert1(key, skip_duplicates=True)
 
-    # # populate trackes
+    # # populate traces
     # trace.TraceLink.fill()
+    # trace.TraceNans.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
+    # trace.TraceSamples.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
 
 
 # ---------- Loading Functions ----------

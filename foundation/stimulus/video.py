@@ -2,7 +2,7 @@ import io
 import av
 import numpy as np
 import datajoint as dj
-from djutils import link, row_property
+from djutils import link, group, row_property
 from PIL import Image
 from foundation.utils.video import Video
 from foundation.bridge.pipeline import pipe_stim
@@ -183,6 +183,13 @@ class VideoLink:
     links = [Clip, Monet2, Trippy, GaborSequence, DotSequence, RdkSequence, Frame]
     name = "video"
     comment = "video stimulus"
+
+
+@group(schema)
+class VideoSet:
+    keys = [VideoLink]
+    name = "videos"
+    comment = "set of video stimuli"
 
 
 # -- Computed Video --
