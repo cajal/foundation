@@ -88,13 +88,13 @@ class MesoActivity(ScanBase, dj.Lookup):
     def bounds(self):
         from foundation.recording.scan import ScanTimes
 
-        return (ScanTimes & self).fetch1("start", "end")
+        return merge(self, ScanTimes).fetch1("start", "end")
 
     @row_property
     def times(self):
         from foundation.recording.scan import ScanTimes
 
-        times = (ScanTimes & self).fetch1("times")
+        times = merge(self, ScanTimes).fetch1("times")
         delay = (pipe_meso.ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
         return times + delay
 
@@ -121,13 +121,13 @@ class ScanPupil(ScanBase, dj.Lookup):
     def bounds(self):
         from foundation.recording.scan import EyeTimes
 
-        return (EyeTimes & self).fetch1("start", "end")
+        return merge(self, EyeTimes).fetch1("start", "end")
 
     @row_property
     def times(self):
         from foundation.recording.scan import EyeTimes
 
-        return (EyeTimes & self).fetch1("times")
+        return merge(self, EyeTimes).fetch1("times")
 
     @row_property
     def values(self):
@@ -159,13 +159,13 @@ class ScanTreadmill(ScanBase, dj.Lookup):
     def bounds(self):
         from foundation.recording.scan import TreadmillTimes
 
-        return (TreadmillTimes & self).fetch1("start", "end")
+        return merge(self, TreadmillTimes).fetch1("start", "end")
 
     @row_property
     def times(self):
         from foundation.recording.scan import TreadmillTimes
 
-        return (TreadmillTimes & self).fetch1("times")
+        return merge(self, TreadmillTimes).fetch1("times")
 
     @row_property
     def values(self):
@@ -239,6 +239,24 @@ class TraceBounds(dj.Computed):
 
         key["trials_id"] = oob["trials_id"]
         self.insert1(key)
+
+    @row_property
+    def trials(self):
+        include = (trial.TrialSet & TraceTrials & self.proj()).members
+        exclude = (trial.TrialSet & self).members
+
+        return (trial.TrialLink & include).proj() - (trial.TrialLink & exclude).proj()
+
+
+@schema
+class TraceSamples(dj.Computed):
+    definition = """
+    -> TraceBounds
+    -> resample.ResampleLink
+    ---
+    -> trial.TrialSet
+    trace               : longblob      # resampled trace
+    """
 
 
 # @schema

@@ -57,7 +57,7 @@ def monotonic(trace):
 class Trace:
     """Trace Base"""
 
-    def __init__(self, times, values, target_period, dtype=np.float32):
+    def __init__(self, times, values, target_period):
         """
         Parameters
         -------
@@ -67,8 +67,6 @@ class Trace:
             trace values, same length as times
         target_period : float
             target sampling period
-        dtype : data-type
-            output data type
         """
         if not times.ndim == values.ndim == 1:
             raise ValueError("Times and Values must be 1D")
@@ -81,7 +79,6 @@ class Trace:
 
         self.times = times
         self.values = values
-        self.dtype = dtype
 
         self.median_time = np.nanmedian(times)
         self.median_value = np.nanmedian(values)
@@ -90,7 +87,6 @@ class Trace:
         self.source_period = np.nanmedian(np.diff(times))
 
         self.init()
-
         self.interp = interp1d(x=self.x, y=self.y, kind=self.kind)
 
     def init(self):
@@ -107,6 +103,10 @@ class Trace:
     @property
     def kind(self):
         return "linear"
+
+    @property
+    def dtype(self):
+        return np.float32
 
     def transform_times(self, times, inverse=False):
         if inverse:
@@ -134,8 +134,8 @@ class Trace:
         1D array | None
         """
         x = self.transform_times(start) + self.target_period * np.arange(samples)
-        y = self.transform_values(self.interp(x), inverse=True)
-        return y.astype(self.dtype)
+        y = self.interp(x).astype(self.dtype)
+        return self.transform_values(y, inverse=True)
 
 
 # ------- Trace Types -------
@@ -148,18 +148,12 @@ class Nans(Trace):
     def x(self):
         return fill_nans(self.transform_times(self.times))
 
-    @property
-    def y(self):
-        nans = np.isnan(self.times) | np.isnan(self.values)
-        y = np.zeros_like(self.values)
-        y[nans] = 1
-        return y
-
     def transform_values(self, values, inverse=False):
-        return values
-
-    def __call__(self, start, samples):
-        return super().__call__(start, samples) > 0
+        if inverse:
+            return values > 0
+        else:
+            nans = np.isnan(self.times) | np.isnan(values)
+            return nans * 1.0
 
 
 class Hamming(Trace):

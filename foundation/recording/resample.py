@@ -121,18 +121,6 @@ class ResampleBase:
 # -- Resample Types --
 
 
-# @method(schema)
-# class Nans(ResampleBase):
-#     name = "nans"
-#     comment = "trace nans"
-
-#     @row_method
-#     def resampler(self, times, values, target_period):
-#         from foundation.utils.trace import Nans
-
-#         return Nans(times, values, target_period)
-
-
 @method(schema)
 class Hamming(ResampleBase):
     name = "hamming"
