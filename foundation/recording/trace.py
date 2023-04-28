@@ -248,143 +248,36 @@ class TraceBounds(dj.Computed):
         return (trial.TrialLink & include).proj() - (trial.TrialLink & exclude).proj()
 
 
-@schema
-class TraceSamples(dj.Computed):
-    definition = """
-    -> TraceBounds
-    -> resample.ResampleLink
-    ---
-    -> trial.TrialSet
-    trace               : longblob      # resampled trace
-    """
-
-
 # @schema
-# class TraceTrials(dj.Computed):
+# class TraceSamples(dj.Computed):
 #     definition = """
-#     -> TraceLink
-#     -> resample.RateLink
-#     -> resample.OffsetLink
+#     -> TraceBounds
+#     -> resample.ResampleLink
 #     ---
 #     -> trial.TrialSet
 #     trace               : longblob      # resampled trace
 #     """
 
-#     @property
-#     def key_source(self):
-#         keys = TraceLink.proj() * resample.OffsetLink.proj() * resample.ResampleLink.proj()
-#         keys & [
-#             TraceLink.ScanPupil * resample.ResampleLink.Nans * ScanPupilType & {"pupil_type": "radius"},
-#             TraceLink.ScanTreadmill * resample.ResampleLink.Nans,
-#             TraceLink * resample.ResampleLink.Hamming,
-#         ]
-
 #     @skip_missing
 #     def make(self, key):
+#         trials = (TraceBounds & key).trials
+
+#         trial_samples = merge(trials, trial.TrialBounds, trial.TrialSamples & key)
+#         start, samples = trial_samples.fetch("start", "samples", order_by="trial_id")
+
+#         trials_key = trial.TrialSet.fill(trials, prompt=False, silent=True)
+
 #         period = (resample.RateLink & key).link.period
 #         offset = (resample.OffsetLink & key).link.offset
 
 #         trace_link = (TraceLink & key).link
+#         resampler = (resample.ResampleLink & key).link.resampler(
+#             trace_link.times,
+#             trace_link.values,
+#             period,
+#         )
+#         trace = np.concatenate([resampler(t + offset, n) for t, n in zip(start, samples)])
 
-#         times = trace_link.times
-#         center = np.nanmedian(times)
-#         start = np.nanmin(times) - center
-#         end = np.nanmax(times) - center
-
-#         trials = trace_link.trials.members
-#         trials = merge(trials, trial.TrialBounds * trial.TrialSamples & key)
-#         trials = trials.fetch(format="frame", order_by=trials.primary_key).reset_index()
-
-#         trials["start"] = trials["start"] - center
-#         trials["end"] = trials["start"] + trials["samples"] * period
-#         trials = trials[(trials["start"] >= start) & (trials["end"] <= end)]
-
-#         trials = trials[["trial_id"]].to_dict(orient="records")
-#         trials = trial.TrialSet.fill(trials)
-
-#         self.insert1(dict(**key, **trials))
+#         self.insert1(dict(trace=trace, **key, **trials_key))
 
 
-# @schema
-# class TraceNans(dj.Computed):
-#     definition = """
-#     -> TraceLink
-#     -> trial.TrialSamples
-#     -> resample.OffsetLink
-#     ---
-#     nans = NULL     : int       # number of NaNs
-#     """
-
-#     @property
-#     def key_source(self):
-#         return TraceLink.proj() * resample.OffsetLink.proj() & [
-#             TraceLink.ScanPupil * ScanPupilType & {"pupil_type": "radius"},
-#             TraceLink.ScanTreadmill,
-#         ]
-
-#     @skip_missing
-#     def make(self, key):
-#         from foundation.utils.trace import Nans
-
-#         period = (resample.RateLink & key).link.period
-#         offset = (resample.OffsetLink & key).link.offset
-#         trace_link = (TraceLink & key).link
-
-#         nans = Nans(trace_link.times, trace_link.values, period)
-#         trials = merge(trace_link.trials, trial.TrialBounds, trial.TrialSamples)
-#         trials = trials.fetch(dj.key, "start", "samples", order_by=trials.primary_key)
-#         keys = []
-
-#         for trial_key, start, samples in zip(*trials):
-
-#             _nans = nans(start + offset, samples)
-
-#             if _nans is None:
-#                 _key = dict(nans=None, **key, **trial_key)
-#             else:
-#                 _key = dict(nans=_nans.sum(), **key, **trial_key)
-
-#             keys.append(_key)
-
-#         self.insert(keys)
-
-
-# @schema
-# class TraceSamples(dj.Computed):
-#     definition = """
-#     -> TraceLink
-#     -> trial.TrialSamples
-#     -> resample.OffsetLink
-#     -> resample.ResampleLink
-#     ---
-#     trace = NULL        : longblob      # resampled trace
-#     """
-
-#     @property
-#     def key_source(self):
-#         return TraceLink.proj() * resample.OffsetLink.proj() * resample.ResampleLink.proj()
-
-#     @skip_missing
-#     def make(self, key):
-#         period = (resample.RateLink & key).link.period
-#         offset = (resample.OffsetLink & key).link.offset
-#         resampler = (resample.ResampleLink & key).link.resampler
-#         trace_link = (TraceLink & key).link
-
-#         trace = resampler(trace_link.times, trace_link.values, period)
-#         trials = merge(trace_link.trials, trial.TrialBounds, trial.TrialSamples)
-#         trials = trials.fetch(dj.key, "start", "samples", order_by=trials.primary_key)
-#         keys = []
-
-#         for trial_key, start, samples in zip(*trials):
-
-#             _trace = trace(start + offset, samples)
-
-#             if _trace is None:
-#                 _key = dict(trace=None, **key, **trial_key)
-#             else:
-#                 _key = dict(trace=_trace, **key, **trial_key)
-
-#             keys.append(_key)
-
-#         self.insert(keys)

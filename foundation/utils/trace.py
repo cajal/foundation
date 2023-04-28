@@ -86,11 +86,7 @@ class Trace:
         self.target_period = target_period
         self.source_period = np.nanmedian(np.diff(times))
 
-        self.init()
         self.interp = interp1d(x=self.x, y=self.y, kind=self.kind)
-
-    def init(self):
-        pass
 
     @property
     def x(self):
@@ -159,9 +155,13 @@ class Nans(Trace):
 class Hamming(Trace):
     """Hamming filtered trace"""
 
-    def init(self):
-        self._x = fill_nans(self.transform_times(self.times))
-        self._y = fill_nans(self.transform_values(self.values))
+    @property
+    def x(self):
+        return fill_nans(self.transform_times(self.times))
+
+    @property
+    def y(self):
+        y = fill_nans(self.transform_values(self.values))
 
         if self.target_period > self.source_period:
             logger.info("Target period is greater than source period. Filtering trace with Hamming window.")
@@ -170,12 +170,6 @@ class Hamming(Trace):
             h = windows.hamming(r * 2 + 1)
             f = h / h.sum()
 
-            self._y = np.convolve(self._y, f, mode="same")
+            y = np.convolve(y, f, mode="same")
 
-    @property
-    def x(self):
-        return self._x
-
-    @property
-    def y(self):
-        return self._y
+        return y

@@ -3,8 +3,9 @@ import datajoint as dj
 from djutils import merge, skip_missing
 from foundation.recording import resample
 from foundation.bridge.pipeline import (
-    pipe_stim,
     pipe_exp,
+    pipe_shared,
+    pipe_stim,
     pipe_fuse,
     pipe_meso,
     pipe_reso,
@@ -16,104 +17,131 @@ schema = dj.schema("foundation_scan")
 
 
 @schema
-class ScanTimes(dj.Computed):
+class Times(dj.Computed):
     definition = """
     -> pipe_exp.Scan
     ---
-    times       : longblob  # scan volume times on the stimulus clock
-    start       : double    # start of the scan recording on the stimulus clock
-    end         : double    # start of the scan recording on the stimulus clock
+    scan_times          : longblob      # scan trace times on the stimulus clock
+    eye_times           : longblob      # eye trace times on the stimulus clock
+    treadmill_times     : longblob      # treadmill trace times on the stimulus clock
     """
 
     def make(self, key):
-        key["times"] = scan_times(**key)[0]
-        key["start"] = key["times"][0]
-        key["end"] = key["times"][-1]
-        self.insert1(key)
+        from scipy.interpolate import interp1d
 
+        # resolve pipeline
+        pipe = dj.U("pipe") & (pipe_fuse.ScanDone & key)
+        pipe = pipe.fetch1("pipe")
+        if pipe == "meso":
+            pipe = pipe_meso
 
-@schema
-class EyeTimes(dj.Computed):
-    definition = """
-    -> pipe_exp.Scan
-    ---
-    times       : longblob  # eye trace times on the stimulus clock
-    start       : double    # start of the eye recording on the stimulus clock
-    end         : double    # end of the eye recording on the stimulus clock
-    """
+        elif pipe == "reso":
+            pipe = pipe_reso
 
-    def make(self, key):
-        key["times"] = eye_times(**key)
-        key["start"] = np.nanmin(key["times"])
-        key["end"] = np.nanmax(key["times"])
-        self.insert1(key)
+        else:
+            raise ValueError(f"{pipe} not recognized")
 
+        # number of planes
+        n = (pipe.ScanInfo & key).proj(n="nfields div nrois").fetch1("n")
+        if n != len(dj.U("z") & (pipe.ScanInfo.Field & key)):
+            raise ValueError("unexpected number of depths")
 
-@schema
-class TreadmillTimes(dj.Computed):
-    definition = """
-    -> pipe_tread.Treadmill
-    ---
-    times       : longblob  # treadmill trace times on the stimulus clock
-    start       : double    # start of the treadmill recording on the stimulus clock
-    end         : double    # end of the treadmill recording on the stimulus clock
-    """
+        # fetch and slice times
+        stim_times = (pipe_stim.Sync & key).fetch1("frame_times", squeeze=True)[::n]
+        beh_times = (pipe_stim.BehaviorSync & key).fetch1("frame_times", squeeze=True)[::n]
 
-    def make(self, key):
-        key["times"] = treadmill_times(**key)
-        key["start"] = np.nanmin(key["times"])
-        key["end"] = np.nanmax(key["times"])
-        self.insert1(key)
+        assert len(stim_times) == len(beh_times)
+        assert np.isfinite(stim_times).all()
+        assert np.isfinite(beh_times).all()
 
+        # truncate times
+        nframes = (pipe.ScanInfo & key).fetch1("nframes")
+        assert 0 <= len(stim_times) - nframes <= 1
 
-@schema
-class EyeNans(dj.Computed):
-    definition = """
-    -> EyeTimes
-    -> pipe_eye.FittedPupil
-    -> pipe_stim.Trial
-    -> resample.RateLink
-    -> resample.OffsetLink
-    ---
-    nans = NULL     : int unsigned      # number of nans
-    """
+        stim_times = stim_times[:nframes]
+        beh_times = beh_times[:nframes]
 
-    @property
-    def key_source(self):
-        return EyeTimes.proj() * pipe_eye.FittedPupil.proj() * resample.RateLink.proj() * resample.OffsetLink.proj()
+        # median times
+        stim_median = np.median(stim_times)
+        beh_median = np.median(beh_times)
 
-    @skip_missing
-    def make(self, key):
-        from foundation.recording.trial import TrialLink, TrialBounds, TrialSamples
-        from foundation.utils.trace import Nans
-
-        trials = (pipe_stim.Trial & key).proj()
-        trials = merge(trials, TrialLink.ScanTrial, TrialBounds, TrialSamples & key)
-
-        times, tmin, tmax = (EyeTimes & key).fetch1("times", "start", "end")
-        values = eye_trace(
-            animal_id=key["animal_id"],
-            session=key["session"],
-            scan_idx=key["scan_idx"],
-            tracking_method=key["tracking_method"],
-            trace_type="radius",
+        # behavior -> stimulus clock
+        beh_to_stim = interp1d(
+            x=beh_times - beh_median,
+            y=stim_times - stim_median,
+            kind="linear",
+            fill_value=np.nan,
+            bounds_error=False,
+            copy=False,
         )
-        period = (resample.RateLink & key).link.period
-        nans = Nans(times, values, period)
 
-        offset = (resample.OffsetLink & key).link.offset
-        keys = []
+        # eye times
+        raw = (pipe_eye.Eye & key).fetch1("eye_time")
+        nans = np.isnan(raw)
+        eye_times = np.full_like(raw, np.nan)
+        eye_times[~nans] = beh_to_stim(raw[~nans] - beh_median) + stim_median
 
-        for trial_idx, start, samples in zip(*trials.fetch("trial_idx", "start", "samples")):
+        # treadmill times
+        raw = (pipe_tread.Treadmill & key).fetch1("treadmill_time")
+        nans = np.isnan(raw)
+        tread_times = np.full_like(raw, np.nan)
+        tread_times[~nans] = beh_to_stim(raw[~nans] - beh_median) + stim_median
 
-            if (start < tmin) or (start + samples * period > tmax):
-                n = None
-            else:
-                n = nans(start + offset, samples).sum()
+        # insert key
+        key["scan_times"] = stim_times
+        key["eye_times"] = eye_times
+        key["treadmill_times"] = tread_times
+        self.insert1(key)
 
-            keys.append(dict(key, nans=n, trial_idx=trial_idx))
 
-        self.insert(keys)
+# @schema
+# class EyeNans(dj.Computed):
+#     definition = """
+#     -> EyeTimes
+#     -> pipe_eye.FittedPupil
+#     -> pipe_stim.Trial
+#     -> resample.RateLink
+#     -> resample.OffsetLink
+#     ---
+#     nans = NULL     : int unsigned      # number of nans
+#     """
+
+#     @property
+#     def key_source(self):
+#         return EyeTimes.proj() * pipe_eye.FittedPupil.proj() * resample.RateLink.proj() * resample.OffsetLink.proj()
+
+#     @skip_missing
+#     def make(self, key):
+#         from foundation.recording.trial import TrialLink, TrialBounds, TrialSamples
+#         from foundation.utils.trace import Nans
+
+#         trials = (pipe_stim.Trial & key).proj()
+#         trials = merge(trials, TrialLink.ScanTrial, TrialBounds, TrialSamples & key)
+
+#         times, tmin, tmax = (EyeTimes & key).fetch1("times", "start", "end")
+#         values = eye_trace(
+#             animal_id=key["animal_id"],
+#             session=key["session"],
+#             scan_idx=key["scan_idx"],
+#             tracking_method=key["tracking_method"],
+#             trace_type="radius",
+#         )
+#         period = (resample.RateLink & key).link.period
+#         nans = Nans(times, values, period)
+
+#         offset = (resample.OffsetLink & key).link.offset
+#         keys = []
+
+#         for trial_idx, start, samples in zip(*trials.fetch("trial_idx", "start", "samples")):
+
+#             if (start < tmin) or (start + samples * period > tmax):
+#                 n = None
+#             else:
+#                 n = nans(start + offset, samples).sum()
+
+#             keys.append(dict(key, nans=n, trial_idx=trial_idx))
+
+#         self.insert(keys)
 
 
 # ---------- Populate Functions ----------
