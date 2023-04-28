@@ -91,13 +91,7 @@ class Trace:
 
         self.init()
 
-        self.interp = interp1d(
-            x=self.x,
-            y=self.y,
-            kind=self.kind,
-            bounds_error=False,
-            fill_value=np.nan,
-        )
+        self.interp = interp1d(x=self.x, y=self.y, kind=self.kind)
 
     def init(self):
         pass
@@ -141,11 +135,7 @@ class Trace:
         """
         x = self.transform_times(start) + self.target_period * np.arange(samples)
         y = self.transform_values(self.interp(x), inverse=True)
-
-        if np.isnan(y).any():
-            return
-        else:
-            return y.astype(self.dtype)
+        return y.astype(self.dtype)
 
 
 # ------- Trace Types -------
@@ -169,12 +159,7 @@ class Nans(Trace):
         return values
 
     def __call__(self, start, samples):
-        samples = super().__call__(start, samples)
-
-        if samples is None:
-            return
-        else:
-            return samples > 0
+        return super().__call__(start, samples) > 0
 
 
 class Hamming(Trace):

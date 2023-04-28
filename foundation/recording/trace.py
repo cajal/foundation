@@ -4,6 +4,8 @@ from djutils import link, group, merge, row_property, skip_missing
 from foundation.bridge.pipeline import pipe_stim, pipe_meso, pipe_eye, pipe_tread
 from foundation.recording import trial, resample
 
+from time import time
+
 schema = dj.schema("foundation_recording")
 
 
@@ -16,11 +18,33 @@ class TraceBase:
     """Recording Trace"""
 
     @row_property
+    def trials(self):
+        """
+        Returns
+        -------
+        trial.TrialSet
+            tuple from trial.TrialSet
+        """
+        raise NotImplementedError()
+
+    @row_property
+    def bounds(self):
+        """
+        Returns
+        -------
+        float
+            start time of trace
+        end
+            end time of trace
+        """
+        raise NotImplementedError()
+
+    @row_property
     def times(self):
         """
         Returns
         -------
-        times : 1D array
+        1D array
             trace times
         """
         raise NotImplementedError()
@@ -30,18 +54,8 @@ class TraceBase:
         """
         Returns
         -------
-        values : 1D array
+        1D array
             trace values
-        """
-        raise NotImplementedError()
-
-    @row_property
-    def trials(self):
-        """
-        Returns
-        -------
-        trial.TrialSet
-            tuple from trial.TrialSet
         """
         raise NotImplementedError()
 
@@ -71,27 +85,21 @@ class MesoActivity(ScanBase, dj.Lookup):
     """
 
     @row_property
-    def times(self):
-        """
-        Returns
-        -------
-        times : 1D array
-            trace times
-        """
-        from foundation.recording.scan import scan_times
+    def bounds(self):
+        from foundation.recording.scan import ScanTimes
 
-        times = scan_times(**self.scan_key)[0]
+        return (ScanTimes & self).fetch1("start", "end")
+
+    @row_property
+    def times(self):
+        from foundation.recording.scan import ScanTimes
+
+        times = (ScanTimes & self).fetch1("times")
         delay = (pipe_meso.ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
         return times + delay
 
     @row_property
     def values(self):
-        """
-        Returns
-        -------
-        values : 1D array
-            trace values
-        """
         return (pipe_meso.Activity.Trace & self).fetch1("trace").clip(0)
 
 
@@ -110,10 +118,16 @@ class ScanPupil(ScanBase, dj.Lookup):
     """
 
     @row_property
-    def times(self):
-        from foundation.recording.scan import eye_times
+    def bounds(self):
+        from foundation.recording.scan import EyeTimes
 
-        return eye_times(**self.scan_key)
+        return (EyeTimes & self).fetch1("start", "end")
+
+    @row_property
+    def times(self):
+        from foundation.recording.scan import EyeTimes
+
+        return (EyeTimes & self).fetch1("times")
 
     @row_property
     def values(self):
@@ -142,10 +156,16 @@ class ScanTreadmill(ScanBase, dj.Lookup):
     """
 
     @row_property
-    def times(self):
-        from foundation.recording.scan import treadmill_times
+    def bounds(self):
+        from foundation.recording.scan import TreadmillTimes
 
-        return treadmill_times(**self.scan_key)
+        return (TreadmillTimes & self).fetch1("start", "end")
+
+    @row_property
+    def times(self):
+        from foundation.recording.scan import TreadmillTimes
+
+        return (TreadmillTimes & self).fetch1("times")
 
     @row_property
     def values(self):
@@ -176,6 +196,20 @@ class TraceSet:
 class TraceTrials(dj.Computed):
     definition = """
     -> TraceLink
+    ---
+    -> trial.TrialSet
+    """
+
+    @skip_missing
+    def make(self, key):
+        key["trials_id"] = (TraceLink & key).link.trials.fetch1("trials_id")
+        self.insert1(key)
+
+
+@schema
+class TraceBounds(dj.Computed):
+    definition = """
+    -> TraceTrials
     -> resample.RateLink
     -> resample.OffsetLink
     ---
@@ -187,25 +221,70 @@ class TraceTrials(dj.Computed):
         period = (resample.RateLink & key).link.period
         offset = (resample.OffsetLink & key).link.offset
 
-        trace_link = (TraceLink & key).link
+        tmin, tmax = (TraceLink & key).link.bounds
+        center = (tmin + tmax) / 2
+        tmin -= center
+        tmax -= center
 
-        times = trace_link.times
-        center = np.nanmedian(times)
-        start = np.nanmin(times) - center
-        end = np.nanmax(times) - center
+        trials = trial.TrialSet & (TraceTrials & key)
+        trials = merge(trials.members, trial.TrialBounds, trial.TrialSamples & key)
 
-        trials = trace_link.trials.members
-        trials = merge(trials, trial.TrialBounds * trial.TrialSamples & key)
-        trials = trials.fetch(format="frame", order_by=trials.primary_key).reset_index()
+        df = trials.fetch(format="frame").reset_index()
+        df["start"] = df["start"] - center + offset
+        df["end"] = df["start"] + df["samples"] * period
 
-        trials["start"] = trials["start"] - center
-        trials["end"] = trials["start"] + trials["samples"] * period
-        trials = trials[(trials["start"] >= start) & (trials["end"] <= end)]
+        oob = (df["start"] < tmin) | (df["end"] > tmax)
+        oob = df.loc[oob, ["trial_id"]].to_dict(orient="records")
+        oob = trial.TrialSet.fill(oob, prompt=False, silent=True)
 
-        trials = trials[["trial_id"]].to_dict(orient="records")
-        trials = trial.TrialSet.fill(trials)
+        key["trials_id"] = oob["trials_id"]
+        self.insert1(key)
 
-        self.insert1(dict(**key, **trials))
+
+# @schema
+# class TraceTrials(dj.Computed):
+#     definition = """
+#     -> TraceLink
+#     -> resample.RateLink
+#     -> resample.OffsetLink
+#     ---
+#     -> trial.TrialSet
+#     trace               : longblob      # resampled trace
+#     """
+
+#     @property
+#     def key_source(self):
+#         keys = TraceLink.proj() * resample.OffsetLink.proj() * resample.ResampleLink.proj()
+#         keys & [
+#             TraceLink.ScanPupil * resample.ResampleLink.Nans * ScanPupilType & {"pupil_type": "radius"},
+#             TraceLink.ScanTreadmill * resample.ResampleLink.Nans,
+#             TraceLink * resample.ResampleLink.Hamming,
+#         ]
+
+#     @skip_missing
+#     def make(self, key):
+#         period = (resample.RateLink & key).link.period
+#         offset = (resample.OffsetLink & key).link.offset
+
+#         trace_link = (TraceLink & key).link
+
+#         times = trace_link.times
+#         center = np.nanmedian(times)
+#         start = np.nanmin(times) - center
+#         end = np.nanmax(times) - center
+
+#         trials = trace_link.trials.members
+#         trials = merge(trials, trial.TrialBounds * trial.TrialSamples & key)
+#         trials = trials.fetch(format="frame", order_by=trials.primary_key).reset_index()
+
+#         trials["start"] = trials["start"] - center
+#         trials["end"] = trials["start"] + trials["samples"] * period
+#         trials = trials[(trials["start"] >= start) & (trials["end"] <= end)]
+
+#         trials = trials[["trial_id"]].to_dict(orient="records")
+#         trials = trial.TrialSet.fill(trials)
+
+#         self.insert1(dict(**key, **trials))
 
 
 # @schema

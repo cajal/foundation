@@ -1,5 +1,67 @@
 import numpy as np
 import datajoint as dj
+from foundation.bridge.pipeline import (
+    pipe_stim,
+    pipe_exp,
+    pipe_fuse,
+    pipe_meso,
+    pipe_reso,
+    pipe_eye,
+    pipe_tread,
+)
+
+schema = dj.schema("foundation_scan")
+
+
+@schema
+class ScanTimes(dj.Computed):
+    definition = """
+    -> pipe_exp.Scan
+    ---
+    times       : longblob  # scan volume times on the stimulus clock
+    start       : double    # start of the scan recording on the stimulus clock
+    end         : double    # start of the scan recording on the stimulus clock
+    """
+
+    def make(self, key):
+        key["times"] = scan_times(**key)[0]
+        key["start"] = key["times"][0]
+        key["end"] = key["times"][-1]
+        self.insert1(key)
+
+
+@schema
+class EyeTimes(dj.Computed):
+    definition = """
+    -> pipe_exp.Scan
+    ---
+    times       : longblob  # eye trace times on the stimulus clock
+    start       : double    # start of the eye recording on the stimulus clock
+    end         : double    # end of the eye recording on the stimulus clock
+    """
+
+    def make(self, key):
+        key["times"] = eye_times(**key)
+        key["start"] = np.nanmin(key["times"])
+        key["end"] = np.nanmax(key["times"])
+        self.insert1(key)
+
+
+@schema
+class TreadmillTimes(dj.Computed):
+    definition = """
+    -> pipe_tread.Treadmill
+    ---
+    times       : longblob  # treadmill trace times on the stimulus clock
+    start       : double    # start of the treadmill recording on the stimulus clock
+    end         : double    # end of the treadmill recording on the stimulus clock
+    """
+
+    def make(self, key):
+        key["times"] = treadmill_times(**key)
+        key["start"] = np.nanmin(key["times"])
+        key["end"] = np.nanmax(key["times"])
+        self.insert1(key)
 
 
 # ---------- Populate Functions ----------
@@ -29,7 +91,6 @@ def populate_scan(
         scan index
     ...
     """
-    from foundation.bridge.pipeline import pipe_stim, pipe_meso
     from foundation.stimulus import video
     from foundation.recording import trial, trace
 
@@ -40,6 +101,11 @@ def populate_scan(
         scan_idx=scan_idx,
     )
     pipe = pipeline(**key)
+
+    # populate bounds
+    ScanTimes.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
+    EyeTimes.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
+    TreadmillTimes.populate(key, reserve_jobs=reserve_jobs, display_progress=display_progress)
 
     # scan trials
     scan_trials = pipe_stim.Trial & key
@@ -118,8 +184,6 @@ def pipeline(animal_id, session, scan_idx):
     dj.schemas.VirtualModule
         pipeline_meso | pipeline_reso
     """
-    from foundation.bridge.pipeline import pipe_fuse, pipe_meso, pipe_reso
-
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
     pipe = dj.U("pipe") & (pipe_fuse.ScanDone & key)
@@ -153,8 +217,6 @@ def scan_times(animal_id, session, scan_idx):
     1D array
         start of each scan volume on the behavior clock
     """
-    from foundation.bridge.pipeline import pipe_stim
-
     # scan key
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
@@ -195,7 +257,6 @@ def eye_times(animal_id, session, scan_idx):
         eye trace times on the stimulus clock
     """
     from scipy.interpolate import interp1d
-    from foundation.bridge.pipeline import pipe_eye
 
     # scan key
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
@@ -243,7 +304,6 @@ def treadmill_times(animal_id, session, scan_idx):
         treadmill trace times on the stimulus clock
     """
     from scipy.interpolate import interp1d
-    from foundation.bridge.pipeline import pipe_tread
 
     # scan key
     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
