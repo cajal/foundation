@@ -2,7 +2,7 @@ import numpy as np
 import datajoint as dj
 from djutils import merge, skip_missing
 from foundation.recording import resample
-from foundation.bridge.pipeline import (
+from foundation.schemas.pipeline import (
     pipe_exp,
     pipe_shared,
     pipe_stim,
@@ -12,8 +12,9 @@ from foundation.bridge.pipeline import (
     pipe_eye,
     pipe_tread,
 )
+from foundation.schemas import scan as schema
 
-schema = dj.schema("foundation_scan")
+# schema = dj.schema("foundation_scan")
 
 
 @schema
@@ -92,56 +93,6 @@ class Times(dj.Computed):
         key["eye_times"] = eye_times
         key["treadmill_times"] = tread_times
         self.insert1(key)
-
-
-# @schema
-# class EyeNans(dj.Computed):
-#     definition = """
-#     -> EyeTimes
-#     -> pipe_eye.FittedPupil
-#     -> pipe_stim.Trial
-#     -> resample.RateLink
-#     -> resample.OffsetLink
-#     ---
-#     nans = NULL     : int unsigned      # number of nans
-#     """
-
-#     @property
-#     def key_source(self):
-#         return EyeTimes.proj() * pipe_eye.FittedPupil.proj() * resample.RateLink.proj() * resample.OffsetLink.proj()
-
-#     @skip_missing
-#     def make(self, key):
-#         from foundation.recording.trial import TrialLink, TrialBounds, TrialSamples
-#         from foundation.utils.trace import Nans
-
-#         trials = (pipe_stim.Trial & key).proj()
-#         trials = merge(trials, TrialLink.ScanTrial, TrialBounds, TrialSamples & key)
-
-#         times, tmin, tmax = (EyeTimes & key).fetch1("times", "start", "end")
-#         values = eye_trace(
-#             animal_id=key["animal_id"],
-#             session=key["session"],
-#             scan_idx=key["scan_idx"],
-#             tracking_method=key["tracking_method"],
-#             trace_type="radius",
-#         )
-#         period = (resample.RateLink & key).link.period
-#         nans = Nans(times, values, period)
-
-#         offset = (resample.OffsetLink & key).link.offset
-#         keys = []
-
-#         for trial_idx, start, samples in zip(*trials.fetch("trial_idx", "start", "samples")):
-
-#             if (start < tmin) or (start + samples * period > tmax):
-#                 n = None
-#             else:
-#                 n = nans(start + offset, samples).sum()
-
-#             keys.append(dict(key, nans=n, trial_idx=trial_idx))
-
-#         self.insert(keys)
 
 
 # ---------- Populate Functions ----------

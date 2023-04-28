@@ -1,12 +1,9 @@
 import numpy as np
 import datajoint as dj
 from djutils import link, group, merge, row_property, skip_missing
-from foundation.bridge.pipeline import pipe_stim, pipe_meso, pipe_eye, pipe_tread
 from foundation.recording import trial, resample
-
-from time import time
-
-schema = dj.schema("foundation_recording")
+from foundation.schemas.pipeline import pipe_stim, pipe_meso, pipe_eye, pipe_tread
+from foundation.schemas import recording as schema
 
 
 # -------------- Trace --------------
