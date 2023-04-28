@@ -229,12 +229,12 @@ class TraceBounds(dj.Computed):
         trials = trial.TrialSet & (TraceTrials & key)
         trials = merge(trials.members, trial.TrialBounds, trial.TrialSamples & key)
 
-        df = trials.fetch(format="frame").reset_index()
-        df["start"] = df["start"] - center + offset
-        df["end"] = df["start"] + df["samples"] * period
+        trial_id, start, end, samples = trials.fetch("trial_id", "start", "end", "samples")
+        start = start - center + offset
+        end = start + samples * period
 
-        oob = (df["start"] < tmin) | (df["end"] > tmax)
-        oob = df.loc[oob, ["trial_id"]].to_dict(orient="records")
+        oob = (start < tmin) | (end > tmax)
+        oob = [dict(trial_id=tid) for tid in trial_id[oob]]
         oob = trial.TrialSet.fill(oob, prompt=False, silent=True)
 
         key["trials_id"] = oob["trials_id"]
