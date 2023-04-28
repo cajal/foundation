@@ -1,6 +1,6 @@
 import numpy as np
 import datajoint as dj
-from djutils import link, row_property, skip_missing
+from djutils import link, group, merge, row_property, skip_missing
 from foundation.bridge.pipeline import pipe_stim
 from foundation.stimulus import video
 from foundation.recording import resample
@@ -83,6 +83,13 @@ class TrialLink:
     links = [ScanTrial]
     name = "trial"
     comment = "recording trial"
+
+
+@group(schema)
+class TrialSet:
+    keys = [TrialLink]
+    name = "trials"
+    comment = "set of recording trials"
 
 
 # -- Computed Trial --
