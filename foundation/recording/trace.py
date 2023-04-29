@@ -1,7 +1,8 @@
 import numpy as np
+import pandas as pd
 import datajoint as dj
 from djutils import link, group, merge, row_property, skip_missing
-from foundation.recording import trial, resample
+from foundation.recording import trial, resample, scan
 from foundation.schemas.pipeline import pipe_stim, pipe_meso, pipe_eye, pipe_tread
 from foundation.schemas import recording as schema
 
@@ -21,18 +22,6 @@ class TraceBase:
         -------
         trial.TrialSet
             tuple from trial.TrialSet
-        """
-        raise NotImplementedError()
-
-    @row_property
-    def bounds(self):
-        """
-        Returns
-        -------
-        float
-            start time of trace
-        end
-            end time of trace
         """
         raise NotImplementedError()
 
@@ -82,16 +71,10 @@ class MesoActivity(ScanBase, dj.Lookup):
     """
 
     @row_property
-    def bounds(self):
-        from foundation.recording.scan import ScanTimes
-
-        return merge(self, ScanTimes).fetch1("start", "end")
-
-    @row_property
     def times(self):
-        from foundation.recording.scan import ScanTimes
+        from foundation.recording.scan import Times
 
-        times = merge(self, ScanTimes).fetch1("times")
+        times = merge(self, Times).fetch1("scan_times")
         delay = (pipe_meso.ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
         return times + delay
 
@@ -101,49 +84,20 @@ class MesoActivity(ScanBase, dj.Lookup):
 
 
 @schema
-class ScanPupilType(dj.Lookup):
-    definition = """
-    pupil_type      : varchar(64)   # fitted scan pupil type
-    """
-
-
-@schema
 class ScanPupil(ScanBase, dj.Lookup):
     definition = """
-    -> pipe_eye.FittedPupil
-    -> ScanPupilType
+    -> scan.Pupil
     """
-
-    @row_property
-    def bounds(self):
-        from foundation.recording.scan import EyeTimes
-
-        return merge(self, EyeTimes).fetch1("start", "end")
 
     @row_property
     def times(self):
-        from foundation.recording.scan import EyeTimes
+        from foundation.recording.scan import Times
 
-        return merge(self, EyeTimes).fetch1("times")
+        return merge(self, Times).fetch1("eye_times")
 
     @row_property
     def values(self):
-        fits = pipe_eye.FittedPupil.Circle & self
-        pupil_type = self.fetch1("pupil_type")
-
-        if pupil_type == "radius":
-            return fits.fetch("radius", order_by="frame_id")
-
-        elif pupil_type in ["center_x", "center_y"]:
-
-            center = fits.fetch("center", order_by="frame_id")
-            if pupil_type == "center_x":
-                return np.array([np.nan if c is None else c[0] for c in center])
-            else:
-                return np.array([np.nan if c is None else c[1] for c in center])
-
-        else:
-            raise NotImplementedError(f"Pupil type '{pupil_type}' not implemented.")
+        return (scan.Pupil & self).fetch1("pupil_trace")
 
 
 @schema
@@ -153,16 +107,10 @@ class ScanTreadmill(ScanBase, dj.Lookup):
     """
 
     @row_property
-    def bounds(self):
-        from foundation.recording.scan import TreadmillTimes
-
-        return merge(self, TreadmillTimes).fetch1("start", "end")
-
-    @row_property
     def times(self):
-        from foundation.recording.scan import TreadmillTimes
+        from foundation.recording.scan import Times
 
-        return merge(self, TreadmillTimes).fetch1("times")
+        return merge(self, Times).fetch1("treadmill_times")
 
     @row_property
     def values(self):
@@ -202,79 +150,51 @@ class TraceTrials(dj.Computed):
         key["trials_id"] = (TraceLink & key).link.trials.fetch1("trials_id")
         self.insert1(key)
 
+    @row_property
+    def trials(self):
+        return (trial.TrialSet & self).members
+
 
 @schema
-class TraceBounds(dj.Computed):
+class TraceSamples(dj.Computed):
     definition = """
     -> TraceTrials
     -> resample.RateLink
     -> resample.OffsetLink
+    -> resample.ResampleLink
     ---
-    -> trial.TrialSet
+    trace           : longblob      # resampled trace
     """
 
     @skip_missing
     def make(self, key):
         period = (resample.RateLink & key).link.period
         offset = (resample.OffsetLink & key).link.offset
+        resampler = (resample.ResampleLink & key).link.resampler
 
-        tmin, tmax = (TraceLink & key).link.bounds
-        center = (tmin + tmax) / 2
-        tmin -= center
-        tmax -= center
+        trace_link = (TraceLink & key).link
+        r = resampler(times=trace_link.times, values=trace_link.values, target_period=period)
 
-        trials = trial.TrialSet & (TraceTrials & key)
-        trials = merge(trials.members, trial.TrialBounds, trial.TrialSamples & key)
+        trials = (TraceTrials & key).trials
+        trials = merge(trials, trial.TrialBounds, trial.TrialSamples & key)
 
-        trial_id, start, end, samples = trials.fetch("trial_id", "start", "end", "samples")
-        start = start - center + offset
-        end = start + samples * period
+        start, samples = trials.fetch("start", "samples", order_by="member_id")
+        trace = [r(start=t + offset, samples=n) for t, n in zip(start, samples)]
 
-        oob = (start < tmin) | (end > tmax)
-        oob = [dict(trial_id=tid) for tid in trial_id[oob]]
-        oob = trial.TrialSet.fill(oob, prompt=False, silent=True)
-
-        key["trials_id"] = oob["trials_id"]
-        self.insert1(key)
+        self.insert1(dict(key, trace=np.concatenate(trace)))
 
     @row_property
     def trials(self):
-        include = (trial.TrialSet & TraceTrials & self.proj()).members
-        exclude = (trial.TrialSet & self).members
+        trials = (TraceTrials & self).trials
+        trials = merge(trials, trial.TrialSamples)
 
-        return (trial.TrialLink & include).proj() - (trial.TrialLink & exclude).proj()
+        trial_id, samples = trials.fetch("trial_id", "samples", order_by="member_id")
+        *split, total = np.cumsum(samples)
 
+        trace = self.fetch1("trace")
+        assert len(trace) == total
 
-# @schema
-# class TraceSamples(dj.Computed):
-#     definition = """
-#     -> TraceBounds
-#     -> resample.ResampleLink
-#     ---
-#     -> trial.TrialSet
-#     trace               : longblob      # resampled trace
-#     """
-
-#     @skip_missing
-#     def make(self, key):
-#         trials = (TraceBounds & key).trials
-
-#         trial_samples = merge(trials, trial.TrialBounds, trial.TrialSamples & key)
-#         start, samples = trial_samples.fetch("start", "samples", order_by="trial_id")
-
-#         trials_key = trial.TrialSet.fill(trials, prompt=False, silent=True)
-
-#         period = (resample.RateLink & key).link.period
-#         offset = (resample.OffsetLink & key).link.offset
-
-#         trace_link = (TraceLink & key).link
-#         resampler = (resample.ResampleLink & key).link.resampler(
-#             trace_link.times,
-#             trace_link.values,
-#             period,
-#         )
-#         trace = np.concatenate([resampler(t + offset, n) for t, n in zip(start, samples)])
-
-#         self.insert1(dict(trace=trace, **key, **trials_key))
-
-
+        return pd.DataFrame(
+            data={"trace": np.split(trace, split)},
+            index=pd.Index(trial_id, name="trial_id"),
+        )

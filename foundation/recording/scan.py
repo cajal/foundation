@@ -32,7 +32,15 @@ class Times(dj.Computed):
         from scipy.interpolate import interp1d
 
         # resolve pipeline
-        pipe = pipeline(**key)
+        pipe = dj.U("pipe") & (pipe_fuse.ScanDone & key)
+        pipe = pipe.fetch1("pipe")
+
+        if pipe == "meso":
+            pipe = pipe_meso
+        elif pipe == "reso":
+            pipe = pipe_reso
+        else:
+            raise ValueError(f"{pipe} not recognized")
 
         # number of planes
         n = (pipe.ScanInfo & key).proj(n="nfields div nrois").fetch1("n")
@@ -88,233 +96,27 @@ class Times(dj.Computed):
 
 
 @schema
-class Samples(dj.Computed):
+class Pupil(dj.Computed):
     definition = """
-    -> Times
-    -> resample.RateLink
+    -> pipe_eye.FittedPupil
+    pupil_type      : enum("radius", "center_x", "center_y")    # pupil data type
     ---
-    trials          : int unsigned      # number of trials
-    samples         : int unsigned      # number of samples
+    pupil_trace     : longblob  # pupil trace
     """
 
-    class Trial(dj.Part):
-        definition = """
-        -> master
-        -> pipe_stim.Trial
-        ---
-        sample_i    : int unsigned      # sample index
-        """
-
-    @skip_missing
     def make(self, key):
-        from foundation.recording.trial import TrialLink, TrialBounds, TrialSamples
+        fits = pipe_eye.FittedPupil.Circle & key
 
-        # trials
-        trials = (pipe_stim.Trial & key).proj()
-        trials = merge(trials, TrialLink.ScanTrial, TrialBounds, TrialSamples)
+        radius, center = fits.fetch("radius", "center", order_by="frame_id")
+        center = [np.array([np.nan, np.nan]) if c is None else c for c in center]
+        x, y = np.array(center).T
 
-        # ordered trials
-        trial_key = self.Trial.primary_key
-        trials = trials.fetch("samples", *trial_key, order_by=trial_key, as_dict=True)
-        trials = pd.DataFrame(trials)
-
-        # number of trials and frames
-        n_trials = len(trials)
-        n_samples = trials.samples.sum()
-
-        # sample index
-        trials["sample_i"] = np.concatenate([[0], trials.samples[:-1].cumsum()])
-
-        # insert keys
-        self.insert1(dict(key, trials=n_trials, samples=n_samples))
-        self.Trial.insert(trials[trial_key + ["sample_i"]])
-
-    @row_property
-    def trials(self):
-        trials = Samples.Trial & self
-        assert len(trials) == self.fetch1("trials")
-        return trials
-
-
-@schema
-class Somas(dj.Computed):
-    definition = """
-    -> Times
-    -> pipe_shared.PipelineVersion
-    -> pipe_shared.SegmentationMethod
-    ---
-    units       : int unsigned      # number of units
-    """
-
-    class Unit(dj.Part):
-        definition = """
-        -> master
-        -> pipe_fuse.ScanSet.Unit
-        ---
-        unit_order     : int unsigned
-        """
-
-    @property
-    def key_source(self):
-        keys = Times.proj() * pipe_shared.PipelineVersion.proj() * pipe_shared.SegmentationMethod.proj()
-        return keys & (pipe_meso.MaskClassification & dict(classification_method=2))
-
-    @skip_missing
-    def make(self, key):
-        # resolve pipeline
-        pipe = pipeline(animal_id=key["animal_id"], session=key["session"], scan_idx=key["scan_idx"])
-
-        # soma units
-        units = pipe.MaskClassification.Type & key & dict(classification_method=2, type="soma")
-        units = merge(units, pipe.ScanSet.Unit, pipe_fuse.ScanSet.Unit)
-
-        # ordered units
-        unit_key = pipe_fuse.ScanSet.Unit.primary_key
-        units = units.fetch(*unit_key, order_by=unit_key, as_dict=True)
-        units = pd.DataFrame(units)
-        n = len(units)
-        units["unit_order"] = np.arange(n)
-
-        # insert keys
-        self.insert1(dict(key, units=n))
-        self.Unit.insert(units)
-
-    @row_property
-    def units(self):
-        units = Somas.Unit & self
-        assert len(units) == self.fetch1("units")
-        return units
-
-
-@schema
-class SomaActivity(Files, dj.Computed):
-    store = "scratch09"
-    definition = """
-    -> Somas
-    -> pipe_shared.SpikeMethod
-    -> Samples
-    -> resample.OffsetLink
-    -> resample.ResampleLink
-    ---
-    samples     : filepath@scratch09    # memmap
-    """
-
-    class Nans(dj.Part):
-        definition = """
-        -> master
-        -> pipe_stim.Trial
-        ---
-        nans        : int unsigned      # number of nans in samples
-        """
-
-    @property
-    def key_source(self):
-        keys = (
-            Somas.proj()
-            * Samples.proj()
-            * pipe_shared.SpikeMethod.proj()
-            * resample.OffsetLink.proj()
-            * resample.ResampleLink.proj()
-        )
-        return keys & pipe_fuse.ScanDone
-
-    @skip_missing
-    def make(self, key):
-        from foundation.recording.trial import TrialLink, TrialBounds, TrialSamples
-
-        # resolve pipeline
-        pipe = pipeline(animal_id=key["animal_id"], session=key["session"], scan_idx=key["scan_idx"])
-
-        # units
-        units = (Somas & key).units
-        units = units.fetch(dj.key, order_by="unit_order")
-
-        # trials
-        trials = (Samples & key).trials
-        trials = merge(trials, TrialLink.ScanTrial, TrialBounds, TrialSamples)
-
-        # trial info
-        trial_idx, start, samples = trials.fetch("trial_idx", "start", "samples", order_by="sample_i")
-        nans = np.zeros_like(samples)
-
-        # resampling
-        times = (Times & key).fetch1("scan_times")
-        period = (resample.RateLink & key).link.period
-        offset = (resample.OffsetLink & key).link.offset
-        resampler = (resample.ResampleLink & key).link.resampler
-
-        # memmap
-        filename = os.path.join(self.tuple_dir(key, create=True), "samples.dat")
-        memmap = np.memmap(
-            filename=filename,
-            shape=(Somas * Samples & key).fetch1("units", "samples"),
-            dtype=np.float32,
-            order="C",
-            offset=0,
-            mode="w+",
-        )
-
-        # sample activity
-        for i, unit in enumerate(tqdm(units)):
-
-            # fetch trace and delay
-            unit = pipe.Activity.Trace * pipe.ScanSet.UnitInfo & unit & key
-            trace, ms_delay = unit.fetch1("trace", "ms_delay")
-
-            # trace resampler
-            r = resampler(times + ms_delay / 1000, trace.clip(0), period)
-
-            # trace samples
-            s = [r(t + offset, n) for t, n in zip(start, samples)]
-
-            # count nans
-            nans += np.array([np.isnan(_).sum() for _ in s])
-
-            # write to memmap
-            memmap[i] = np.concatenate(s).astype(np.float32)
-            memmap.flush()
-
-        # insert keys
-        self.insert1(dict(key, samples=filename))
-        self.Nans.insert([dict(key, trial_idx=t, nans=n) for t, n in zip(trial_idx, nans)])
-
-    @row_method
-    def memmap(self, *, checksum=True):
-
-        if checksum:
-            filename = self.fetch1("samples")
-        else:
-            filename = os.path.join(self.dir(), "samples.dat")
-
-        return np.memmap(
-            filename=filename,
-            shape=(Somas * Samples & self.proj()).fetch1("units", "samples"),
-            dtype=np.float32,
-            order="C",
-            offset=0,
-            mode="r",
-        )
-
-    @row_method
-    def trials(self, *unit_ids, checksum=True):
-
-        memmap = self.memmap(checksum=checksum)
-
-        trials = Samples.Trial & self
-        trial_idx, sample_i = trials.fetch("trial_idx", "sample_i", order_by="sample_i")
-
-        for unit_id in unit_ids:
-
-            unit = Somas.Unit & self & dict(unit_id=unit_id)
-            i = unit.fetch1("unit_order")
-
-            samples = np.array(memmap[i])
-            samples = np.split(samples, sample_i[1:])
-
-            yield pd.DataFrame(
-                data={"samples": samples},
-                index=pd.Index(trial_idx, name="trial_idx"),
-            )
+        keys = [
+            dict(key, pupil_type="radius", pupil_trace=radius),
+            dict(key, pupil_type="center_x", pupil_trace=x),
+            dict(key, pupil_type="center_y", pupil_trace=y),
+        ]
+        self.insert(keys)
 
 
 # ---------- Populate Functions ----------
@@ -421,35 +223,35 @@ def populate_scan(
 # ---------- Loading Functions ----------
 
 
-def pipeline(animal_id, session, scan_idx):
-    """
-    Parameters
-    ----------
-    animal_id : int
-        animal id
-    session : int
-        scan session
-    scan_idx : int
-        scan index
+# def pipeline(animal_id, session, scan_idx):
+#     """
+#     Parameters
+#     ----------
+#     animal_id : int
+#         animal id
+#     session : int
+#         scan session
+#     scan_idx : int
+#         scan index
 
-    Returns
-    -------
-    dj.schemas.VirtualModule
-        pipeline_meso | pipeline_reso
-    """
-    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
+#     Returns
+#     -------
+#     dj.schemas.VirtualModule
+#         pipeline_meso | pipeline_reso
+#     """
+#     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
-    pipe = dj.U("pipe") & (pipe_fuse.ScanDone & key)
-    pipe = pipe.fetch1("pipe")
+#     pipe = dj.U("pipe") & (pipe_fuse.ScanDone & key)
+#     pipe = pipe.fetch1("pipe")
 
-    if pipe == "meso":
-        return pipe_meso
+#     if pipe == "meso":
+#         return pipe_meso
 
-    elif pipe == "reso":
-        return pipe_reso
+#     elif pipe == "reso":
+#         return pipe_reso
 
-    else:
-        raise ValueError(f"{pipe} not recognized")
+#     else:
+#         raise ValueError(f"{pipe} not recognized")
 
 
 # def scan_times(animal_id, session, scan_idx):
