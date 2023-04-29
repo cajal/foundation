@@ -271,7 +271,7 @@ class SomaActivity(Files, dj.Computed):
             nans += np.array([np.isnan(_).sum() for _ in s])
 
             # write to memmap
-            memmap[i] = np.concatenate(s)
+            memmap[i] = np.concatenate(s).astype(np.float32)
             memmap.flush()
 
         # insert keys
