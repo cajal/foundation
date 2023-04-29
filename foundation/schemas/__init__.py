@@ -3,8 +3,8 @@ import datajoint as dj
 dj.config["stores"] = {
     "scratch09": dict(
         protocol="file",
-        location="/mnt/scratch09/djexternal/",
-        stage="/mnt/scratch09/djexternal/",
+        location="/mnt/scratch09/foundation/",
+        stage="/mnt/scratch09/foundation/",
     )
 }
 

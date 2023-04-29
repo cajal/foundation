@@ -86,7 +86,13 @@ class Trace:
         self.target_period = target_period
         self.source_period = np.nanmedian(np.diff(times))
 
-        self.interp = interp1d(x=self.x, y=self.y, kind=self.kind)
+        self.interp = interp1d(
+            x=self.x,
+            y=self.y,
+            kind=self.kind,
+            bounds_error=False,
+            fill_value=np.nan,
+        )
 
     @property
     def x(self):
