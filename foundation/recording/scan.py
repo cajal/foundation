@@ -2,7 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import datajoint as dj
-from djutils import merge, skip_missing, row_property, Files
+from djutils import merge, skip_missing, row_property, row_method, Files
 from tqdm import tqdm
 from foundation.recording import resample
 from foundation.schemas.pipeline import (
@@ -277,6 +277,44 @@ class SomaActivity(Files, dj.Computed):
         # insert keys
         self.insert1(dict(key, samples=filename))
         self.Nans.insert([dict(key, trial_idx=t, nans=n) for t, n in zip(trial_idx, nans)])
+
+    @row_method
+    def memmap(self, *, checksum=True):
+
+        if checksum:
+            filename = self.fetch1("samples")
+        else:
+            filename = os.path.join(self.dir(), "samples.dat")
+
+        return np.memmap(
+            filename=filename,
+            shape=(Somas * Samples & self.proj()).fetch1("units", "samples"),
+            dtype=np.float32,
+            order="C",
+            offset=0,
+            mode="r",
+        )
+
+    @row_method
+    def trials(self, *unit_ids, checksum=True):
+
+        memmap = self.memmap(checksum=checksum)
+
+        trials = Samples.Trial & self
+        trial_idx, sample_i = trials.fetch("trial_idx", "sample_i", order_by="sample_i")
+
+        for unit_id in unit_ids:
+
+            unit = Somas.Unit & self & dict(unit_id=unit_id)
+            i = unit.fetch1("unit_order")
+
+            samples = np.array(memmap[i])
+            samples = np.split(samples, sample_i[1:])
+
+            yield pd.DataFrame(
+                data={"samples": samples},
+                index=pd.Index(trial_idx, name="trial_idx"),
+            )
 
 
 # ---------- Populate Functions ----------
