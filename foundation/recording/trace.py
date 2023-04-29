@@ -152,6 +152,12 @@ class TraceTrials(dj.Computed):
 
     @row_property
     def trials(self):
+        """
+        Returns
+        -------
+        trial.TrialSet.Member
+            members from trial set
+        """
         return (trial.TrialSet & self).members
 
 
@@ -168,16 +174,20 @@ class TraceSamples(dj.Computed):
 
     @skip_missing
     def make(self, key):
+        # resampling
         period = (resample.RateLink & key).link.period
         offset = (resample.OffsetLink & key).link.offset
         resampler = (resample.ResampleLink & key).link.resampler
 
+        # trace resampler
         trace_link = (TraceLink & key).link
         r = resampler(times=trace_link.times, values=trace_link.values, target_period=period)
 
+        # trials
         trials = (TraceTrials & key).trials
         trials = merge(trials, trial.TrialBounds, trial.TrialSamples & key)
 
+        # resample trials, orderd by member_id
         start, samples = trials.fetch("start", "samples", order_by="member_id")
         trace = [r(start=t + offset, samples=n) for t, n in zip(start, samples)]
 
@@ -185,6 +195,13 @@ class TraceSamples(dj.Computed):
 
     @row_property
     def trials(self):
+        """
+        Returns
+        -------
+        pd.DataFrame
+            index -- trial_id
+            trace -- resampled trace
+        """
         trials = (TraceTrials & self).trials
         trials = merge(trials, trial.TrialSamples)
 
