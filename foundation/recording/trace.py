@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import datajoint as dj
 from djutils import link, group, merge, row_property, skip_missing
-from foundation.recording import trial, resample, scan
+from foundation.recording import trial, resample, scan_data
 from foundation.schemas.pipeline import pipe_stim, pipe_meso, pipe_eye, pipe_tread
 from foundation.schemas import recording as schema
 

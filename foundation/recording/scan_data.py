@@ -1,8 +1,6 @@
-import os
 import numpy as np
-import pandas as pd
 import datajoint as dj
-from djutils import merge, skip_missing, row_property, row_method, Files
+from djutils import merge, skip_missing
 from tqdm import tqdm
 from foundation.recording import resample
 from foundation.schemas.pipeline import (
@@ -119,6 +117,23 @@ class Pupil(dj.Computed):
         self.insert(keys)
 
 
+@schema
+class PupilNans(dj.Computed):
+    definition = """
+    -> pipe_eye.FittedPupil
+    -> pipe_stim.Trial
+    -> resample.RateLink
+    -> resample.OffsetLink
+    ---
+    nans        : int unsigned      # number of nans
+    """
+
+    @property
+    def key_source(self):
+        keys = pipe_eye.FittedPupil.proj() * resample.RateLink.proj() * resample.OffsetLink.proj()
+        return keys & Pupil
+
+
 # ---------- Populate Functions ----------
 
 
@@ -218,209 +233,3 @@ def populate_scan(
     trace.TraceLink.fill()
     trace.TraceTrials.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
     trace.TraceBounds.populate(reserve_jobs=reserve_jobs, display_progress=display_progress)
-
-
-# ---------- Loading Functions ----------
-
-
-# def pipeline(animal_id, session, scan_idx):
-#     """
-#     Parameters
-#     ----------
-#     animal_id : int
-#         animal id
-#     session : int
-#         scan session
-#     scan_idx : int
-#         scan index
-
-#     Returns
-#     -------
-#     dj.schemas.VirtualModule
-#         pipeline_meso | pipeline_reso
-#     """
-#     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-
-#     pipe = dj.U("pipe") & (pipe_fuse.ScanDone & key)
-#     pipe = pipe.fetch1("pipe")
-
-#     if pipe == "meso":
-#         return pipe_meso
-
-#     elif pipe == "reso":
-#         return pipe_reso
-
-#     else:
-#         raise ValueError(f"{pipe} not recognized")
-
-
-# def scan_times(animal_id, session, scan_idx):
-#     """
-#     Parameters
-#     ----------
-#     animal_id : int
-#         animal id
-#     session : int
-#         scan session
-#     scan_idx : int
-#         scan index
-
-#     Returns
-#     -------
-#     1D array
-#         start of each scan volume on the stimulus clock
-#     1D array
-#         start of each scan volume on the behavior clock
-#     """
-#     # scan key
-#     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-
-#     # load pipeline
-#     pipe = pipeline(**key)
-
-#     # number of planes
-#     n = (pipe.ScanInfo & key).proj(n="nfields div nrois").fetch1("n")
-#     if n != len(dj.U("z") & (pipe.ScanInfo.Field & key)):
-#         raise ValueError("unexpected number of depths")
-
-#     # fetch and slice times
-#     stim_times = (pipe_stim.Sync & key).fetch1("frame_times", squeeze=True)[::n]
-#     beh_times = (pipe_stim.BehaviorSync & key).fetch1("frame_times", squeeze=True)[::n]
-#     assert len(stim_times) == len(beh_times)
-
-#     # truncate times
-#     nframes = (pipe.ScanInfo & key).fetch1("nframes")
-#     assert 0 <= len(stim_times) - nframes <= 1
-
-#     return stim_times[:nframes], beh_times[:nframes]
-
-
-# def eye_times(animal_id, session, scan_idx):
-#     """
-#     Parameters
-#     ----------
-#     animal_id : int
-#         animal id
-#     session : int
-#         scan session
-#     scan_idx : int
-#         scan index
-
-#     Returns
-#     -------
-#     1D array
-#         eye trace times on the stimulus clock
-#     """
-#     from scipy.interpolate import interp1d
-
-#     # scan key
-#     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-
-#     # scan times on stimulus and beahvior clocks
-#     stim_times, beh_times = scan_times(**key)
-
-#     # median times
-#     stim_median = np.median(stim_times)
-#     beh_median = np.median(beh_times)
-
-#     # behavior -> stimulus clock
-#     beh_to_stim = interp1d(
-#         x=beh_times - beh_median,
-#         y=stim_times - stim_median,
-#         kind="linear",
-#         fill_value=np.nan,
-#         bounds_error=False,
-#         copy=False,
-#     )
-
-#     # convert times
-#     raw = (pipe_eye.Eye & key).fetch1("eye_time")
-#     nans = np.isnan(raw)
-#     times = np.full_like(raw, np.nan)
-#     times[~nans] = beh_to_stim(raw[~nans] - beh_median) + stim_median
-
-#     return times
-
-
-# def treadmill_times(animal_id, session, scan_idx):
-#     """
-#     Parameters
-#     ----------
-#     animal_id : int
-#         animal id
-#     session : int
-#         scan session
-#     scan_idx : int
-#         scan index
-
-#     Returns
-#     -------
-#     1D array
-#         treadmill trace times on the stimulus clock
-#     """
-#     from scipy.interpolate import interp1d
-
-#     # scan key
-#     key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-
-#     # scan times on stimulus and beahvior clocks
-#     stim_times, beh_times = scan_times(**key)
-
-#     # median times
-#     stim_median = np.median(stim_times)
-#     beh_median = np.median(beh_times)
-
-#     # behavior -> stimulus clock
-#     beh_to_stim = interp1d(
-#         x=beh_times - beh_median,
-#         y=stim_times - stim_median,
-#         kind="linear",
-#         fill_value=np.nan,
-#         bounds_error=False,
-#         copy=False,
-#     )
-
-#     # convert times
-#     raw = (pipe_tread.Treadmill & key).fetch1("treadmill_time")
-#     nans = np.isnan(raw)
-#     times = np.full_like(raw, np.nan)
-#     times[~nans] = beh_to_stim(raw[~nans] - beh_median) + stim_median
-
-#     return times
-
-
-def eye_trace(animal_id, session, scan_idx, tracking_method=2, trace_type="radius"):
-    """
-    Parameters
-    ----------
-    animal_id : int
-        animal id
-    session : int
-        scan session
-    scan_idx : int
-        scan index
-    tracking_method : int
-        tracking method
-
-    Returns
-    -------
-    1D array
-        pupil trace
-    """
-    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx, tracking_method=tracking_method)
-    fits = pipe_eye.FittedPupil.Circle & key
-
-    if trace_type == "radius":
-        return fits.fetch("radius", order_by="frame_id")
-
-    elif trace_type in ["center_x", "center_y"]:
-
-        center = fits.fetch("center", order_by="frame_id")
-
-        if trace_type == "center_x":
-            return np.array([np.nan if c is None else c[0] for c in center])
-        else:
-            return np.array([np.nan if c is None else c[1] for c in center])
-
-    else:
-        raise NotImplementedError(f"Pupil type '{trace_type}' not implemented.")
