@@ -101,11 +101,11 @@ class FilteredUnits(dj.Computed):
         # scan units
         units = pipe_fuse.ScanSet.Unit & key
 
-        # filter trials
+        # filter units
         for filter_key in (UnitFilterSet & key).members.fetch(dj.key, order_by="member_id"):
             units = (UnitFilterLink & key).link.filter(units)
 
-        # insert trial set
+        # insert unit set
         unit_set = UnitSet.fill(units, prompt=False)
 
         # insert key
