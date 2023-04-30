@@ -16,14 +16,12 @@ class TrialBase:
     """Recording Trial"""
 
     @row_property
-    def bounds(self):
+    def flips(self):
         """
         Returns
         -------
-        float
-            trial start time (seconds)
-        float
-            trial end time (seconds)
+        1D array
+            video flip times
         """
         raise NotImplementedError()
 
@@ -34,16 +32,6 @@ class TrialBase:
         -------
         video.VideoLink
             tuple from video.VideoLink
-        """
-        raise NotImplementedError()
-
-    @row_property
-    def flips(self):
-        """
-        Returns
-        -------
-        1D array
-            video flip times
         """
         raise NotImplementedError()
 
@@ -58,6 +46,10 @@ class ScanTrial(TrialBase, dj.Lookup):
     """
 
     @row_property
+    def flips(self):
+        return (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
+
+    @row_property
     def bounds(self):
         flips = self.flips
         return self.flips[0], self.flips[-1]
@@ -68,10 +60,6 @@ class ScanTrial(TrialBase, dj.Lookup):
         stim_type = trial.fetch1("stimulus_type")
         stim_type = stim_type.split(".")[1]
         return video.VideoLink.get(stim_type, trial)
-
-    @row_property
-    def flips(self):
-        return (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
 
 
 # -- Trial Link --
@@ -105,7 +93,18 @@ class TrialBounds(dj.Computed):
 
     @skip_missing
     def make(self, key):
-        key["start"], key["end"] = (TrialLink & key).link.bounds
+        from foundation.utils.trace import monotonic
+
+        # trial flip times
+        flips = (TrialLink & key).link.flips
+
+        # verify flip times
+        assert np.isfinite(flips).all()
+        assert monotonic(flips)
+
+        # trial bounds
+        key["start"] = flips[0]
+        key["end"] = flips[-1]
         self.insert1(key)
 
 
@@ -120,9 +119,12 @@ class TrialSamples(dj.Computed):
 
     @skip_missing
     def make(self, key):
+        # trial duration
         start, end = (TrialBounds & key).fetch1("start", "end")
-        period = (resample.RateLink & key).link.period
-        key["samples"] = round((end - start) / period) + 1
+        duration = end - start
+
+        # trial samples
+        key["samples"] = (resample.RateLink & key).link.samples(duration)
         self.insert1(key)
 
 
@@ -152,19 +154,16 @@ class VideoSamples(dj.Computed):
     @skip_missing
     def make(self, key):
         from scipy.interpolate import interp1d
-        from foundation.utils.trace import monotonic
 
         # flip times and sampling period
         flips = (TrialLink & key).link.flips
         period = (resample.RateLink & key).link.period
 
-        assert np.isfinite(flips).all()
-        assert monotonic(flips)
-
         # video and trial info
         info = video.VideoInfo * TrialVideo * TrialSamples * TrialBounds & key
         start, samples, fixed, frames = info.fetch1("start", "samples", "fixed", "frames")
 
+        # ensure flips and video frames match
         assert frames == len(flips)
 
         # nearest flip if fixed, else previous flip
@@ -176,6 +175,7 @@ class VideoSamples(dj.Computed):
             bounds_error=False,
         )
 
+        # video frame index
         key["video_index"] = index(np.arange(samples)).astype(int)
         self.insert1(key)
 

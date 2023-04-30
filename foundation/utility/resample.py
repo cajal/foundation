@@ -17,9 +17,24 @@ class RateBase:
         Returns
         -------
         float
-            resampling period (seconds)
+            sampling period (seconds)
         """
         raise NotImplementedError()
+
+    @row_method
+    def samples(self, duration):
+        """
+        Parameters
+        ----------
+        duration
+            sampling duration (seconds)
+
+        Returns
+        -------
+        int
+            number of samples
+        """
+        return round(duration / self.period) + 1
 
 
 # -- Rate Types --
