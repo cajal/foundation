@@ -207,25 +207,23 @@ class TrialFilterBase:
 # -- Trial Filter Types --
 
 
-# @method(schema)
-# class FlipsEqualsFrames(TrialFilterBase):
-#     name = "flips_equals_frames"
-#     comment = "flips == frames"
+@schema
+class TrialVideoFilter(TrialFilterBase, dj.Lookup):
+    definition = """
+    -> video.VideoFilterSet
+    """
 
-#     @row_method
-#     def filter(self, trials):
-#         key = (trials * stimulus.Stimulus) & "flips = frames"
-#         return trials & key.proj()
+    @row_method
+    def filter(self, trials):
+        # trial videos
+        trial_videos = merge(trials, TrialVideo)
+        videos = video.VideoLink & trial_videos
 
+        # filter videos
+        for key in (video.VideoFilterSet & self).members.fetch(dj.key, order_by="member_id"):
+            videos = (video.VideoFilterLink & key).link.filter(videos)
 
-# @schema
-# class StimulusType(TrialFilterBase, dj.Lookup):
-#     definition = """
-#     stimulus_type       : varchar(128)  # stimulus type
-#     """
-
-#     def filter(self, trials):
-#         return trials & (stimulus.StimulusLink & self)
+        return trials & (trial_videos & videos).proj()
 
 
 # -- Trial Filter Link --
@@ -233,7 +231,7 @@ class TrialFilterBase:
 
 @link(schema)
 class TrialFilterLink:
-    links = []
+    links = [TrialVideoFilter]
     name = "trial_filter"
     comment = "recording trial filter"
 
