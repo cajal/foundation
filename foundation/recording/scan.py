@@ -9,7 +9,8 @@ from foundation.schemas import recording as schema
 @schema
 class ScanTrials(dj.Computed):
     definition = """
-    -> scan_trial.FilteredTrials
+    -> scan_trial.FilteredTrials.proj(scan_trial_filters_id='trial_filters_id')
+    -> trial.TrialFilterSet
     ---
     -> trial.TrialSet
     """
@@ -17,8 +18,14 @@ class ScanTrials(dj.Computed):
     @skip_missing
     def make(self, key):
         # filtered scan trials
-        trials = scan_trial.TrialSet & (scan_trial.FilteredTrials & key)
+        trials = scan_trial.FilteredTrials.proj(..., scan_trial_filters_id="trial_filters_id") & key
+        trials = scan_trial.TrialSet & trials
         trials = merge(trials.members, trial.TrialLink.ScanTrial)
+        trials = trial.TrialLink & trials
+
+        # filter trials
+        for filter_key in (trial.TrialFilterSet & key).members.fetch(dj.key, order_by="member_id"):
+            trials = (trial.TrialFilterLink & key).link.filter(trials)
 
         # trial set
         trials = trial.TrialSet.fill(trials, prompt=False)

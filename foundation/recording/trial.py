@@ -1,6 +1,6 @@
 import numpy as np
 import datajoint as dj
-from djutils import link, group, merge, row_property, skip_missing
+from djutils import link, group, merge, row_property, row_method, skip_missing
 from foundation.utils.trace import monotonic, samples, frame_index
 from foundation.utility import resample
 from foundation.stimulus import video
@@ -185,26 +185,26 @@ class VideoSamples(dj.Computed):
 # -- Trial Filter Base --
 
 
-# class TrialFilterBase:
-#     """Trial Filter"""
+class TrialFilterBase:
+    """Trial Filter"""
 
-#     @row_method
-#     def filter(self, trials):
-#         """
-#         Parameters
-#         ----------
-#         trials : Trial
-#             Trial tuples
+    @row_method
+    def filter(self, trials):
+        """
+        Parameters
+        ----------
+        trials : TrialLink
+            Trial tuples
 
-#         Returns
-#         -------
-#         Trial
-#             retricted Trial tuples
-#         """
-#         raise NotImplementedError()
+        Returns
+        -------
+        TrialLink
+            retricted Trial tuples
+        """
+        raise NotImplementedError()
 
 
-# # -- Trial Filter Types --
+# -- Trial Filter Types --
 
 
 # @method(schema)
@@ -228,21 +228,18 @@ class VideoSamples(dj.Computed):
 #         return trials & (stimulus.StimulusLink & self)
 
 
-# # -- Trial Filter Link --
+# -- Trial Filter Link --
 
 
-# @link(schema)
-# class TrialFilterLink:
-#     links = [FlipsEqualsFrames, StimulusType]
-#     name = "trial_filter"
-#     comment = "recording trial filter"
+@link(schema)
+class TrialFilterLink:
+    links = []
+    name = "trial_filter"
+    comment = "recording trial filter"
 
 
-# # -- Trial Filter Group --
-
-
-# @group(schema)
-# class TrialFilterGroup:
-#     keys = [TrialFilterLink]
-#     name = "trial_filters"
-#     comment = "recording trial filters"
+@group(schema)
+class TrialFilterSet:
+    keys = [TrialFilterLink]
+    name = "trial_filters"
+    comment = "set of recording trial filters"

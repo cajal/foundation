@@ -11,7 +11,7 @@ from foundation.schemas import scan as schema
 @group(schema)
 class UnitSet:
     keys = [pipe_fuse.ScanSet.Unit]
-    name = "scan_units"
+    name = "units"
     comment = "set of scan units"
 
 
@@ -69,14 +69,14 @@ class UnitMaskType(UnitFilterBase, dj.Lookup):
 @link(schema)
 class UnitFilterLink:
     links = [UnitMaskType]
-    name = "scan_unit_filter"
+    name = "unit_filter"
     comment = "scan unit filter"
 
 
 @group(schema)
 class UnitFilterSet:
     keys = [UnitFilterLink]
-    name = "scan_unit_filters"
+    name = "unit_filters"
     comment = "set of scan unit filters"
 
 

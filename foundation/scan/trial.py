@@ -11,7 +11,7 @@ from foundation.schemas import scan as schema
 @group(schema)
 class TrialSet:
     keys = [pipe_stim.Trial]
-    name = "scan_trials"
+    name = "trials"
     comment = "set of scan trials"
 
 
@@ -62,14 +62,14 @@ class PupilNansFilter(TrialFilterBase, dj.Lookup):
 @link(schema)
 class TrialFilterLink:
     links = [PupilNansFilter]
-    name = "scan_trial_filter"
+    name = "trial_filter"
     comment = "scan trial filter"
 
 
 @group(schema)
 class TrialFilterSet:
     keys = [TrialFilterLink]
-    name = "scan_trial_filters"
+    name = "trial_filters"
     comment = "set of scan trial filters"
 
 

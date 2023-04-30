@@ -2,7 +2,7 @@ import io
 import av
 import numpy as np
 import datajoint as dj
-from djutils import link, group, row_property
+from djutils import link, group, row_property, row_method
 from PIL import Image
 from foundation.utils.video import Video
 from foundation.schemas.pipeline import pipe_stim
@@ -218,3 +218,79 @@ class VideoInfo(dj.Computed):
         key["fixed"] = frames.fixed
 
         self.insert1(key)
+
+
+# -------------- Video Filter --------------
+
+# -- Video Filter Base --
+
+
+class VideoFilterBase:
+    """Video Filter"""
+
+    @row_method
+    def filter(self, videos):
+        """
+        Parameters
+        ----------
+        videos : VideoLink
+            VideoLink tuples
+
+        Returns
+        -------
+        VideoLink
+            retricted VideoLink tuples
+        """
+        raise NotImplementedError()
+
+
+# -- Video Filter Types --
+
+
+@schema
+class VideoTypeFilter(VideoFilterBase, dj.Lookup):
+    definition = """
+    video_type      : varchar(128)      # video type
+    include         : bool              # include or exclude
+    """
+
+    @row_method
+    def filter(self, videos):
+
+        if self.fetch1("include"):
+            return videos & self
+        else:
+            return videos - self
+
+
+@schema
+class VideoSetFilter(VideoFilterBase, dj.Lookup):
+    definition = """
+    -> VideoSet
+    include         : bool              # include or exclude
+    """
+
+    @row_method
+    def filter(self, videos):
+
+        if self.fetch1("include"):
+            return videos & (VideoSet & self).members
+        else:
+            return videos - (VideoSet & self).members
+
+
+# -- Video Filter Link --
+
+
+@link(schema)
+class VideoFilterLink:
+    links = [VideoTypeFilter, VideoSetFilter]
+    name = "video_filter"
+    comment = "video filter"
+
+
+@group(schema)
+class VideoFilterSet:
+    keys = [VideoFilterLink]
+    name = "video_filters"
+    comment = "set of video filters"
