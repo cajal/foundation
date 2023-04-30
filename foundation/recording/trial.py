@@ -1,6 +1,7 @@
 import numpy as np
 import datajoint as dj
 from djutils import link, group, merge, row_property, skip_missing
+from foundation.utils.trace import monotonic, samples, frame_index
 from foundation.utility import resample
 from foundation.stimulus import video
 from foundation.schemas.pipeline import pipe_stim
@@ -93,8 +94,6 @@ class TrialBounds(dj.Computed):
 
     @skip_missing
     def make(self, key):
-        from foundation.utils.trace import monotonic
-
         # trial flip times
         flips = (TrialLink & key).link.flips
 
@@ -119,12 +118,12 @@ class TrialSamples(dj.Computed):
 
     @skip_missing
     def make(self, key):
-        # trial duration
+        # trial timing
         start, end = (TrialBounds & key).fetch1("start", "end")
-        duration = end - start
+        period = (resample.RateLink & key).link.period
 
         # trial samples
-        key["samples"] = (resample.RateLink & key).link.samples(duration)
+        key["samples"] = samples(start, end, period)
         self.insert1(key)
 
 
@@ -159,24 +158,25 @@ class VideoSamples(dj.Computed):
         flips = (TrialLink & key).link.flips
         period = (resample.RateLink & key).link.period
 
-        # video and trial info
-        info = video.VideoInfo * TrialVideo * TrialSamples * TrialBounds & key
-        start, samples, fixed, frames = info.fetch1("start", "samples", "fixed", "frames")
-
         # ensure flips and video frames match
-        assert frames == len(flips)
+        frames = merge(TrialVideo & key, video.VideoInfo).fetch1("frames")
+        assert len(flips) == frames
 
-        # nearest flip if fixed, else previous flip
-        index = interp1d(
-            x=(flips - start) / period,
-            y=np.arange(flips.size),
-            kind="nearest" if fixed else "previous",
-            fill_value="extrapolate",
-            bounds_error=False,
+        # sampling index for each flip
+        samp_index = frame_index(flips - flips[0], period)
+        new_samp = np.diff(samp_index, prepend=-1) > 0
+
+        # samples
+        samps = np.arange(samp_index[-1] + 1)
+        assert len(samps) == (TrialSamples & key).fetch1("samples")
+
+        # for each of the samples, get the previous flip/video index
+        previous = interp1d(
+            x=samp_index[new_samp],
+            y=np.where(new_samp)[0],
+            kind="previous",
         )
-
-        # video frame index
-        key["video_index"] = index(np.arange(samples)).astype(int)
+        key["video_index"] = previous(samps).astype(int)
         self.insert1(key)
 
 
