@@ -1,4 +1,3 @@
-import numpy as np
 import datajoint as dj
 from djutils import link, group, merge, row_method, skip_missing
 from foundation.scan import timing, pupil
@@ -40,11 +39,11 @@ class TrialFilterBase:
         raise NotImplementedError()
 
 
-# -- Trial Restriction Types --
+# -- Trial Filter Types --
 
 
 @schema
-class PupilNansFilter(dj.Lookup):
+class PupilNansFilter(TrialFilterBase, dj.Lookup):
     definition = """
     -> pipe_shared.TrackingMethod
     max_nans        : decimal(4, 3)     # maximum tolerated fraction of nans

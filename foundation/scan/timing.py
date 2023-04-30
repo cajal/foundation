@@ -3,11 +3,9 @@ import datajoint as dj
 from foundation.schemas.pipeline import (
     pipe_exp,
     pipe_stim,
-    pipe_fuse,
-    pipe_meso,
-    pipe_reso,
     pipe_eye,
     pipe_tread,
+    resolve_pipe,
 )
 from foundation.schemas import scan as schema
 
@@ -26,15 +24,7 @@ class Timing(dj.Computed):
         from scipy.interpolate import interp1d
 
         # resolve pipeline
-        pipe = dj.U("pipe") & (pipe_fuse.ScanDone & key)
-        pipe = pipe.fetch1("pipe")
-
-        if pipe == "meso":
-            pipe = pipe_meso
-        elif pipe == "reso":
-            pipe = pipe_reso
-        else:
-            raise ValueError(f"{pipe} not recognized")
+        pipe = resolve_pipe(**key)
 
         # number of planes
         n = (pipe.ScanInfo & key).proj(n="nfields div nrois").fetch1("n")
