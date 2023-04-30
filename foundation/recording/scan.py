@@ -7,7 +7,7 @@ from foundation.schemas import recording as schema
 
 
 @schema
-class ScanTrialSet(dj.Computed):
+class ScanTrials(dj.Computed):
     definition = """
     -> scan_trial.FilteredTrials
     ---

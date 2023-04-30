@@ -5,7 +5,14 @@ from djutils import link, group, merge, row_property, skip_missing
 from foundation.utility import resample
 from foundation.scan import timing as scan_timing, pupil as scan_pupil
 from foundation.recording import trial
-from foundation.schemas.pipeline import pipe_stim, pipe_meso, pipe_eye, pipe_tread
+from foundation.schemas.pipeline import (
+    pipe_fuse,
+    pipe_shared,
+    pipe_stim,
+    pipe_eye,
+    pipe_tread,
+    resolve_pipe,
+)
 from foundation.schemas import recording as schema
 
 
@@ -62,21 +69,27 @@ class ScanBase(TraceBase):
 
 
 @schema
-class MesoActivity(ScanBase, dj.Lookup):
+class ScanResponse(ScanBase, dj.Lookup):
     definition = """
     -> scan_timing.Timing
-    -> pipe_meso.Activity.Trace
+    -> pipe_fuse.ScanSet.Unit
+    -> pipe_shared.SpikeMethod
     """
+
+    @row_property
+    def pipe(self):
+        key = dj.U("animal_id", "session", "scan_idx") & self
+        return resolve_pipe(**key.fetch1())
 
     @row_property
     def times(self):
         times = (scan_timing.Timing & self).fetch1("scan_times")
-        delay = (pipe_meso.ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
+        delay = (self.pipe.ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
         return times + delay
 
     @row_property
     def values(self):
-        return (pipe_meso.Activity.Trace & self).fetch1("trace").clip(0)
+        return (self.pipe.Activity.Trace & self).fetch1("trace").clip(0)
 
 
 @schema
@@ -115,7 +128,7 @@ class ScanTreadmill(ScanBase, dj.Lookup):
 
 @link(schema)
 class TraceLink:
-    links = [MesoActivity, ScanPupil, ScanTreadmill]
+    links = [ScanResponse, ScanPupil, ScanTreadmill]
     name = "trace"
     comment = "recording trace"
 
@@ -186,7 +199,6 @@ class TraceSamples(dj.Computed):
 
         # concatenate samples
         trace = np.concatenate(samples)
-
         self.insert1(dict(key, trace=trace))
 
     @row_property
