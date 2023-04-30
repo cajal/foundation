@@ -1,14 +1,14 @@
 import numpy as np
 import datajoint as dj
-from foundation.utility import resample
 from foundation.scan import timing
 from foundation.schemas.pipeline import pipe_eye, pipe_stim
 from foundation.schemas import scan as schema
 
 
 @schema
-class Pupil(dj.Computed):
+class PupilTrace(dj.Computed):
     definition = """
+    -> timing.Timing
     -> pipe_eye.FittedPupil
     pupil_type      : enum("radius", "center_x", "center_y")    # pupil data type
     ---
@@ -36,30 +36,27 @@ class Pupil(dj.Computed):
 @schema
 class PupilNans(dj.Computed):
     definition = """
+    -> timing.Timing
     -> pipe_eye.FittedPupil
     -> pipe_stim.Trial
-    -> resample.RateLink
-    -> resample.OffsetLink
     ---
-    nan_count           : int unsigned      # number of nans
-    nan_fraction        : float             # fraction of nans
+    nans                : float             # fraction of nans
     """
 
     @property
     def key_source(self):
-        keys = pipe_eye.FittedPupil.proj() * resample.RateLink.proj() * resample.OffsetLink.proj()
-        return keys & Pupil
+        return pipe_eye.FittedPupil.proj() & timing.Timing
 
     def make(self, key):
         from foundation.utils.trace import Nans
 
-        # pupil trace times and values
-        times = (timing.Times & key).fetch1("eye_times")
-        values = (Pupil & dict(key, pupil_type="radius")).fetch1("pupil_trace")
+        # trace timing
+        times = (timing.Timing & key).fetch1("eye_times")
+        period = np.nanmedian(np.diff(times))
 
-        # sampling rate
-        rate_link = (resample.RateLink & key).link
-        period = rate_link.period
+        # trace value
+        values = PupilTrace & dict(key, pupil_type="radius")
+        values = values.fetch1("pupil_trace")
 
         # nan detector
         nans = Nans(times, values, period)
@@ -72,10 +69,9 @@ class PupilNans(dj.Computed):
         for trial, flip in zip(trials, flips):
 
             # nans in trial
-            samples = rate_link.samples(flip[-1] - flip[0])
-            n = nans(flip[0], samples)
+            n = nans(flip[0], flip[-1])
+            _key = dict(key, trial_idx=trial, nans=n.mean())
 
-            _key = dict(key, trial_idx=trial, nan_count=n.sum(), nan_fraction=n.mean())
             keys.append(_key)
 
         self.insert(keys)

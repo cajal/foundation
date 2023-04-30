@@ -13,7 +13,7 @@ from foundation.schemas import scan as schema
 
 
 @schema
-class Times(dj.Computed):
+class Timing(dj.Computed):
     definition = """
     -> pipe_exp.Scan
     ---

@@ -51,6 +51,66 @@ def monotonic(trace):
     return bool(np.nanmin(delt) > 0)
 
 
+def frame_index(time, period):
+    """Returns the frame index that the time belongs to
+
+    Parameters
+    ----------
+    time : array-like
+        time
+    period : float
+        sampling period
+
+    Returns
+    -------
+    array-like
+        dtype = int
+    """
+    index = np.round(time / period, 1)
+    return np.floor(index).astype(int)
+
+
+def samples(start, end, period):
+    """Number of samples
+
+    Parameters
+    ----------
+    start : float
+        start time
+    end : float
+        end time
+    period : float
+        sampling period
+
+    Returns
+    -------
+    int
+        number of samples
+    """
+    return frame_index(end - start, period) + 1
+
+
+def sample_times(start, end, period):
+    """Sampling times
+
+    Parameters
+    ----------
+    start : float
+        start time
+    end : float
+        end time
+    period : float
+        sampling period
+
+    Returns
+    -------
+    1D array
+        sampling times
+    """
+    n = samples(start, end, period)
+    return np.arange(n) * period + start
+
+
 # ------- Trace Base -------
 
 
@@ -106,10 +166,6 @@ class Trace:
     def kind(self):
         return "linear"
 
-    @property
-    def dtype(self):
-        return np.float32
-
     def transform_times(self, times, inverse=False):
         if inverse:
             return times + self.median_time
@@ -122,22 +178,29 @@ class Trace:
         else:
             return values - self.median_value
 
-    def __call__(self, start, samples):
+    def __call__(self, start, end):
         """
         Parameters
         ----------
         start : float
             start time
-        samples : int
-            number of samples
+        end : float
+            end time
 
         Returns
         -------
         1D array | None
         """
-        x = self.transform_times(start) + self.target_period * np.arange(samples)
-        y = self.interp(x).astype(self.dtype)
-        return self.transform_values(y, inverse=True)
+        x = sample_times(
+            start=self.transform_times(start),
+            end=self.transform_times(end),
+            period=self.target_period,
+        )
+        y = self.transform_values(
+            values=self.interp(x),
+            inverse=True,
+        )
+        return y
 
 
 # ------- Trace Types -------
