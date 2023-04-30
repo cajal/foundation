@@ -41,7 +41,8 @@ class PupilNans(dj.Computed):
     -> resample.RateLink
     -> resample.OffsetLink
     ---
-    nans        : int unsigned      # number of nans
+    nan_count           : int unsigned      # number of nans
+    nan_fraction        : float             # fraction of nans
     """
 
     @property
@@ -70,11 +71,11 @@ class PupilNans(dj.Computed):
         keys = []
         for trial, flip in zip(trials, flips):
 
-            # number of nans in trial
+            # nans in trial
             samples = rate_link.samples(flip[-1] - flip[0])
-            n = nans(flip[0], samples).sum()
+            n = nans(flip[0], samples)
 
-            _key = dict(key, trial_idx=trial, nans=n)
+            _key = dict(key, trial_idx=trial, nan_count=n.sum(), nan_fraction=n.mean())
             keys.append(_key)
 
         self.insert(keys)
