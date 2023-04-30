@@ -1,6 +1,6 @@
 import datajoint as dj
 from djutils import link, method, row_property, row_method
-from foundation.schemas import recording as schema
+from foundation.schemas import utility as schema
 
 
 # ---------- Rate ----------

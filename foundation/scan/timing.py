@@ -117,23 +117,6 @@ class Pupil(dj.Computed):
         self.insert(keys)
 
 
-@schema
-class PupilNans(dj.Computed):
-    definition = """
-    -> pipe_eye.FittedPupil
-    -> pipe_stim.Trial
-    -> resample.RateLink
-    -> resample.OffsetLink
-    ---
-    nans        : int unsigned      # number of nans
-    """
-
-    @property
-    def key_source(self):
-        keys = pipe_eye.FittedPupil.proj() * resample.RateLink.proj() * resample.OffsetLink.proj()
-        return keys & Pupil
-
-
 # ---------- Populate Functions ----------
 
 

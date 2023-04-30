@@ -1,8 +1,8 @@
 import numpy as np
 import datajoint as dj
 from djutils import link, group, merge, row_property, skip_missing
+from foundation.utility import resample
 from foundation.stimulus import video
-from foundation.recording import resample
 from foundation.schemas.pipeline import pipe_stim
 from foundation.schemas import recording as schema
 
