@@ -178,7 +178,7 @@ class Trace:
         else:
             return values - self.median_value
 
-    def __call__(self, start, end):
+    def __call__(self, start, end, offset=0):
         """
         Parameters
         ----------
@@ -186,14 +186,16 @@ class Trace:
             start time
         end : float
             end time
+        offset : float
+            offset time
 
         Returns
         -------
         1D array | None
         """
         x = sample_times(
-            start=self.transform_times(start),
-            end=self.transform_times(end),
+            start=self.transform_times(start) + offset,
+            end=self.transform_times(end) + offset,
             period=self.target_period,
         )
         y = self.transform_values(

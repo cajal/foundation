@@ -3,6 +3,7 @@ import pandas as pd
 import datajoint as dj
 from djutils import link, group, merge, row_property, skip_missing
 from foundation.utility import resample
+from foundation.scan import timing as scan_timing, pupil as scan_pupil
 from foundation.recording import trial
 from foundation.schemas.pipeline import pipe_stim, pipe_meso, pipe_eye, pipe_tread
 from foundation.schemas import recording as schema
@@ -51,12 +52,7 @@ class TraceBase:
 
 
 class ScanBase(TraceBase):
-    """Scan Trials"""
-
-    @row_property
-    def scan_key(self):
-        key = ["animal_id", "session", "scan_idx"]
-        return dict(zip(key, self.fetch1(*key)))
+    """Scan Traces"""
 
     @row_property
     def trials(self):
@@ -68,14 +64,13 @@ class ScanBase(TraceBase):
 @schema
 class MesoActivity(ScanBase, dj.Lookup):
     definition = """
+    -> scan_timing.Timing
     -> pipe_meso.Activity.Trace
     """
 
     @row_property
     def times(self):
-        from foundation.recording.scan import Times
-
-        times = merge(self, Times).fetch1("scan_times")
+        times = (scan_timing.Timing & self).fetch1("scan_times")
         delay = (pipe_meso.ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
         return times + delay
 
@@ -87,31 +82,28 @@ class MesoActivity(ScanBase, dj.Lookup):
 @schema
 class ScanPupil(ScanBase, dj.Lookup):
     definition = """
-    -> scan.Pupil
+    -> scan_pupil.PupilTrace
     """
 
     @row_property
     def times(self):
-        from foundation.recording.scan import Times
-
-        return merge(self, Times).fetch1("eye_times")
+        return (scan_timing.Timing & self).fetch1("eye_times")
 
     @row_property
     def values(self):
-        return (scan.Pupil & self).fetch1("pupil_trace")
+        return (scan_pupil.PupilTrace & self).fetch1("pupil_trace")
 
 
 @schema
 class ScanTreadmill(ScanBase, dj.Lookup):
     definition = """
+    -> scan_timing.Timing
     -> pipe_tread.Treadmill
     """
 
     @row_property
     def times(self):
-        from foundation.recording.scan import Times
-
-        return merge(self, Times).fetch1("treadmill_times")
+        return (scan_timing.Timing & self).fetch1("treadmill_times")
 
     @row_property
     def values(self):
@@ -186,13 +178,16 @@ class TraceSamples(dj.Computed):
 
         # trials
         trials = (TraceTrials & key).trials
-        trials = merge(trials, trial.TrialBounds, trial.TrialSamples & key)
+        trials = merge(trials, trial.TrialBounds)
 
-        # resample trials, orderd by member_id
-        start, samples = trials.fetch("start", "samples", order_by="member_id")
-        trace = [r(start=t + offset, samples=n) for t, n in zip(start, samples)]
+        # sample trials, ordered by member_id
+        start, end = trials.fetch("start", "end", order_by="member_id")
+        samples = [r(s, e, offset) for s, e in zip(start, end)]
 
-        self.insert1(dict(key, trace=np.concatenate(trace)))
+        # concatenate samples
+        trace = np.concatenate(samples)
+
+        self.insert1(dict(key, trace=trace))
 
     @row_property
     def trials(self):
