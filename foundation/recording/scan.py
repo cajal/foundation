@@ -81,7 +81,8 @@ class ScanPerspective(dj.Computed):
             scan_timing.Timing & key,
             scan_pupil.PupilTrace & key,
             trace.TraceLink.ScanPupil & key,
-        ) & [dict(pupil_type="center_x"), dict(pupil_type="center_y")]
+        )
+        pupils &= [dict(pupil_type="center_x"), dict(pupil_type="center_y")]
 
         # filter traces
         traces = trace.TraceLink & pupils
@@ -110,7 +111,8 @@ class ScanModulation(dj.Computed):
             scan_timing.Timing & key,
             scan_pupil.PupilTrace & key,
             trace.TraceLink.ScanPupil & key,
-        ) & dict(pupil_type="radius")
+        )
+        pupil &= dict(pupil_type="radius")
 
         # scan treadmill trace
         tread = merge(
