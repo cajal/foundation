@@ -77,13 +77,12 @@ class ScanPerspective(dj.Computed):
     @skip_missing
     def make(self, key):
         # scan pupil traces
-        pupils = scan_timing.Timing * pipe_shared.TrackingMethod & key
-        pupils = merge(pupils, scan_pupil.PupilTrace)
-        types = [
-            dict(pupil_type="center_x"),
-            dict(pupil_type="center_y"),
-        ]
-        pupils = merge(pupils & types, trace.TraceLink.ScanPupil)
+        pupils = merge(
+            scan_timing.Timing & key,
+            scan_pupil.PupilTrace & key,
+            trace.TraceLink.ScanPupil & key,
+        )
+        pupils = pupils & [dict(pupil_type="center_x"), dict(pupil_type="center_y")]
 
         # filter traces
         traces = trace.TraceLink & pupils
@@ -108,12 +107,17 @@ class ScanModulation(dj.Computed):
     @skip_missing
     def make(self, key):
         # scan pupil trace
-        pupil = scan_timing.Timing * pipe_shared.TrackingMethod & key
-        pupil = merge(pupil, scan_pupil.PupilTrace & dict(pupil_type="radius"), trace.TraceLink.ScanPupil)
+        pupil = merge(
+            scan_timing.Timing & key,
+            scan_pupil.PupilTrace & dict(pupil_type="radius"),
+            trace.TraceLink.ScanPupil & key,
+        )
 
         # scan treadmill trace
-        tread = scan_timing.Timing & key
-        tread = merge(tread, trace.TraceLink.ScanTreadmill)
+        tread = merge(
+            scan_timing.Timing & key,
+            trace.TraceLink.ScanTreadmill & key,
+        )
 
         # filter traces
         traces = trace.TraceLink & [pupil, tread]
