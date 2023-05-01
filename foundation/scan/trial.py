@@ -1,5 +1,4 @@
-import datajoint as dj
-from djutils import link, group, merge, row_method, skip_missing
+from djutils import merge, row_method
 from foundation.scan import timing, pupil
 from foundation.schemas.pipeline import pipe_stim, pipe_shared
 from foundation.schemas import scan as schema
@@ -8,7 +7,7 @@ from foundation.schemas import scan as schema
 # -------------- Trial Set --------------
 
 
-@group(schema)
+@schema.set
 class TrialSet:
     keys = [pipe_stim.Trial]
     name = "trials"
@@ -20,7 +19,7 @@ class TrialSet:
 # -- Trial Filter Base --
 
 
-class TrialFilterBase:
+class _TrialFilter:
     """Trial Filter"""
 
     @row_method
@@ -42,8 +41,8 @@ class TrialFilterBase:
 # -- Trial Filter Types --
 
 
-@schema
-class PupilNansFilter(TrialFilterBase, dj.Lookup):
+@schema.lookup
+class PupilNansFilter(_TrialFilter):
     definition = """
     -> pipe_shared.TrackingMethod
     max_nans        : decimal(4, 3)     # maximum tolerated fraction of nans
@@ -59,14 +58,14 @@ class PupilNansFilter(TrialFilterBase, dj.Lookup):
 # -- Trial Filter Link --
 
 
-@link(schema)
+@schema.link
 class TrialFilterLink:
     links = [PupilNansFilter]
     name = "trial_filter"
     comment = "scan trial filter"
 
 
-@group(schema)
+@schema.set
 class TrialFilterSet:
     keys = [TrialFilterLink]
     name = "trial_filters"
@@ -76,8 +75,8 @@ class TrialFilterSet:
 # -- Computed Trial Filter --
 
 
-@schema
-class FilteredTrials(dj.Computed):
+@schema.computed
+class FilteredTrials:
     definition = """
     -> timing.Timing
     -> TrialFilterSet
@@ -85,13 +84,12 @@ class FilteredTrials(dj.Computed):
     -> TrialSet
     """
 
-    @skip_missing
     def make(self, key):
         # scan trials
         trials = pipe_stim.Trial & key
 
         # filter trials
-        for filter_key in (TrialFilterSet & key).members.fetch(dj.key, order_by="member_id"):
+        for filter_key in (TrialFilterSet & key).members.fetch("KEY", order_by="member_id"):
             trials = (TrialFilterLink & key).link.filter(trials)
 
         # insert trial set

@@ -1,12 +1,11 @@
 import numpy as np
-import datajoint as dj
 from foundation.scan import timing
 from foundation.schemas.pipeline import pipe_eye, pipe_stim
 from foundation.schemas import scan as schema
 
 
-@schema
-class PupilTrace(dj.Computed):
+@schema.computed
+class PupilTrace:
     definition = """
     -> timing.Timing
     -> pipe_eye.FittedPupil
@@ -33,8 +32,8 @@ class PupilTrace(dj.Computed):
         self.insert(keys)
 
 
-@schema
-class PupilNans(dj.Computed):
+@schema.computed
+class PupilNans:
     definition = """
     -> timing.Timing
     -> pipe_eye.FittedPupil

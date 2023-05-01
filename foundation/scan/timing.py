@@ -10,8 +10,8 @@ from foundation.schemas.pipeline import (
 from foundation.schemas import scan as schema
 
 
-@schema
-class Timing(dj.Computed):
+@schema.computed
+class Timing:
     definition = """
     -> pipe_exp.Scan
     ---

@@ -1,5 +1,5 @@
 import datajoint as dj
-from djutils import link, group, merge, row_method, skip_missing
+from djutils import merge, row_method
 from foundation.scan import timing
 from foundation.schemas.pipeline import pipe_fuse, pipe_shared, resolve_pipe
 from foundation.schemas import scan as schema
@@ -8,7 +8,7 @@ from foundation.schemas import scan as schema
 # -------------- Unit Set --------------
 
 
-@group(schema)
+@schema.set
 class UnitSet:
     keys = [pipe_fuse.ScanSet.Unit]
     name = "units"
@@ -20,7 +20,7 @@ class UnitSet:
 # -- Unit Filter Base --
 
 
-class UnitFilterBase:
+class _UnitFilter:
     """Unit Filter"""
 
     @row_method
@@ -42,8 +42,8 @@ class UnitFilterBase:
 # -- Unit Filter Types --
 
 
-@schema
-class UnitMaskType(UnitFilterBase, dj.Lookup):
+@schema.lookup
+class UnitMaskType(_UnitFilter):
     definition = """
     -> pipe_shared.PipelineVersion
     -> pipe_shared.SegmentationMethod
@@ -68,14 +68,14 @@ class UnitMaskType(UnitFilterBase, dj.Lookup):
 # -- Unit Filter Link --
 
 
-@link(schema)
+@schema.link
 class UnitFilterLink:
     links = [UnitMaskType]
     name = "unit_filter"
     comment = "scan unit filter"
 
 
-@group(schema)
+@schema.set
 class UnitFilterSet:
     keys = [UnitFilterLink]
     name = "unit_filters"
@@ -85,8 +85,8 @@ class UnitFilterSet:
 # -- Computed Unit Filter --
 
 
-@schema
-class FilteredUnits(dj.Computed):
+@schema.computed
+class FilteredUnits:
     definition = """
     -> timing.Timing
     -> UnitFilterSet
@@ -98,13 +98,12 @@ class FilteredUnits(dj.Computed):
     def key_source(self):
         return timing.Timing.proj() * UnitFilterSet.proj() & pipe_fuse.ScanDone
 
-    @skip_missing
     def make(self, key):
         # scan units
         units = pipe_fuse.ScanSet.Unit & key
 
         # filter units
-        for filter_key in (UnitFilterSet & key).members.fetch(dj.key, order_by="member_id"):
+        for filter_key in (UnitFilterSet & key).members.fetch("KEY", order_by="member_id"):
             units = (UnitFilterLink & key).link.filter(units)
 
         # insert unit set
