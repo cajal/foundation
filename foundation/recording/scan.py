@@ -1,7 +1,12 @@
 import datajoint as dj
 from djutils import merge, skip_missing
-from foundation.scan import trial as scan_trial, unit as scan_unit
 from foundation.recording import trial, trace
+from foundation.scan import (
+    timing as scan_timing,
+    pupil as scan_pupil,
+    trial as scan_trial,
+    unit as scan_unit,
+)
 from foundation.schemas.pipeline import pipe_shared
 from foundation.schemas import recording as schema
 
@@ -51,6 +56,67 @@ class ScanResponses(dj.Computed):
 
         # filter traces
         traces = trace.TraceLink & units
+        for filter_key in (trace.TraceFilterSet & key).members.fetch(dj.key, order_by="member_id"):
+            traces = (trace.TraceFilterLink & filter_key).link.filter(traces)
+
+        # trace set
+        traces = trace.TraceSet.fill(traces, prompt=False)
+        self.insert1(dict(key, **traces))
+
+
+@schema
+class ScanPerspective(dj.Computed):
+    definition = """
+    -> scan_timing.Timing
+    -> pipe_shared.TrackingMethod
+    -> trace.TraceFilterSet
+    ---
+    -> trace.TraceSet
+    """
+
+    @skip_missing
+    def make(self, key):
+        # scan pupil traces
+        pupils = scan_timing.Timing * pipe_shared.TrackingMethod & key
+        pupils = merge(pupils, scan_pupil.PupilTrace)
+        types = [
+            dict(pupil_type="center_x"),
+            dict(pupil_type="center_y"),
+        ]
+        pupils = merge(pupils & types, trace.TraceLink.ScanPupil)
+
+        # filter traces
+        traces = trace.TraceLink & pupils
+        for filter_key in (trace.TraceFilterSet & key).members.fetch(dj.key, order_by="member_id"):
+            traces = (trace.TraceFilterLink & filter_key).link.filter(traces)
+
+        # trace set
+        traces = trace.TraceSet.fill(traces, prompt=False)
+        self.insert1(dict(key, **traces))
+
+
+@schema
+class ScanModulation(dj.Computed):
+    definition = """
+    -> scan_timing.Timing
+    -> pipe_shared.TrackingMethod
+    -> trace.TraceFilterSet
+    ---
+    -> trace.TraceSet
+    """
+
+    @skip_missing
+    def make(self, key):
+        # scan pupil trace
+        pupil = scan_timing.Timing * pipe_shared.TrackingMethod & key
+        pupil = merge(pupil, scan_pupil.PupilTrace & dict(pupil_type="radius"), trace.TraceLink.ScanPupil)
+
+        # scan treadmill trace
+        tread = scan_timing.Timing & key
+        tread = merge(tread, trace.TraceLink.ScanTreadmill)
+
+        # filter traces
+        traces = trace.TraceLink & [pupil, tread]
         for filter_key in (trace.TraceFilterSet & key).members.fetch(dj.key, order_by="member_id"):
             traces = (trace.TraceFilterLink & filter_key).link.filter(traces)
 
