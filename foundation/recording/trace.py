@@ -174,7 +174,9 @@ class TraceSamples(dj.Computed):
     -> resample.OffsetLink
     -> resample.ResampleLink
     ---
-    trace           : longblob      # resampled trace
+    trace           : longblob          # resampled trace
+    samples         : int unsigned      # number of samples
+    nans            : int unsigned      # number of nans
     """
 
     @skip_missing
@@ -198,7 +200,11 @@ class TraceSamples(dj.Computed):
 
         # concatenate samples
         trace = np.concatenate(samples)
-        self.insert1(dict(key, trace=trace))
+        samples = len(trace)
+        nans = np.isnan(trace).sum()
+
+        # insert key
+        self.insert1(dict(key, trace=trace, samples=samples, nans=nans))
 
     @row_property
     def trials(self):
@@ -209,21 +215,20 @@ class TraceSamples(dj.Computed):
             index -- trial_id
             trace -- resampled trace
         """
+        # fetch data
+        key, trace, samples = self.fetch1(dj.key, "trace", "samples")
+
         # trials
-        trials = (TraceTrials & self).trials
+        trials = merge((TraceTrials & key).trials, trial.TrialSamples & key)
 
         # trial samples, ordered by member_id
-        trials = merge(trials, trial.TrialSamples & self)
-        trial_id, samples = trials.fetch("trial_id", "samples", order_by="member_id")
+        trial_id, trial_samples = trials.fetch("trial_id", "samples", order_by="member_id")
 
         # trace split indices
-        *split, total = np.cumsum(samples)
+        *split, total = np.cumsum(trial_samples)
+        assert total == samples == len(trace)
 
-        # fetch and verify trace length
-        trace = self.fetch1("trace")
-        assert len(trace) == total
-
-        # dataframe containing rows of trial samples
+        # dataframe containing trial samples
         return pd.DataFrame(
             data={"trace": np.split(trace, split)},
             index=pd.Index(trial_id, name="trial_id"),

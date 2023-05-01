@@ -15,7 +15,9 @@ class TraceSummary(dj.Computed):
     -> trial.TrialSet
     -> stat.SummaryLink
     ---
-    summary         : float         # summary statistic
+    summary = NULL  : float             # summary statistic
+    samples         : int unsigned      # number of samples
+    nans            : int unsigned      # number of nans
     """
 
     @property
@@ -45,8 +47,12 @@ class TraceSummary(dj.Computed):
         trials = (trial.TrialSet & key).members.fetch("trial_id", order_by="member_id")
 
         # trial set samples
-        samples = np.concatenate(df.loc[trials].trace.values)
+        a = np.concatenate(df.loc[trials].trace.values)
+
+        # summary statistic of non-nan values
+        n = np.isnan(a)
+        summary = (stat.SummaryLink & key).link.stat(a[~n])
 
         # summary statistic
-        key["summary"] = (stat.SummaryLink & key).link.stat(samples)
-        self.insert1(key)
+        key["summary"] = summary
+        self.insert1(dict(key, summary=summary, samples=len(a), nans=n.sum()))
