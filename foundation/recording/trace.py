@@ -200,7 +200,7 @@ class TraceSamples(dj.Computed):
         samples = [r(s, e, offset) for s, e in zip(start, end)]
 
         # concatenate samples
-        trace = np.concatenate(samples)
+        trace = np.concatenate(samples).astype(np.float32)
         samples = len(trace)
         nans = np.isnan(trace).sum()
 
