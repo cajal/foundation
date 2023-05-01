@@ -1,6 +1,5 @@
 import numpy as np
-import datajoint as dj
-from djutils import link, group, merge, row_property, row_method, skip_missing
+from djutils import merge, row_property, row_method
 from foundation.utils.trace import monotonic, samples, frame_index
 from foundation.utility import resample
 from foundation.stimulus import video
@@ -13,7 +12,7 @@ from foundation.schemas import recording as schema
 # -- Trial Base --
 
 
-class TrialBase:
+class _Trial:
     """Recording Trial"""
 
     @row_property
@@ -40,8 +39,8 @@ class TrialBase:
 # -- Trial Types --
 
 
-@schema
-class ScanTrial(TrialBase, dj.Lookup):
+@schema.lookup
+class ScanTrial(_Trial):
     definition = """
     -> pipe_stim.Trial
     """
@@ -61,14 +60,14 @@ class ScanTrial(TrialBase, dj.Lookup):
 # -- Trial Link --
 
 
-@link(schema)
+@schema.link
 class TrialLink:
     links = [ScanTrial]
     name = "trial"
     comment = "recording trial"
 
 
-@group(schema)
+@schema.set
 class TrialSet:
     keys = [TrialLink]
     name = "trials"
@@ -78,8 +77,8 @@ class TrialSet:
 # -- Computed Trial --
 
 
-@schema
-class TrialBounds(dj.Computed):
+@schema.computed
+class TrialBounds:
     definition = """
     -> TrialLink
     ---
@@ -87,7 +86,6 @@ class TrialBounds(dj.Computed):
     end         : double        # trial end time (seconds)
     """
 
-    @skip_missing
     def make(self, key):
         # trial flip times
         flips = (TrialLink & key).link.flips
@@ -102,8 +100,8 @@ class TrialBounds(dj.Computed):
         self.insert1(key)
 
 
-@schema
-class TrialSamples(dj.Computed):
+@schema.computed
+class TrialSamples:
     definition = """
     -> TrialBounds
     -> resample.RateLink
@@ -111,7 +109,6 @@ class TrialSamples(dj.Computed):
     samples     : int unsigned  # number of trial samples
     """
 
-    @skip_missing
     def make(self, key):
         # trial timing
         start, end = (TrialBounds & key).fetch1("start", "end")
@@ -122,22 +119,21 @@ class TrialSamples(dj.Computed):
         self.insert1(key)
 
 
-@schema
-class TrialVideo(dj.Computed):
+@schema.computed
+class TrialVideo:
     definition = """
     -> TrialLink
     ---
     -> video.VideoLink
     """
 
-    @skip_missing
     def make(self, key):
         key["video_id"] = (TrialLink & key).link.video.fetch1("video_id")
         self.insert1(key)
 
 
-@schema
-class VideoSamples(dj.Computed):
+@schema.computed
+class VideoSamples:
     definition = """
     -> TrialVideo
     -> TrialSamples
@@ -145,7 +141,6 @@ class VideoSamples(dj.Computed):
     video_index     : longblob      # video frame index for each sample
     """
 
-    @skip_missing
     def make(self, key):
         from scipy.interpolate import interp1d
 
@@ -180,7 +175,7 @@ class VideoSamples(dj.Computed):
 # -- Trial Filter Base --
 
 
-class TrialFilterBase:
+class _TrialFilter:
     """Trial Filter"""
 
     @row_method
@@ -202,8 +197,8 @@ class TrialFilterBase:
 # -- Trial Filter Types --
 
 
-@schema
-class TrialVideoFilter(TrialFilterBase, dj.Lookup):
+@schema.lookup
+class TrialVideoFilter(_TrialFilter):
     definition = """
     -> video.VideoFilterSet
     """
@@ -215,7 +210,7 @@ class TrialVideoFilter(TrialFilterBase, dj.Lookup):
         videos = video.VideoLink & trial_videos
 
         # filter videos
-        for key in (video.VideoFilterSet & self).members.fetch(dj.key, order_by="member_id"):
+        for key in (video.VideoFilterSet & self).members.fetch("KEY", order_by="member_id"):
             videos = (video.VideoFilterLink & key).link.filter(videos)
 
         return trials & (trial_videos & videos).proj()
@@ -224,14 +219,14 @@ class TrialVideoFilter(TrialFilterBase, dj.Lookup):
 # -- Trial Filter Link --
 
 
-@link(schema)
+@schema.link
 class TrialFilterLink:
     links = [TrialVideoFilter]
     name = "trial_filter"
     comment = "recording trial filter"
 
 
-@group(schema)
+@schema.set
 class TrialFilterSet:
     keys = [TrialFilterLink]
     name = "trial_filters"

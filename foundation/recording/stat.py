@@ -1,15 +1,14 @@
 import numpy as np
 import datajoint as dj
-from djutils import skip_missing
 from operator import add
 from functools import reduce
-from foundation.utility import stat
 from foundation.recording import trial, trace
+from foundation.utility import stat
 from foundation.schemas import recording as schema
 
 
-@schema
-class TraceSummary(dj.Computed):
+@schema.computed
+class TraceSummary:
     definition = """
     -> trace.TraceSamples
     -> trial.TrialSet
@@ -38,7 +37,6 @@ class TraceSummary(dj.Computed):
 
         return keys * trace.TraceSamples.proj() * stat.SummaryLink.proj()
 
-    @skip_missing
     def make(self, key):
         # trace samples
         df = (trace.TraceSamples & key).trials

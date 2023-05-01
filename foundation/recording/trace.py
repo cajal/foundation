@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 import datajoint as dj
-from djutils import link, group, merge, row_property, row_method, skip_missing
+from djutils import merge, row_property, row_method
+from foundation.recording import trial
 from foundation.utility import resample
 from foundation.scan import timing as scan_timing, pupil as scan_pupil
-from foundation.recording import trial
 from foundation.schemas.pipeline import (
     pipe_fuse,
     pipe_shared,
@@ -20,7 +20,7 @@ from foundation.schemas import recording as schema
 # -- Trace Base --
 
 
-class TraceBase:
+class _Trace:
     """Recording Trace"""
 
     @row_property
@@ -57,8 +57,8 @@ class TraceBase:
 # -- Trace Types --
 
 
-class ScanBase(TraceBase):
-    """Scan Traces"""
+class _Scan(_Trace):
+    """Scan Trace"""
 
     @row_property
     def trials(self):
@@ -68,8 +68,8 @@ class ScanBase(TraceBase):
         return trial.TrialSet & trials
 
 
-@schema
-class ScanResponse(ScanBase, dj.Lookup):
+@schema.lookup
+class ScanResponse(_Scan):
     definition = """
     -> scan_timing.Timing
     -> pipe_fuse.ScanSet.Unit
@@ -92,8 +92,8 @@ class ScanResponse(ScanBase, dj.Lookup):
         return (self.pipe.Activity.Trace & self).fetch1("trace").clip(0)
 
 
-@schema
-class ScanPupil(ScanBase, dj.Lookup):
+@schema.lookup
+class ScanPupil(_Scan):
     definition = """
     -> scan_pupil.PupilTrace
     """
@@ -107,8 +107,8 @@ class ScanPupil(ScanBase, dj.Lookup):
         return (scan_pupil.PupilTrace & self).fetch1("pupil_trace")
 
 
-@schema
-class ScanTreadmill(ScanBase, dj.Lookup):
+@schema.lookup
+class ScanTreadmill(_Scan):
     definition = """
     -> scan_timing.Timing
     -> pipe_tread.Treadmill
@@ -126,14 +126,14 @@ class ScanTreadmill(ScanBase, dj.Lookup):
 # -- Trace Link --
 
 
-@link(schema)
+@schema.link
 class TraceLink:
     links = [ScanResponse, ScanPupil, ScanTreadmill]
     name = "trace"
     comment = "recording trace"
 
 
-@group(schema)
+@schema.set
 class TraceSet:
     keys = [TraceLink]
     name = "traces"
@@ -143,15 +143,14 @@ class TraceSet:
 # -- Computed Trace --
 
 
-@schema
-class TraceTrials(dj.Computed):
+@schema.computed
+class TraceTrials:
     definition = """
     -> TraceLink
     ---
     -> trial.TrialSet
     """
 
-    @skip_missing
     def make(self, key):
         key["trials_id"] = (TraceLink & key).link.trials.fetch1("trials_id")
         self.insert1(key)
@@ -167,8 +166,8 @@ class TraceTrials(dj.Computed):
         return (trial.TrialSet & self).members
 
 
-@schema
-class TraceSamples(dj.Computed):
+@schema.computed
+class TraceSamples:
     definition = """
     -> TraceTrials
     -> resample.RateLink
@@ -180,7 +179,6 @@ class TraceSamples(dj.Computed):
     nans            : int unsigned      # number of nans
     """
 
-    @skip_missing
     def make(self, key):
         # resampling
         period = (resample.RateLink & key).link.period
@@ -217,7 +215,7 @@ class TraceSamples(dj.Computed):
             trace -- resampled trace
         """
         # fetch data
-        key, trace, samples = self.fetch1(dj.key, "trace", "samples")
+        key, trace, samples = self.fetch1("KEY", "trace", "samples")
 
         # trials
         trials = merge((TraceTrials & key).trials, trial.TrialSamples & key)
@@ -241,7 +239,7 @@ class TraceSamples(dj.Computed):
 # -- Trace Filter Base --
 
 
-class TraceFilterBase:
+class _TraceFilter:
     """Trace Filter"""
 
     @row_method
@@ -266,14 +264,14 @@ class TraceFilterBase:
 # -- Trace Filter Link --
 
 
-@link(schema)
+@schema.link
 class TraceFilterLink:
     links = []
     name = "trace_filter"
     comment = "recording trace filter"
 
 
-@group(schema)
+@schema.set
 class TraceFilterSet:
     keys = [TraceFilterLink]
     name = "trace_filters"

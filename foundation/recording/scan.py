@@ -1,5 +1,4 @@
-import datajoint as dj
-from djutils import merge, skip_missing
+from djutils import merge
 from foundation.recording import trial, trace, stat
 from foundation.scan import (
     timing as scan_timing,
@@ -110,8 +109,8 @@ def populate_scan(
     populate(stat.TraceSummary, trace_set * trial_set.proj())
 
 
-@schema
-class ScanTrials(dj.Computed):
+@schema.computed
+class ScanTrials:
     definition = """
     -> scan_trial.FilteredTrials.proj(scan_trial_filters_id='trial_filters_id')
     -> trial.TrialFilterSet
@@ -119,7 +118,6 @@ class ScanTrials(dj.Computed):
     -> trial.TrialSet
     """
 
-    @skip_missing
     def make(self, key):
         # filtered scan trials
         trials = scan_trial.FilteredTrials.proj(..., scan_trial_filters_id="trial_filters_id") & key
@@ -128,7 +126,7 @@ class ScanTrials(dj.Computed):
 
         # filter trials
         trials = trial.TrialLink & trials
-        for filter_key in (trial.TrialFilterSet & key).members.fetch(dj.key, order_by="member_id"):
+        for filter_key in (trial.TrialFilterSet & key).members.fetch("KEY", order_by="member_id"):
             trials = (trial.TrialFilterLink & filter_key).link.filter(trials)
 
         # trial set
@@ -136,8 +134,8 @@ class ScanTrials(dj.Computed):
         self.insert1(dict(key, **trials))
 
 
-@schema
-class ScanResponses(dj.Computed):
+@schema.computed
+class ScanResponses:
     definition = """
     -> scan_unit.FilteredUnits
     -> trace.TraceFilterSet
@@ -146,7 +144,6 @@ class ScanResponses(dj.Computed):
     -> trace.TraceSet
     """
 
-    @skip_missing
     def make(self, key):
         # filtered scan units
         units = scan_unit.FilteredUnits & key
@@ -155,7 +152,7 @@ class ScanResponses(dj.Computed):
 
         # filter traces
         traces = trace.TraceLink & units
-        for filter_key in (trace.TraceFilterSet & key).members.fetch(dj.key, order_by="member_id"):
+        for filter_key in (trace.TraceFilterSet & key).members.fetch("KEY", order_by="member_id"):
             traces = (trace.TraceFilterLink & filter_key).link.filter(traces)
 
         # trace set
@@ -163,8 +160,8 @@ class ScanResponses(dj.Computed):
         self.insert1(dict(key, **traces))
 
 
-@schema
-class ScanPerspective(dj.Computed):
+@schema.computed
+class ScanPerspective:
     definition = """
     -> scan_timing.Timing
     -> pipe_shared.TrackingMethod
@@ -173,7 +170,6 @@ class ScanPerspective(dj.Computed):
     -> trace.TraceSet
     """
 
-    @skip_missing
     def make(self, key):
         # scan pupil traces
         pupils = merge(
@@ -185,7 +181,7 @@ class ScanPerspective(dj.Computed):
 
         # filter traces
         traces = trace.TraceLink & pupils
-        for filter_key in (trace.TraceFilterSet & key).members.fetch(dj.key, order_by="member_id"):
+        for filter_key in (trace.TraceFilterSet & key).members.fetch("KEY", order_by="member_id"):
             traces = (trace.TraceFilterLink & filter_key).link.filter(traces)
 
         # trace set
@@ -193,8 +189,8 @@ class ScanPerspective(dj.Computed):
         self.insert1(dict(key, **traces))
 
 
-@schema
-class ScanModulation(dj.Computed):
+@schema.computed
+class ScanModulation:
     definition = """
     -> scan_timing.Timing
     -> pipe_shared.TrackingMethod
@@ -203,7 +199,6 @@ class ScanModulation(dj.Computed):
     -> trace.TraceSet
     """
 
-    @skip_missing
     def make(self, key):
         # scan pupil trace
         pupil = merge(
@@ -221,7 +216,7 @@ class ScanModulation(dj.Computed):
 
         # filter traces
         traces = trace.TraceLink & [pupil, tread]
-        for filter_key in (trace.TraceFilterSet & key).members.fetch(dj.key, order_by="member_id"):
+        for filter_key in (trace.TraceFilterSet & key).members.fetch("KEY", order_by="member_id"):
             traces = (trace.TraceFilterLink & filter_key).link.filter(traces)
 
         # trace set
