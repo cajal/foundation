@@ -56,11 +56,13 @@ class UnitMaskType(UnitFilterBase, dj.Lookup):
         key = dj.U("animal_id", "session", "scan_idx") & units
         pipe = resolve_pipe(**key.fetch1())
 
-        key = key * self
-        key = dj.U(*set(key.primary_key) - {"type"}) & key
-        key = merge(units, pipe.MaskClassification.Type * pipe.ScanSet.Unit & key)
+        key = merge(
+            units,
+            self.proj(target="type"),
+            pipe.MaskClassification.Type * pipe.ScanSet.Unit,
+        )
 
-        return units & (key & self)
+        return units & (key & "type = target")
 
 
 # -- Unit Filter Link --

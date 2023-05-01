@@ -51,9 +51,9 @@ class PupilNansFilter(TrialFilterBase, dj.Lookup):
 
     @row_method
     def filter(self, trials):
-        max_nans = self.fetch1("max_nans")
-        key = merge(trials, pupil.PupilNans) & f"nans < {max_nans}"
-        return trials & key.proj()
+        key = merge(trials, self, pupil.PupilNans)
+
+        return trials & (key & "nans < max_nans").proj()
 
 
 # -- Trial Filter Link --
