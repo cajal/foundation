@@ -1,8 +1,8 @@
-import numpy as np
 import datajoint as dj
 from djutils import merge, skip_missing
 from foundation.scan import trial as scan_trial, unit as scan_unit
 from foundation.recording import trial, trace
+from foundation.schemas.pipeline import pipe_shared
 from foundation.schemas import recording as schema
 
 
@@ -21,12 +21,39 @@ class ScanTrials(dj.Computed):
         trials = scan_trial.FilteredTrials.proj(..., scan_trial_filters_id="trial_filters_id") & key
         trials = scan_trial.TrialSet & trials
         trials = merge(trials.members, trial.TrialLink.ScanTrial)
-        trials = trial.TrialLink & trials
 
         # filter trials
+        trials = trial.TrialLink & trials
         for filter_key in (trial.TrialFilterSet & key).members.fetch(dj.key, order_by="member_id"):
-            trials = (trial.TrialFilterLink & key).link.filter(trials)
+            trials = (trial.TrialFilterLink & filter_key).link.filter(trials)
 
         # trial set
         trials = trial.TrialSet.fill(trials, prompt=False)
         self.insert1(dict(key, **trials))
+
+
+@schema
+class ScanResponses(dj.Computed):
+    definition = """
+    -> scan_unit.FilteredUnits
+    -> trace.TraceFilterSet
+    -> pipe_shared.SpikeMethod
+    ---
+    -> trace.TraceSet
+    """
+
+    @skip_missing
+    def make(self, key):
+        # filtered scan units
+        units = scan_unit.FilteredUnits & key
+        units = scan_unit.UnitSet & units
+        units = merge(units.members, trace.TraceLink.ScanResponse & key)
+
+        # filter traces
+        traces = trace.TraceLink & units
+        for filter_key in (trace.TraceFilterSet & key).members.fetch(dj.key, order_by="member_id"):
+            traces = (trace.TraceFilterLink & filter_key).link.filter(traces)
+
+        # trace set
+        traces = trace.TraceSet.fill(traces, prompt=False)
+        self.insert1(dict(key, **traces))

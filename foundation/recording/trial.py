@@ -194,12 +194,12 @@ class TrialFilterBase:
         Parameters
         ----------
         trials : TrialLink
-            Trial tuples
+            TrialLink tuples
 
         Returns
         -------
         TrialLink
-            retricted Trial tuples
+            retricted TrialLink tuples
         """
         raise NotImplementedError()
 

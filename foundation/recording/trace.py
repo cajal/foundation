@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import datajoint as dj
-from djutils import link, group, merge, row_property, skip_missing
+from djutils import link, group, merge, row_property, row_method, skip_missing
 from foundation.utility import resample
 from foundation.scan import timing as scan_timing, pupil as scan_pupil
 from foundation.recording import trial
@@ -223,3 +223,47 @@ class TraceSamples(dj.Computed):
             data={"trace": np.split(trace, split)},
             index=pd.Index(trial_id, name="trial_id"),
         )
+
+
+# -------------- Trace Filter --------------
+
+# -- Trace Filter Base --
+
+
+class TraceFilterBase:
+    """Trace Filter"""
+
+    @row_method
+    def filter(self, traces):
+        """
+        Parameters
+        ----------
+        traces : TraceLink
+            TraceLink tuples
+
+        Returns
+        -------
+        TraceLink
+            retricted TraceLink tuples
+        """
+        raise NotImplementedError()
+
+
+# -- Trace Filter Types --
+
+
+# -- Trace Filter Link --
+
+
+@link(schema)
+class TraceFilterLink:
+    links = []
+    name = "trace_filter"
+    comment = "recording trace filter"
+
+
+@group(schema)
+class TraceFilterSet:
+    keys = [TraceFilterLink]
+    name = "trace_filters"
+    comment = "set of recording trace filters"
