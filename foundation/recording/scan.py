@@ -22,6 +22,29 @@ def populate_scan(
     trial_filters_id="07170d5333b23f57c17027073647fd3d",
     trace_filters_id="d41d8cd98f00b204e9800998ecf8427e",
 ):
+    """Populate scan and recording tables
+
+    Parameters
+    ----------
+    animal_id : int
+        animal id
+    session : int
+        session
+    scan_idx : int
+        scan_idx
+    tracking_method : int
+        pupil tracking method
+    spike_method : int
+        spiking activity method
+    scan_trial_filters_id : str
+        key -- scan_trial.TrialFilterSet
+    unit_filters_id : str
+        key -- scan_unit.UnitFilterSet
+    trial_filters_id : str
+        key -- trial.TrialFilterSet
+    trace_filters_id :
+        key -- trace.TraceFilterSet
+    """
     scan_key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
 
     def populate(table, key):
