@@ -1,5 +1,7 @@
+import numpy as np
 from djutils import merge
 from foundation.recording import trial, trace, stat
+from foundation.stimulus import video
 from foundation.scan import (
     timing as scan_timing,
     pupil as scan_pupil,
@@ -73,9 +75,19 @@ def populate_scan(
     # scan trials
     key = dict(scan_key, trial_filters_id=scan_trial_filters_id)
     populate(scan_trial.FilteredTrials, key)
-    insert(trial.ScanTrial, pipe_stim.Trial & scan_key)
+
+    trials = pipe_stim.Trial & scan_key
+    insert(trial.ScanTrial, trials)
+
+    # scan videos
+    conds = pipe_stim.Condition & trials
+    for stim_type in np.unique(conds.fetch("stimulus_type")):
+        keys = conds & dict(stimulus_type=stim_type)
+        table = video.VideoLink.get(stim_type.split(".")[1]).link
+        insert(table, keys)
 
     # fill links
+    video.VideoLink.fill()
     trial.TrialLink.fill()
     trace.TraceLink.fill()
 
