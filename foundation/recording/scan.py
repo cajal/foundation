@@ -58,10 +58,19 @@ def populate_scan(
     trace.TraceLink.fill()
 
     # populate trials
-    populate(trial.TrialBounds, {})
-    populate(trial.TrialSamples, {})
-    populate(trial.TrialVideo, {})
-    populate(trial.VideoSamples, {})
+    key = trial.TrialLink.get("ScanTrial", scan_key).proj()
+    populate(trial.TrialBounds, key)
+    populate(trial.TrialSamples, key)
+    populate(trial.TrialVideo, key)
+    populate(trial.VideoSamples, key)
+
+    # populate traces
+    trace_types = ["ScanResponse", "ScanPupil", "ScanTreadmill"]
+    key = dict(scan_key, tracking_method=tracking_method, spike_method=spike_method)
+    key = [trace.TraceLink.get(t, key).proj() for t in trace_types]
+    key = (trace.TraceLink & key).proj()
+    populate(trace.TraceTrials, key)
+    populate(trace.TraceSamples, key)
 
     # recording trial set
     key = dict(scan_key, scan_trial_filters_id=scan_trial_filters_id, trial_filters_id=trial_filters_id)
