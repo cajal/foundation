@@ -7,7 +7,7 @@ from foundation.schemas import utility as schema
 # -- Rate Base --
 
 
-class Rate:
+class _Rate:
     """Resampling Rate"""
 
     @row_property
@@ -25,7 +25,7 @@ class Rate:
 
 
 @schema.lookup
-class Hz(Rate):
+class Hz(_Rate):
     definition = """
     hz          : decimal(9, 6)         # samples per second
     """
@@ -50,7 +50,7 @@ class RateLink:
 # -- Offset Base --
 
 
-class Offset:
+class _Offset:
     """Resampling Offset"""
 
     @row_property
@@ -68,7 +68,7 @@ class Offset:
 
 
 @schema.method
-class ZeroOffset(Offset):
+class ZeroOffset(_Offset):
     name = "zero_offset"
     comment = "zero resampling offset"
 
@@ -92,7 +92,7 @@ class OffsetLink:
 # -- Resample Base --
 
 
-class Resample:
+class _Resample:
     """Trace Resampling"""
 
     @row_method
@@ -119,7 +119,7 @@ class Resample:
 
 
 @schema.method
-class Hamming(Resample):
+class Hamming(_Resample):
     name = "hamming"
     comment = "hamming trace"
 

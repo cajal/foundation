@@ -1,11 +1,10 @@
 import io
 import av
 import numpy as np
-import datajoint as dj
-from djutils import link, group, row_property, row_method
+from djutils import row_property, row_method
 from PIL import Image
 from foundation.utils.video import Video
-from foundation.schemas.pipeline import pipe_stim
+from foundation.schemas.pipeline import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
 from foundation.schemas import stimulus as schema
 
 
@@ -14,7 +13,7 @@ from foundation.schemas import stimulus as schema
 # -- Video Base --
 
 
-class VideoBase:
+class _Video:
     """Stimlus Frames"""
 
     @row_property
@@ -30,8 +29,8 @@ class VideoBase:
 # -- Video Types --
 
 
-@schema
-class Clip(VideoBase, dj.Lookup):
+@schema.lookup
+class Clip(_Video):
     definition = """
     -> pipe_stim.Clip
     """
@@ -61,8 +60,8 @@ class Clip(VideoBase, dj.Lookup):
         return Video(frames)
 
 
-@schema
-class Monet2(VideoBase, dj.Lookup):
+@schema.lookup
+class Monet2(_Video):
     definition = """
     -> pipe_stim.Monet2
     """
@@ -73,8 +72,8 @@ class Monet2(VideoBase, dj.Lookup):
         return Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
 
 
-@schema
-class Trippy(VideoBase, dj.Lookup):
+@schema.lookup
+class Trippy(_Video):
     definition = """
     -> pipe_stim.Trippy
     """
@@ -85,64 +84,61 @@ class Trippy(VideoBase, dj.Lookup):
         return Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
 
 
-@schema
-class GaborSequence(VideoBase, dj.Lookup):
+@schema.lookup
+class GaborSequence(_Video):
     definition = """
     -> pipe_stim.GaborSequence
     """
 
     @row_property
     def video(self):
-        gabor = dj.create_virtual_module("gabor", "pipeline_gabor")
         sequence = (pipe_stim.GaborSequence & self).fetch1()
 
-        movs = (gabor.Sequence.Gabor * gabor.Gabor & sequence).fetch("movie", order_by="sequence_id")
+        movs = (pipe_gabor.Sequence.Gabor * pipe_gabor.Gabor & sequence).fetch("movie", order_by="sequence_id")
         assert len(movs) == sequence["sequence_length"]
 
         return Video([Image.fromarray(frame, mode="L") for frame in np.concatenate(movs)])
 
 
-@schema
-class DotSequence(VideoBase, dj.Lookup):
+@schema.lookup
+class DotSequence(_Video):
     definition = """
     -> pipe_stim.DotSequence
     """
 
     @row_property
     def video(self):
-        dot = dj.create_virtual_module("dot", "pipeline_dot")
         sequence = (pipe_stim.DotSequence & self).fetch1()
 
-        images = (dot.Dot * dot.Sequence.Dot * dot.Display & sequence).fetch("image", order_by="dot_id")
+        images = (pipe_dot.Dot * pipe_dot.Sequence.Dot * pipe_dot.Display & sequence).fetch("image", order_by="dot_id")
         assert len(images) == sequence["sequence_length"]
 
-        n_frames, id_trace = (dot.Trace * dot.Display & sequence).fetch1("n_frames", "id_trace")
+        n_frames, id_trace = (pipe_dot.Trace * pipe_dot.Display & sequence).fetch1("n_frames", "id_trace")
         frames = np.stack(images[id_trace])
         assert len(frames) == n_frames
 
         return Video([Image.fromarray(frame, mode="L") for frame in frames])
 
 
-@schema
-class RdkSequence(VideoBase, dj.Lookup):
+@schema.lookup
+class RdkSequence(_Video):
     definition = """
     -> pipe_stim.RdkSequence
     """
 
     @row_property
     def video(self):
-        rdk = dj.create_virtual_module("rdk", "pipeline_rdk")
         sequence = (pipe_stim.RdkSequence & self).fetch1()
 
         movs = []
         for i in range(sequence["sequence_length"]):
             _key = dict(sequence, sequence_id=i)
-            if rdk.Sequence.Rotation & _key:
-                movie = (rdk.RotationRdk * rdk.Sequence.Rotation & _key).fetch1("movie")
-            elif rdk.Sequence.Radial & _key:
-                movie = (rdk.RadialRdk * rdk.Sequence.Radial & _key).fetch1("movie")
-            elif rdk.Sequence.Translation & _key:
-                movie = (rdk.TranslationRdk * rdk.Sequence.Translation & _key).fetch1("movie")
+            if pipe_rdk.Sequence.Rotation & _key:
+                movie = (pipe_rdk.RotationRdk * pipe_rdk.Sequence.Rotation & _key).fetch1("movie")
+            elif pipe_rdk.Sequence.Radial & _key:
+                movie = (pipe_rdk.RadialRdk * pipe_rdk.Sequence.Radial & _key).fetch1("movie")
+            elif pipe_rdk.Sequence.Translation & _key:
+                movie = (pipe_rdk.TranslationRdk * pipe_rdk.Sequence.Translation & _key).fetch1("movie")
             else:
                 raise Exception
             movs += [movie]
@@ -150,8 +146,8 @@ class RdkSequence(VideoBase, dj.Lookup):
         return Video([Image.fromarray(frame, mode="L") for frame in np.concatenate(movs)])
 
 
-@schema
-class Frame(VideoBase, dj.Lookup):
+@schema.lookup
+class Frame(_Video):
     definition = """
     -> pipe_stim.Frame
     """
@@ -177,14 +173,14 @@ class Frame(VideoBase, dj.Lookup):
 # -- Video Link --
 
 
-@link(schema)
+@schema.link
 class VideoLink:
     links = [Clip, Monet2, Trippy, GaborSequence, DotSequence, RdkSequence, Frame]
     name = "video"
     comment = "video stimulus"
 
 
-@group(schema)
+@schema.set
 class VideoSet:
     keys = [VideoLink]
     name = "videos"
@@ -194,8 +190,8 @@ class VideoSet:
 # -- Computed Video --
 
 
-@schema
-class VideoInfo(dj.Computed):
+@schema.computed
+class VideoInfo:
     definition = """
     -> VideoLink
     ---
@@ -225,7 +221,7 @@ class VideoInfo(dj.Computed):
 # -- Video Filter Base --
 
 
-class VideoFilterBase:
+class _VideoFilter:
     """Video Filter"""
 
     @row_method
@@ -247,8 +243,8 @@ class VideoFilterBase:
 # -- Video Filter Types --
 
 
-@schema
-class VideoTypeFilter(VideoFilterBase, dj.Lookup):
+@schema.lookup
+class VideoTypeFilter(_VideoFilter):
     definition = """
     video_type      : varchar(128)      # video type
     include         : bool              # include or exclude
@@ -263,8 +259,8 @@ class VideoTypeFilter(VideoFilterBase, dj.Lookup):
             return videos - self
 
 
-@schema
-class VideoSetFilter(VideoFilterBase, dj.Lookup):
+@schema.lookup
+class VideoSetFilter(_VideoFilter):
     definition = """
     -> VideoSet
     include         : bool              # include or exclude
@@ -282,14 +278,14 @@ class VideoSetFilter(VideoFilterBase, dj.Lookup):
 # -- Video Filter Link --
 
 
-@link(schema)
+@schema.link
 class VideoFilterLink:
     links = [VideoTypeFilter, VideoSetFilter]
     name = "video_filter"
     comment = "video filter"
 
 
-@group(schema)
+@schema.set
 class VideoFilterSet:
     keys = [VideoFilterLink]
     name = "video_filters"

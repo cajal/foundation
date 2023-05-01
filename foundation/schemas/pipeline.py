@@ -8,6 +8,9 @@ pipe_meso = dj.create_virtual_module("pipe_meso", "pipeline_meso")
 pipe_reso = dj.create_virtual_module("pipe_reso", "pipeline_reso")
 pipe_eye = dj.create_virtual_module("pipe_eye", "pipeline_eye")
 pipe_tread = dj.create_virtual_module("pipe_tread", "pipeline_treadmill")
+pipe_gabor = dj.create_virtual_module("pipe_gabor", "pipeline_gabor")
+pipe_dot = dj.create_virtual_module("pipe_dot", "pipeline_dot")
+pipe_rdk = dj.create_virtual_module("pipe_rdk", "pipeline_rdk")
 
 
 def resolve_pipe(animal_id, session, scan_idx):
