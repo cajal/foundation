@@ -1,6 +1,6 @@
 import datajoint as dj
 from djutils import merge, skip_missing
-from foundation.recording import trial, trace
+from foundation.recording import trial, trace, stat
 from foundation.scan import (
     timing as scan_timing,
     pupil as scan_pupil,
@@ -87,25 +87,27 @@ def populate_scan(
     populate(trial.TrialVideo, key)
     populate(trial.VideoSamples, key)
 
-    # populate traces
-    trace_types = ["ScanResponse", "ScanPupil", "ScanTreadmill"]
-    key = dict(scan_key, tracking_method=tracking_method, spike_method=spike_method)
-    key = [trace.TraceLink.get(t, key).proj() for t in trace_types]
-    key = (trace.TraceLink & key).proj()
-    populate(trace.TraceTrials, key)
-    populate(trace.TraceSamples, key)
-
     # recording trial set
     key = dict(scan_key, scan_trial_filters_id=scan_trial_filters_id, trial_filters_id=trial_filters_id)
     populate(ScanTrials, key)
+    trial_set = trial.TrialSet & (ScanTrials & key)
 
     # recording trace sets
     key = dict(scan_key, spike_method=spike_method, unit_filters_id=unit_filters_id, trace_filters_id=trace_filters_id)
     populate(ScanResponses, key)
+    response_set = trace.TraceSet & (ScanResponses & key)
 
     key = dict(scan_key, tracking_method=tracking_method, trace_filters_id=trace_filters_id)
     populate(ScanPerspective, key)
     populate(ScanModulation, key)
+    perspective_set = trace.TraceSet & (ScanPerspective & key)
+    modulation_set = trace.TraceSet & (ScanModulation & key)
+
+    # populate traces
+    trace_set = response_set.members.proj() + perspective_set.members.proj() + modulation_set.members.proj()
+    populate(trace.TraceTrials, trace_set)
+    populate(trace.TraceSamples, trace_set)
+    populate(stat.TraceSummary, trace_set * trial_set.proj())
 
 
 @schema
