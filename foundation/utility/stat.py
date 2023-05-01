@@ -1,6 +1,5 @@
 import numpy as np
-import datajoint as dj
-from djutils import link, method, row_method
+from djutils import row_method
 from foundation.schemas import utility as schema
 
 
@@ -9,7 +8,7 @@ from foundation.schemas import utility as schema
 # -- Summary Base --
 
 
-class SummaryBase:
+class Summary:
     """Summary Statistic"""
 
     @row_method
@@ -31,8 +30,8 @@ class SummaryBase:
 # -- Summary Type --
 
 
-@method(schema)
-class Mean(SummaryBase):
+@schema.method
+class Mean(Summary):
     name = "mean"
     comment = "arithmetic mean"
 
@@ -41,8 +40,8 @@ class Mean(SummaryBase):
         return np.mean(a)
 
 
-@schema
-class Std(SummaryBase, dj.Lookup):
+@schema.lookup
+class Std(Summary):
     definition = """
     ddof        : int unsigned      # delta degrees of freedom
     """
@@ -55,7 +54,7 @@ class Std(SummaryBase, dj.Lookup):
 # -- Summary Link --
 
 
-@link(schema)
+@schema.link
 class SummaryLink:
     links = [Mean, Std]
     name = "summary"

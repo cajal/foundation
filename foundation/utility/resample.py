@@ -1,5 +1,4 @@
-import datajoint as dj
-from djutils import link, method, row_property, row_method
+from djutils import row_property, row_method
 from foundation.schemas import utility as schema
 
 
@@ -8,7 +7,7 @@ from foundation.schemas import utility as schema
 # -- Rate Base --
 
 
-class RateBase:
+class Rate:
     """Resampling Rate"""
 
     @row_property
@@ -25,8 +24,8 @@ class RateBase:
 # -- Rate Types --
 
 
-@schema
-class Hz(RateBase, dj.Lookup):
+@schema.lookup
+class Hz(Rate):
     definition = """
     hz          : decimal(9, 6)         # samples per second
     """
@@ -39,7 +38,7 @@ class Hz(RateBase, dj.Lookup):
 # -- Rate Link --
 
 
-@link(schema)
+@schema.link
 class RateLink:
     links = [Hz]
     name = "rate"
@@ -51,7 +50,7 @@ class RateLink:
 # -- Offset Base --
 
 
-class OffsetBase:
+class Offset:
     """Resampling Offset"""
 
     @row_property
@@ -68,8 +67,8 @@ class OffsetBase:
 # -- Offset Types --
 
 
-@method(schema)
-class ZeroOffset(OffsetBase):
+@schema.method
+class ZeroOffset(Offset):
     name = "zero_offset"
     comment = "zero resampling offset"
 
@@ -81,7 +80,7 @@ class ZeroOffset(OffsetBase):
 # -- Offset Link --
 
 
-@link(schema)
+@schema.link
 class OffsetLink:
     links = [ZeroOffset]
     name = "offset"
@@ -93,7 +92,7 @@ class OffsetLink:
 # -- Resample Base --
 
 
-class ResampleBase:
+class Resample:
     """Trace Resampling"""
 
     @row_method
@@ -119,8 +118,8 @@ class ResampleBase:
 # -- Resample Types --
 
 
-@method(schema)
-class Hamming(ResampleBase):
+@schema.method
+class Hamming(Resample):
     name = "hamming"
     comment = "hamming trace"
 
@@ -134,7 +133,7 @@ class Hamming(ResampleBase):
 # -- Resample Link --
 
 
-@link(schema)
+@schema.link
 class ResampleLink:
     links = [Hamming]
     name = "resample"

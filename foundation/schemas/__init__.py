@@ -1,6 +1,7 @@
-import datajoint as dj
+from datajoint import config
+from djutils import Schema
 
-dj.config["stores"] = {
+config["stores"] = {
     "scratch09": dict(
         protocol="file",
         location="/mnt/scratch09/foundation/",
@@ -8,7 +9,7 @@ dj.config["stores"] = {
     )
 }
 
-utility = dj.schema("foundation_utility")
-stimulus = dj.schema("foundation_stimulus")
-recording = dj.schema("foundation_recording")
-scan = dj.schema("foundation_scan")
+utility = Schema("foundation_utility")
+stimulus = Schema("foundation_stimulus")
+recording = Schema("foundation_recording")
+scan = Schema("foundation_scan")
