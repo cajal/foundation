@@ -53,6 +53,5 @@ class TraceSummary(dj.Computed):
         n = np.isnan(a)
         summary = (stat.SummaryLink & key).link.stat(a[~n])
 
-        # summary statistic
-        key["summary"] = summary
+        # insert key
         self.insert1(dict(key, summary=summary, samples=len(a), nans=n.sum()))
