@@ -1,6 +1,6 @@
 import numpy as np
 import datajoint as dj
-from djutils import merge, skip_missing
+from djutils import skip_missing
 from operator import add
 from functools import reduce
 from foundation.utility import stat

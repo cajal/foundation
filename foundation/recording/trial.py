@@ -51,11 +51,6 @@ class ScanTrial(TrialBase, dj.Lookup):
         return (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
 
     @row_property
-    def bounds(self):
-        flips = self.flips
-        return self.flips[0], self.flips[-1]
-
-    @row_property
     def video(self):
         trial = pipe_stim.Trial * pipe_stim.Condition & self
         stim_type = trial.fetch1("stimulus_type")

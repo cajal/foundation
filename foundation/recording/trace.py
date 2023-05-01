@@ -9,7 +9,6 @@ from foundation.schemas.pipeline import (
     pipe_fuse,
     pipe_shared,
     pipe_stim,
-    pipe_eye,
     pipe_tread,
     resolve_pipe,
 )
@@ -210,15 +209,21 @@ class TraceSamples(dj.Computed):
             index -- trial_id
             trace -- resampled trace
         """
+        # trials
         trials = (TraceTrials & self).trials
-        trials = merge(trials, trial.TrialSamples)
 
+        # trial samples, ordered by member_id
+        trials = merge(trials, trial.TrialSamples & self)
         trial_id, samples = trials.fetch("trial_id", "samples", order_by="member_id")
+
+        # trace split indices
         *split, total = np.cumsum(samples)
 
+        # fetch and verify trace length
         trace = self.fetch1("trace")
         assert len(trace) == total
 
+        # dataframe containing rows of trial samples
         return pd.DataFrame(
             data={"trace": np.split(trace, split)},
             index=pd.Index(trial_id, name="trial_id"),
