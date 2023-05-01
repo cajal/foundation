@@ -36,6 +36,7 @@ class TraceSummary(dj.Computed):
 
         return keys * trace.TraceSamples.proj() * stat.SummaryLink.proj()
 
+    @skip_missing
     def make(self, key):
         # trace samples
         df = (trace.TraceSamples & key).trials
