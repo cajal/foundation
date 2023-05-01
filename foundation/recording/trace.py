@@ -64,7 +64,8 @@ class ScanBase(TraceBase):
     def trials(self):
         trials = pipe_stim.Trial.proj() & self
         trials = merge(trials, trial.TrialLink.ScanTrial)
-        return trial.TrialSet.get(trials)
+        trials = trial.TrialSet.fill(trials, prompt=False, silent=True)
+        return trial.TrialSet & trials
 
 
 @schema
