@@ -71,24 +71,15 @@ class TrialTraces(Files):
             # write traces to memmap
             for i, trace_key in enumerate(tqdm(trace_keys, desc="Traces")):
 
-                j = 0
                 df = (trace.TraceSamples & trace_key).trials.loc[trial_ids]
-
-                for tup, trial_id, trial_n in zip(df.itertuples(), trial_ids, samples):
-
-                    assert trial_id == tup.Index
-                    assert trial_n == tup.trace.size
-
-                    memmap[i, j : j + trial_n] = tup.trace.astype(np.float32)
-                    j += trial_n
-
+                memmap[i] = np.concatenate(df.trace.values).astype(np.float32)
                 memmap.flush()
 
             # read traces from memmap and save to file
             j = 0
             for trial_id, trial_n in zip(trial_ids, tqdm(samples, desc="Trials")):
 
-                _traces = memmap[j : j + trial_n]
+                _traces = memmap[:, j : j + trial_n]
                 _finite = bool(np.isfinite(_traces).all())
 
                 _key = dict(key, trial_id=trial_id)
