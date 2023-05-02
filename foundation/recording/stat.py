@@ -2,16 +2,19 @@ import numpy as np
 import datajoint as dj
 from operator import add
 from functools import reduce
-from foundation.recording import trial, trace, sample
-from foundation.utility import stat
+from foundation.recording import trial, trace
+from foundation.utility import resample, stat
 from foundation.schemas import recording as schema
 
 
 @schema.computed
 class TraceSummary:
     definition = """
-    -> sample.TraceSamples
+    -> trace.TraceTrials
     -> trial.TrialSet
+    -> resample.RateLink
+    -> resample.OffsetLink
+    -> resample.ResampleLink
     -> stat.SummaryLink
     ---
     summary = NULL  : float             # summary statistic
@@ -20,7 +23,7 @@ class TraceSummary:
     """
 
     @property
-    def key_source(self):
+    def scan_keys(self):
         from foundation.recording.scan import (
             ScanTrialSet,
             ScanUnitSet,
@@ -28,28 +31,35 @@ class TraceSummary:
             ScanPerspectiveSet,
         )
 
-        keys = [
+        return [
             trace.TraceSet.Member * ScanUnitSet * ScanTrialSet,
             trace.TraceSet.Member * ScanPerspectiveSet * ScanTrialSet,
             trace.TraceSet.Member * ScanModulationSet * ScanTrialSet,
         ]
-        keys = reduce(add, [dj.U("trace_id", "trials_id") & key for key in keys])
 
-        return keys * sample.TraceSamples.proj() * stat.SummaryLink.proj()
+    @property
+    def key_source(self):
+        keys = self.scan_keys
+        keys = reduce(add, [dj.U("trace_id", "trials_id") & key for key in keys])
+        return keys * resample.RateLink * resample.OffsetLink * resample.ResampleLink * stat.SummaryLink
 
     def make(self, key):
         # trial set
-        trials = (trial.TrialSet & key).members.fetch("trial_id", order_by="member_id")
+        trials_id = key.pop("trials_id")
+        trials_key = trial.TrialSet & {"trials_id": trials_id}
 
-        # trial set samples
-        df = (sample.TraceSamples & key).samples.loc[trials]
+        # resample keys
+        rate_key = resample.RateLink & key
+        offset_key = resample.OffsetLink & key
+        resample_key = resample.ResampleLink & key
 
-        # sample values and nans
-        a = np.concatenate(df.trace.values)
-        n = np.isnan(a)
+        # resampled trace
+        a = (trace.TraceTrials & key).trial_samples(trials_key, rate_key, offset_key, resample_key)
+        a = np.concatenate(a)
 
         # summary statistic for non-nan values
-        summary = (stat.SummaryLink & key).link.stat(a[~n])
+        n = np.isnan(a)
+        s = (stat.SummaryLink & key).link.stat(a[~n])
 
         # insert key
-        self.insert1(dict(key, summary=summary, samples=len(a), nans=n.sum()))
+        self.insert1(dict(key, trials_id=trials_id, summary=s, samples=len(a), nans=n.sum()))

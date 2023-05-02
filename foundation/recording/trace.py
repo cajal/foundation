@@ -1,6 +1,6 @@
-from djutils import merge, row_property
+import pandas as pd
+from djutils import merge, row_property, row_method, RestrictionError
 from foundation.recording import trial
-from foundation.utility import resample
 from foundation.scan import timing as scan_timing, pupil as scan_pupil
 from foundation.schemas.pipeline import (
     pipe_fuse,
@@ -84,18 +84,14 @@ class ScanResponse(_Scan):
     """
 
     @row_property
-    def pipe(self):
-        return resolve_pipe(self)
-
-    @row_property
     def times(self):
         times = (scan_timing.Timing & self).fetch1("scan_times")
-        delay = (self.pipe.ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
+        delay = (resolve_pipe(self).ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
         return times + delay
 
     @row_property
     def values(self):
-        return (self.pipe.Activity.Trace & self).fetch1("trace").clip(0)
+        return (resolve_pipe(self).Activity.Trace & self).fetch1("trace").clip(0)
 
     @row_property
     def homogeneous(self):
@@ -186,15 +182,53 @@ class TraceTrials:
         key["trials_id"] = (TraceLink & key).link.trials.fetch1("trials_id")
         self.insert1(key)
 
-    @row_property
-    def trials(self):
+    @row_method
+    def trial_samples(self, trials_key, rate_key, offset_key, resample_key):
         """
+        Parameters
+        ----------
+        trials_key : foundation.recording.trial.TrialSet
+            single tuple
+        rate_key : foundation.utility.resample.RateLink
+            single tuple
+        offset_key : foundation.utility.resample.OffsetLink
+            single tuple
+        resample_key : foundation.utility.resample.ResampleLink
+            single tuple
+
         Returns
         -------
-        trial.TrialSet
-            tuple from trial.TrialSet
+        pd.Series
+            index -- trial_id
+            data -- resampled trace
         """
-        return trial.TrialSet & self
+        # trials
+        trials = trials_key.members
+
+        # ensure trials belong to trace
+        all_trials = (trial.TrialSet & self).members
+        if (trial.TrialLink & trials).proj() - (trial.TrialLink & all_trials).proj():
+            raise RestrictionError("Requested trials do not belong to the trace.")
+
+        # resampling
+        period = rate_key.link.period
+        offset = offset_key.link.offset
+        resampler = resample_key.link.resampler
+
+        # trace resampler
+        trace = (TraceLink & self).link
+        r = resampler(times=trace.times, values=trace.values, target_period=period)
+
+        # resampled trials
+        trial_timing = merge(trials, trial.TrialBounds)
+        trial_ids, starts, ends = trial_timing.fetch("trial_id", "start", "end", order_by="member_id")
+        samples = [r(a, b, offset) for a, b in zip(starts, ends)]
+
+        # pandas Series containing resampled trials
+        return pd.Series(
+            data=samples,
+            index=pd.Index(trial_ids, name="trial_id"),
+        )
 
 
 # -------------- Trace Filter --------------
