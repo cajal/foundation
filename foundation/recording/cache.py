@@ -40,14 +40,19 @@ class TrialTraces(Files):
             trial.TrialSet.Member * ScanTrials * ScanPerspective,
         ]
         keys = reduce(add, [dj.U("traces_id", "trial_id") & key for key in keys])
-
-        return keys * (resample.RateLink * resample.OffsetLink * resample.ResampleLink).proj()
+        keys = keys * (resample.RateLink * resample.OffsetLink * resample.ResampleLink).proj()
+        return keys - self
 
     @property
     def key_source(self):
-        return dj.U("traces_id", "rate_id", "offset_id", "resample_id") & self.keys
+        key = dj.U("traces_id", "rate_id", "offset_id", "resample_id")
+        key = key.aggr(self.keys, trial_id="min(trial_id)")
+        return key * trial.TrialLink.proj()
 
     def make(self, key):
+        # remove trial_id from key
+        key.pop("trial_id")
+
         # fetch all trials for trace set, ordered by trial_id
         trials = self.keys & key
         trials = merge(trials, trial.TrialSamples & key)
