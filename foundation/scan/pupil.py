@@ -47,7 +47,7 @@ class PupilNans:
         return pipe_eye.FittedPupil.proj() & timing.Timing
 
     def make(self, key):
-        from foundation.utils.trace import Nans
+        from foundation.utils.resample import Nans
 
         # trace timing
         times = (timing.Timing & key).fetch1("eye_times")

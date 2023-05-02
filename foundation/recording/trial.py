@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.interpolate import interp1d
 from djutils import merge, row_property, row_method
-from foundation.utils.trace import monotonic, frame_index
+from foundation.utils.resample import monotonic, frame_index
 from foundation.stimulus import video
 from foundation.schemas.pipeline import pipe_stim
 from foundation.schemas import recording as schema

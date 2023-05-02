@@ -110,7 +110,7 @@ class _Resample:
 
         Returns
         -------
-        foundation.utils.trace.Trace
+        foundation.utils.resample.Trace
             trace resampler
         """
         raise NotImplementedError()
@@ -126,7 +126,7 @@ class Hamming(_Resample):
 
     @row_method
     def resampler(self, times, values, target_period):
-        from foundation.utils.trace import Hamming
+        from foundation.utils.resample import Hamming
 
         return Hamming(times, values, target_period)
 
