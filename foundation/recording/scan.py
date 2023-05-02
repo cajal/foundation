@@ -1,6 +1,6 @@
 import numpy as np
 from djutils import merge
-from foundation.recording import trial, trace, stat
+from foundation.recording import trial, trace, cache, stat
 from foundation.stimulus import video
 from foundation.scan import (
     timing as scan_timing,
@@ -119,7 +119,7 @@ def populate_scan(
     populate(trace.TraceHomogeneous, trace_set)
     populate(trace.TraceTrials, trace_set)
     populate(trace.TraceSamples, trace_set)
-    populate(trace.TrialTraces, trace_set)
+    populate(cache.TrialTraces, trace_set)
     populate(stat.TraceSummary, trace_set * trial_set.proj())
 
 
