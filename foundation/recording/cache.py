@@ -6,13 +6,13 @@ from tempfile import TemporaryDirectory
 from operator import add
 from functools import reduce
 from tqdm import tqdm
-from foundation.recording import trial, trace
+from foundation.recording import trial, trace, sample
 from foundation.utility import resample
 from foundation.schemas import recording as schema
 
 
 @schema.computed
-class TrialTraces(Files):
+class CachedTraces(Files):
     store = "scratch09"
     definition = """
     -> trace.TraceSet
@@ -28,16 +28,16 @@ class TrialTraces(Files):
     @property
     def scan_keys(self):
         from foundation.recording.scan import (
-            ScanTrials,
-            ScanResponses,
-            ScanModulation,
-            ScanPerspective,
+            ScanTrialSet,
+            ScanUnitSet,
+            ScanModulationSet,
+            ScanPerspectiveSet,
         )
 
         return [
-            trial.TrialSet.Member * ScanTrials * ScanResponses,
-            trial.TrialSet.Member * ScanTrials * ScanModulation,
-            trial.TrialSet.Member * ScanTrials * ScanPerspective,
+            trial.TrialSet.Member * ScanTrialSet * ScanUnitSet,
+            trial.TrialSet.Member * ScanTrialSet * ScanPerspectiveSet,
+            trial.TrialSet.Member * ScanTrialSet * ScanModulationSet,
         ]
 
     @property
@@ -59,12 +59,12 @@ class TrialTraces(Files):
 
         # fetch all trials for trace set, ordered by trial_id
         trials = self.keys & key
-        trials = merge(trials, trial.TrialSamples & key)
+        trials = merge(trials, sample.TrialSamples & key)
         trial_ids, samples = trials.fetch("trial_id", "samples", order_by="trial_id")
 
         # fetch all traces for trace set, orderd by member_id of trace set
         traces = (trace.TraceSet & key).members
-        traces = merge(traces, trace.TraceSamples & key)
+        traces = merge(traces, sample.TraceSamples & key)
         trace_keys = traces.fetch("KEY", order_by="member_id")
 
         with TemporaryDirectory() as tmpdir:
@@ -80,7 +80,7 @@ class TrialTraces(Files):
             # write traces to memmap
             for i, trace_key in enumerate(tqdm(trace_keys, desc="Traces")):
 
-                df = (trace.TraceSamples & trace_key).samples.loc[trial_ids]
+                df = (sample.TraceSamples & trace_key).samples.loc[trial_ids]
                 memmap[i] = np.concatenate(df.trace.values).astype(np.float32)
                 memmap.flush()
 

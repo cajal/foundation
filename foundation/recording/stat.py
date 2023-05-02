@@ -2,7 +2,7 @@ import numpy as np
 import datajoint as dj
 from operator import add
 from functools import reduce
-from foundation.recording import trial, trace
+from foundation.recording import trial, trace, sample
 from foundation.utility import stat
 from foundation.schemas import recording as schema
 
@@ -10,7 +10,7 @@ from foundation.schemas import recording as schema
 @schema.computed
 class TraceSummary:
     definition = """
-    -> trace.TraceSamples
+    -> sample.TraceSamples
     -> trial.TrialSet
     -> stat.SummaryLink
     ---
@@ -22,27 +22,27 @@ class TraceSummary:
     @property
     def key_source(self):
         from foundation.recording.scan import (
-            ScanTrials,
-            ScanResponses,
-            ScanModulation,
-            ScanPerspective,
+            ScanTrialSet,
+            ScanUnitSet,
+            ScanModulationSet,
+            ScanPerspectiveSet,
         )
 
         keys = [
-            trace.TraceSet.Member * ScanResponses * ScanTrials,
-            trace.TraceSet.Member * ScanModulation * ScanTrials,
-            trace.TraceSet.Member * ScanPerspective * ScanTrials,
+            trace.TraceSet.Member * ScanUnitSet * ScanTrialSet,
+            trace.TraceSet.Member * ScanPerspectiveSet * ScanTrialSet,
+            trace.TraceSet.Member * ScanModulationSet * ScanTrialSet,
         ]
         keys = reduce(add, [dj.U("trace_id", "trials_id") & key for key in keys])
 
-        return keys * trace.TraceSamples.proj() * stat.SummaryLink.proj()
+        return keys * sample.TraceSamples.proj() * stat.SummaryLink.proj()
 
     def make(self, key):
         # trial set
         trials = (trial.TrialSet & key).members.fetch("trial_id", order_by="member_id")
 
         # trial set samples
-        df = (trace.TraceSamples & key).samples.loc[trials]
+        df = (sample.TraceSamples & key).samples.loc[trials]
 
         # sample values and nans
         a = np.concatenate(df.trace.values)

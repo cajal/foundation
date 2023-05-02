@@ -1,8 +1,4 @@
-import numpy as np
-import pandas as pd
-from djutils import merge, row_property, row_method
-from operator import add
-from functools import reduce
+from djutils import merge, row_property
 from foundation.recording import trial
 from foundation.utility import resample
 from foundation.scan import timing as scan_timing, pupil as scan_pupil
@@ -199,73 +195,6 @@ class TraceTrials:
             tuple from trial.TrialSet
         """
         return trial.TrialSet & self
-
-
-@schema.computed
-class TraceSamples:
-    definition = """
-    -> TraceTrials
-    -> resample.RateLink
-    -> resample.OffsetLink
-    -> resample.ResampleLink
-    ---
-    trace           : longblob          # resampled trace
-    samples         : int unsigned      # number of samples
-    nans            : int unsigned      # number of nans
-    """
-
-    def make(self, key):
-        # resampling
-        period = (resample.RateLink & key).link.period
-        offset = (resample.OffsetLink & key).link.offset
-        resampler = (resample.ResampleLink & key).link.resampler
-
-        # trace resampler
-        trace_link = (TraceLink & key).link
-        r = resampler(times=trace_link.times, values=trace_link.values, target_period=period)
-
-        # trials
-        trials = merge((TraceTrials & key).trials.members, trial.TrialBounds)
-
-        # sample trials, ordered by member_id
-        start, end = trials.fetch("start", "end", order_by="member_id")
-        samples = [r(s, e, offset) for s, e in zip(start, end)]
-
-        # concatenate samples
-        trace = np.concatenate(samples).astype(np.float32)
-        samples = len(trace)
-        nans = np.isnan(trace).sum()
-
-        # insert key
-        self.insert1(dict(key, trace=trace, samples=samples, nans=nans))
-
-    @row_property
-    def samples(self):
-        """
-        Returns
-        -------
-        pd.DataFrame
-            index -- trial_id
-            trace -- resampled trace
-        """
-        # fetch data
-        key, trace, samples = self.fetch1("KEY", "trace", "samples")
-
-        # trials
-        trials = merge((TraceTrials & key).trials.members, trial.TrialSamples & key)
-
-        # trial samples, ordered by member_id
-        trial_id, trial_samples = trials.fetch("trial_id", "samples", order_by="member_id")
-
-        # trace split indices
-        *split, total = np.cumsum(trial_samples)
-        assert total == samples == len(trace)
-
-        # dataframe containing trial samples
-        return pd.DataFrame(
-            data={"trace": np.split(trace, split)},
-            index=pd.Index(trial_id, name="trial_id"),
-        )
 
 
 # -------------- Trace Filter --------------

@@ -7,7 +7,7 @@ from foundation.schemas import stimulus as schema
 
 
 @schema.computed
-class ResizedVideo(Files):
+class CachedVideo(Files):
     store = "scratch09"
     definition = """
     -> video.VideoLink

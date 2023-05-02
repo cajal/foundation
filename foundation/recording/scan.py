@@ -13,7 +13,7 @@ from foundation.schemas import recording as schema
 
 
 @schema.computed
-class ScanTrials:
+class ScanTrialSet:
     definition = """
     -> scan_trial.FilteredTrials.proj(scan_trial_filters_id='trial_filters_id')
     -> trial.TrialFilterSet
@@ -37,7 +37,7 @@ class ScanTrials:
 
 
 @schema.computed
-class ScanResponses:
+class ScanUnitSet:
     definition = """
     -> scan_unit.FilteredUnits
     -> trace.TraceFilterSet
@@ -62,7 +62,7 @@ class ScanResponses:
 
 
 @schema.computed
-class ScanPerspective:
+class ScanPerspectiveSet:
     definition = """
     -> scan_timing.Timing
     -> pipe_shared.TrackingMethod
@@ -90,7 +90,7 @@ class ScanPerspective:
 
 
 @schema.computed
-class ScanModulation:
+class ScanModulationSet:
     definition = """
     -> scan_timing.Timing
     -> pipe_shared.TrackingMethod
@@ -211,16 +211,16 @@ def populate_scan(
 
     # recording trial set
     key = dict(scan_key, scan_trial_filters_id=scan_trial_filters_id, trial_filters_id=trial_filters_id)
-    populate(ScanTrials, key)
-    trial_set = trial.TrialSet & (ScanTrials & key)
+    populate(ScanTrialSet, key)
+    trial_set = trial.TrialSet & (ScanTrialSet & key)
 
     # recording trace sets
     key = dict(scan_key, spike_method=spike_method, unit_filters_id=unit_filters_id, trace_filters_id=trace_filters_id)
-    populate(ScanResponses, key)
-    response_set = trace.TraceSet & (ScanResponses & key)
+    populate(ScanUnitSet, key)
+    response_set = trace.TraceSet & (ScanUnitSet & key)
 
     key = dict(scan_key, tracking_method=tracking_method, trace_filters_id=trace_filters_id)
-    populate(ScanPerspective, key)
-    populate(ScanModulation, key)
-    perspective_set = trace.TraceSet & (ScanPerspective & key)
-    modulation_set = trace.TraceSet & (ScanModulation & key)
+    populate(ScanPerspectiveSet, key)
+    populate(ScanModulationSet, key)
+    perspective_set = trace.TraceSet & (ScanPerspectiveSet & key)
+    modulation_set = trace.TraceSet & (ScanModulationSet & key)
