@@ -79,7 +79,7 @@ class TrialTraces(Files):
             j = 0
             for trial_id, trial_n in zip(trial_ids, tqdm(samples, desc="Trials")):
 
-                _traces = memmap[:, j : j + trial_n]
+                _traces = memmap[:, j : j + trial_n].T
                 _finite = bool(np.isfinite(_traces).all())
 
                 _key = dict(key, trial_id=trial_id)
