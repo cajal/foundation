@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import datajoint as dj
 from djutils import merge, row_property, row_method
+from operator import add
+from functools import reduce
 from foundation.recording import trial
 from foundation.utility import resample
 from foundation.scan import timing as scan_timing, pupil as scan_pupil
@@ -53,6 +55,16 @@ class _Trace:
         """
         raise NotImplementedError()
 
+    @row_property
+    def homogeneous(self):
+        """
+        Returns
+        -------
+        bool
+            homogeneous transformation of trace values
+        """
+        raise NotImplementedError()
+
 
 # -- Trace Types --
 
@@ -91,6 +103,10 @@ class ScanResponse(_Scan):
     def values(self):
         return (self.pipe.Activity.Trace & self).fetch1("trace").clip(0)
 
+    @row_property
+    def homogeneous(self):
+        return True
+
 
 @schema.lookup
 class ScanPupil(_Scan):
@@ -105,6 +121,10 @@ class ScanPupil(_Scan):
     @row_property
     def values(self):
         return (scan_pupil.PupilTrace & self).fetch1("pupil_trace")
+
+    @row_property
+    def homogeneous(self):
+        return False
 
 
 @schema.lookup
@@ -121,6 +141,10 @@ class ScanTreadmill(_Scan):
     @row_property
     def values(self):
         return (pipe_tread.Treadmill & self).fetch1("treadmill_vel")
+
+    @row_property
+    def homogeneous(self):
+        return True
 
 
 # -- Trace Link --
@@ -141,6 +165,19 @@ class TraceSet:
 
 
 # -- Computed Trace --
+
+
+@schema.computed
+class TraceHomogeneous:
+    definition = """
+    -> TraceLink
+    ---
+    homogeneous     : bool      # homogeneous tranformation
+    """
+
+    def make(self, key):
+        key["homogeneous"] = (TraceLink & key).link.homogeneous
+        self.insert1(key)
 
 
 @schema.computed

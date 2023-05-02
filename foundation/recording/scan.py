@@ -116,8 +116,10 @@ def populate_scan(
 
     # populate traces
     trace_set = response_set.members.proj() + perspective_set.members.proj() + modulation_set.members.proj()
+    populate(trace.TraceHomogeneous, trace_set)
     populate(trace.TraceTrials, trace_set)
     populate(trace.TraceSamples, trace_set)
+    populate(trace.TrialTraces, trace_set)
     populate(stat.TraceSummary, trace_set * trial_set.proj())
 
 
