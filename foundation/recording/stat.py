@@ -10,8 +10,8 @@ from foundation.schemas import recording as schema
 @schema.computed
 class TraceSummary:
     definition = """
-    -> trace.TraceTrials
     -> trial.TrialSet
+    -> trace.TraceLink
     -> resample.RateLink
     -> resample.OffsetLink
     -> resample.ResampleLink
@@ -40,21 +40,20 @@ class TraceSummary:
     @property
     def key_source(self):
         keys = self.scan_keys
-        keys = reduce(add, [dj.U("trace_id", "trials_id") & key for key in keys])
+        keys = reduce(add, [dj.U("trials_id", "trace_id") & key for key in keys])
         return keys * resample.RateLink * resample.OffsetLink * resample.ResampleLink * stat.SummaryLink
 
     def make(self, key):
         # trial set
-        trials_id = key.pop("trials_id")
-        trials_key = trial.TrialSet & {"trials_id": trials_id}
+        trials_key = trial.TrialSet & key
 
-        # resample keys
+        # resampling method
         rate_key = resample.RateLink & key
         offset_key = resample.OffsetLink & key
         resample_key = resample.ResampleLink & key
 
         # resampled trace
-        a = (trace.TraceTrials & key).trial_samples(trials_key, rate_key, offset_key, resample_key)
+        a = (trace.TraceLink & key).resampled_trials(trials_key, rate_key, offset_key, resample_key)
         a = np.concatenate(a)
 
         # summary statistic for non-nan values
@@ -62,4 +61,4 @@ class TraceSummary:
         s = (stat.SummaryLink & key).link.stat(a[~n])
 
         # insert key
-        self.insert1(dict(key, trials_id=trials_id, summary=s, samples=len(a), nans=n.sum()))
+        self.insert1(dict(key, summary=s, samples=len(a), nans=n.sum()))

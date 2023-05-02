@@ -1,6 +1,6 @@
 import numpy as np
 from djutils import merge, row_property, row_method
-from foundation.utils.trace import monotonic
+from foundation.utils.trace import monotonic, frame_index
 from foundation.stimulus import video
 from foundation.schemas.pipeline import pipe_stim
 from foundation.schemas import recording as schema
@@ -29,8 +29,8 @@ class _Trial:
         """
         Returns
         -------
-        video.VideoLink
-            tuple from video.VideoLink
+        foundation.stimulus.video.VideoLink
+            single tuple
         """
         raise NotImplementedError()
 
