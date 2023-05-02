@@ -217,33 +217,10 @@ class VideoInfo:
 
 # -------------- Video Filter --------------
 
-# -- Video Filter Base --
 
-
-class _VideoFilter:
-    """Video Filter"""
-
-    @row_method
-    def filter(self, videos):
-        """
-        Parameters
-        ----------
-        videos : VideoLink
-            VideoLink tuples
-
-        Returns
-        -------
-        VideoLink
-            retricted VideoLink tuples
-        """
-        raise NotImplementedError()
-
-
-# -- Video Filter Types --
-
-
-@schema.lookup
-class VideoTypeFilter(_VideoFilter):
+@schema.filter_lookup
+class VideoTypeFilter:
+    filter_type = VideoLink
     definition = """
     video_type      : varchar(128)      # video type
     include         : bool              # include or exclude
@@ -258,8 +235,9 @@ class VideoTypeFilter(_VideoFilter):
             return videos - self
 
 
-@schema.lookup
-class VideoSetFilter(_VideoFilter):
+@schema.filter_lookup
+class VideoSetFilter:
+    filter_type = VideoLink
     definition = """
     -> VideoSet
     include         : bool              # include or exclude
@@ -274,18 +252,15 @@ class VideoSetFilter(_VideoFilter):
             return videos - (VideoSet & self).members
 
 
-# -- Video Filter Link --
-
-
-@schema.link
+@schema.filter_link
 class VideoFilterLink:
-    links = [VideoTypeFilter, VideoSetFilter]
+    filters = [VideoTypeFilter, VideoSetFilter]
     name = "video_filter"
     comment = "video filter"
 
 
-@schema.set
+@schema.filter_link_set
 class VideoFilterSet:
-    keys = [VideoFilterLink]
+    filter_link = VideoFilterLink
     name = "video_filters"
     comment = "set of video filters"

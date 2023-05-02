@@ -172,33 +172,10 @@ class VideoSamples:
 
 # -------------- Trial Filter --------------
 
-# -- Trial Filter Base --
 
-
-class _TrialFilter:
-    """Trial Filter"""
-
-    @row_method
-    def filter(self, trials):
-        """
-        Parameters
-        ----------
-        trials : TrialLink
-            TrialLink tuples
-
-        Returns
-        -------
-        TrialLink
-            retricted TrialLink tuples
-        """
-        raise NotImplementedError()
-
-
-# -- Trial Filter Types --
-
-
-@schema.lookup
-class TrialVideoFilter(_TrialFilter):
+@schema.filter_lookup
+class TrialVideoFilter:
+    filter_type = TrialLink
     definition = """
     -> video.VideoFilterSet
     """
@@ -210,24 +187,20 @@ class TrialVideoFilter(_TrialFilter):
         videos = video.VideoLink & trial_videos
 
         # filter videos
-        for key in (video.VideoFilterSet & self).members.fetch("KEY", order_by="member_id"):
-            videos = (video.VideoFilterLink & key).link.filter(videos)
+        videos = (video.VideoFilterSet & self).filter(videos)
 
         return trials & (trial_videos & videos).proj()
 
 
-# -- Trial Filter Link --
-
-
-@schema.link
+@schema.filter_link
 class TrialFilterLink:
-    links = [TrialVideoFilter]
+    filters = [TrialVideoFilter]
     name = "trial_filter"
     comment = "recording trial filter"
 
 
-@schema.set
+@schema.filter_link_set
 class TrialFilterSet:
-    keys = [TrialFilterLink]
+    filter_link = TrialFilterLink
     name = "trial_filters"
     comment = "set of recording trial filters"

@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import datajoint as dj
 from djutils import merge, row_property, row_method
 from operator import add
 from functools import reduce
@@ -90,8 +89,7 @@ class ScanResponse(_Scan):
 
     @row_property
     def pipe(self):
-        key = dj.U("animal_id", "session", "scan_idx") & self
-        return resolve_pipe(**key.fetch1())
+        return resolve_pipe(self)
 
     @row_property
     def times(self):
@@ -273,43 +271,16 @@ class TraceSamples:
 
 # -------------- Trace Filter --------------
 
-# -- Trace Filter Base --
 
-
-class _TraceFilter:
-    """Trace Filter"""
-
-    @row_method
-    def filter(self, traces):
-        """
-        Parameters
-        ----------
-        traces : TraceLink
-            TraceLink tuples
-
-        Returns
-        -------
-        TraceLink
-            retricted TraceLink tuples
-        """
-        raise NotImplementedError()
-
-
-# -- Trace Filter Types --
-
-
-# -- Trace Filter Link --
-
-
-@schema.link
+@schema.filter_link
 class TraceFilterLink:
-    links = []
+    filters = []
     name = "trace_filter"
     comment = "recording trace filter"
 
 
-@schema.set
+@schema.filter_link_set
 class TraceFilterSet:
-    keys = [TraceFilterLink]
+    filter_link = TraceFilterLink
     name = "trace_filters"
     comment = "set of recording trace filters"

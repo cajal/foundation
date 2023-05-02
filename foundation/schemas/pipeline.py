@@ -13,23 +13,17 @@ pipe_dot = dj.create_virtual_module("pipe_dot", "pipeline_dot")
 pipe_rdk = dj.create_virtual_module("pipe_rdk", "pipeline_rdk")
 
 
-def resolve_pipe(animal_id, session, scan_idx):
+def resolve_pipe(key):
     """
     Parameters
     ----------
-    animal_id : int
-        animal id
-    session : int
-        session
-    scan_idx : int
-        scan idx
+    key
+        restriction for pipe_fuse.ScanDone
 
     Returns
     -------
         pipe_meso | pipe_reso
     """
-    key = dict(animal_id=animal_id, session=session, scan_idx=scan_idx)
-
     pipe = dj.U("pipe") & (pipe_fuse.ScanDone & key)
     pipe = pipe.fetch1("pipe")
 

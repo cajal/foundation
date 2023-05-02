@@ -16,33 +16,10 @@ class TrialSet:
 
 # -------------- Trial Filter --------------
 
-# -- Trial Filter Base --
 
-
-class _TrialFilter:
-    """Trial Filter"""
-
-    @row_method
-    def filter(self, trials):
-        """
-        Parameters
-        ----------
-        trials : pipe_stim.Trial
-            tuples from pipe_stim.Trial
-
-        Returns
-        -------
-        pipe_stim.Trial
-            restricted tuples
-        """
-        raise NotImplementedError()
-
-
-# -- Trial Filter Types --
-
-
-@schema.lookup
-class PupilNansFilter(_TrialFilter):
+@schema.filter_lookup
+class PupilNansFilter:
+    filter_type = pipe_stim.Trial
     definition = """
     -> pipe_shared.TrackingMethod
     max_nans        : decimal(4, 3)     # maximum tolerated fraction of nans
@@ -55,19 +32,16 @@ class PupilNansFilter(_TrialFilter):
         return trials & (key & "nans < max_nans").proj()
 
 
-# -- Trial Filter Link --
-
-
-@schema.link
+@schema.filter_link
 class TrialFilterLink:
-    links = [PupilNansFilter]
+    filters = [PupilNansFilter]
     name = "trial_filter"
     comment = "scan trial filter"
 
 
-@schema.set
+@schema.filter_link_set
 class TrialFilterSet:
-    keys = [TrialFilterLink]
+    filter_link = TrialFilterLink
     name = "trial_filters"
     comment = "set of scan trial filters"
 
@@ -89,8 +63,7 @@ class FilteredTrials:
         trials = pipe_stim.Trial & key
 
         # filter trials
-        for filter_key in (TrialFilterSet & key).members.fetch("KEY", order_by="member_id"):
-            trials = (TrialFilterLink & key).link.filter(trials)
+        trials = (TrialFilterLink & key).filter(trials)
 
         # insert trial set
         trial_set = TrialSet.fill(trials, prompt=False)

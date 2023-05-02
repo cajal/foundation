@@ -24,7 +24,7 @@ class Timing:
         from scipy.interpolate import interp1d
 
         # resolve pipeline
-        pipe = resolve_pipe(**key)
+        pipe = resolve_pipe(key)
 
         # number of planes
         n = (pipe.ScanInfo & key).proj(n="nfields div nrois").fetch1("n")

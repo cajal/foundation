@@ -114,14 +114,6 @@ def populate_scan(
     perspective_set = trace.TraceSet & (ScanPerspective & key)
     modulation_set = trace.TraceSet & (ScanModulation & key)
 
-    # # populate traces
-    # trace_set = response_set.members.proj() + perspective_set.members.proj() + modulation_set.members.proj()
-    # populate(trace.TraceHomogeneous, trace_set)
-    # populate(trace.TraceTrials, trace_set)
-    # populate(trace.TraceSamples, trace_set)
-    # populate(cache.TrialTraces, trace_set)
-    # populate(stat.TraceSummary, trace_set * trial_set.proj())
-
 
 @schema.computed
 class ScanTrials:
@@ -140,8 +132,7 @@ class ScanTrials:
 
         # filter trials
         trials = trial.TrialLink & trials
-        for filter_key in (trial.TrialFilterSet & key).members.fetch("KEY", order_by="member_id"):
-            trials = (trial.TrialFilterLink & filter_key).link.filter(trials)
+        trials = (trial.TrialFilterSet & key).filter(trials)
 
         # trial set
         trials = trial.TrialSet.fill(trials, prompt=False)
@@ -166,8 +157,7 @@ class ScanResponses:
 
         # filter traces
         traces = trace.TraceLink & units
-        for filter_key in (trace.TraceFilterSet & key).members.fetch("KEY", order_by="member_id"):
-            traces = (trace.TraceFilterLink & filter_key).link.filter(traces)
+        traces = (trace.TraceFilterSet & key).filter(traces)
 
         # trace set
         traces = trace.TraceSet.fill(traces, prompt=False)
@@ -195,8 +185,7 @@ class ScanPerspective:
 
         # filter traces
         traces = trace.TraceLink & pupils
-        for filter_key in (trace.TraceFilterSet & key).members.fetch("KEY", order_by="member_id"):
-            traces = (trace.TraceFilterLink & filter_key).link.filter(traces)
+        traces = (trace.TraceFilterSet & key).filter(traces)
 
         # trace set
         traces = trace.TraceSet.fill(traces, prompt=False)
@@ -230,8 +219,7 @@ class ScanModulation:
 
         # filter traces
         traces = trace.TraceLink & [pupil, tread]
-        for filter_key in (trace.TraceFilterSet & key).members.fetch("KEY", order_by="member_id"):
-            traces = (trace.TraceFilterLink & filter_key).link.filter(traces)
+        traces = (trace.TraceFilterSet & key).filter(traces)
 
         # trace set
         traces = trace.TraceSet.fill(traces, prompt=False)

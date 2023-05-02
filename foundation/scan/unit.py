@@ -17,33 +17,10 @@ class UnitSet:
 
 # -------------- Unit Filter --------------
 
-# -- Unit Filter Base --
 
-
-class _UnitFilter:
-    """Unit Filter"""
-
-    @row_method
-    def filter(self, units):
-        """
-        Parameters
-        ----------
-        units : pipe_fuse.ScanSet.Unit
-            tuples from pipe_fuse.ScanSet.Unit
-
-        Returns
-        -------
-        pipe_fuse.ScanSet.Unit
-            restricted tuples
-        """
-        raise NotImplementedError()
-
-
-# -- Unit Filter Types --
-
-
-@schema.lookup
-class UnitMaskType(_UnitFilter):
+@schema.filter_lookup
+class UnitMaskType:
+    filter_type = pipe_fuse.ScanSet.Unit
     definition = """
     -> pipe_shared.PipelineVersion
     -> pipe_shared.SegmentationMethod
@@ -53,31 +30,25 @@ class UnitMaskType(_UnitFilter):
 
     @row_method
     def filter(self, units):
-        key = dj.U("animal_id", "session", "scan_idx") & units
-        pipe = resolve_pipe(**key.fetch1())
-
+        pipe = resolve_pipe(units)
         key = merge(
             units,
             self.proj(target="type"),
             pipe.MaskClassification.Type * pipe.ScanSet.Unit,
         )
-
         return units & (key & "type = target")
 
 
-# -- Unit Filter Link --
-
-
-@schema.link
+@schema.filter_link
 class UnitFilterLink:
-    links = [UnitMaskType]
+    filters = [UnitMaskType]
     name = "unit_filter"
     comment = "scan unit filter"
 
 
-@schema.set
+@schema.filter_link_set
 class UnitFilterSet:
-    keys = [UnitFilterLink]
+    filter_link = UnitFilterLink
     name = "unit_filters"
     comment = "set of scan unit filters"
 
@@ -103,8 +74,7 @@ class FilteredUnits:
         units = pipe_fuse.ScanSet.Unit & key
 
         # filter units
-        for filter_key in (UnitFilterSet & key).members.fetch("KEY", order_by="member_id"):
-            units = (UnitFilterLink & key).link.filter(units)
+        units = (UnitFilterSet & key).filter(units)
 
         # insert unit set
         unit_set = UnitSet.fill(units, prompt=False)
