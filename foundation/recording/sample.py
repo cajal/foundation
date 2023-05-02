@@ -108,7 +108,7 @@ class TraceSamples:
             trace -- resampled trace
         """
         # fetch data
-        key, samps, samples = self.fetch1("KEY", "trace", "samples")
+        key, samps, total = self.fetch1("KEY", "trace", "samples")
 
         # trials
         trials = merge((trace.TraceTrials & key).trials.members, TrialSamples & key)
@@ -117,8 +117,8 @@ class TraceSamples:
         trial_id, trial_samples = trials.fetch("trial_id", "samples", order_by="member_id")
 
         # trace split indices
-        *split, total = np.cumsum(trial_samples)
-        assert total == samples == len(samps)
+        *split, _total = np.cumsum(trial_samples)
+        assert _total == total == len(samps)
 
         # dataframe containing trial samples
         return pd.DataFrame(
