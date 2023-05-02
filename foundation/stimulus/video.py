@@ -2,8 +2,7 @@ import io
 import av
 import numpy as np
 from djutils import row_property, row_method
-from PIL import Image
-from foundation.utils.video import Video
+from foundation.utils.video import Image, Video
 from foundation.schemas.pipeline import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
 from foundation.schemas import stimulus as schema
 

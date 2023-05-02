@@ -114,13 +114,13 @@ def populate_scan(
     perspective_set = trace.TraceSet & (ScanPerspective & key)
     modulation_set = trace.TraceSet & (ScanModulation & key)
 
-    # populate traces
-    trace_set = response_set.members.proj() + perspective_set.members.proj() + modulation_set.members.proj()
-    populate(trace.TraceHomogeneous, trace_set)
-    populate(trace.TraceTrials, trace_set)
-    populate(trace.TraceSamples, trace_set)
-    populate(cache.TrialTraces, trace_set)
-    populate(stat.TraceSummary, trace_set * trial_set.proj())
+    # # populate traces
+    # trace_set = response_set.members.proj() + perspective_set.members.proj() + modulation_set.members.proj()
+    # populate(trace.TraceHomogeneous, trace_set)
+    # populate(trace.TraceTrials, trace_set)
+    # populate(trace.TraceSamples, trace_set)
+    # populate(cache.TrialTraces, trace_set)
+    # populate(stat.TraceSummary, trace_set * trial_set.proj())
 
 
 @schema.computed

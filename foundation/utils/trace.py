@@ -2,7 +2,6 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import windows
 from .signal import lowpass_filter
-from .logging import logger
 
 
 # ------- Trace Functions -------
@@ -235,12 +234,9 @@ class Hamming(Trace):
         y = fill_nans(self.transform_values(self.values))
 
         if self.target_period > self.source_period:
-            logger.info("Target period is greater than source period. Filtering trace with Hamming window.")
-
             r = round(self.target_period / self.source_period)
             h = windows.hamming(r * 2 + 1)
             f = h / h.sum()
-
             y = np.convolve(y, f, mode="same")
 
         return y

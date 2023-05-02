@@ -67,14 +67,15 @@ class _Offset:
 # -- Offset Types --
 
 
-@schema.method
-class ZeroOffset(_Offset):
-    name = "zero_offset"
-    comment = "zero resampling offset"
+@schema.lookup
+class MsOffset(_Offset):
+    definition = """
+    ms_offset       : int unsigned      # millisecond offset
+    """
 
     @row_property
     def offset(self):
-        return 0
+        return self.fetch1("ms_offset") / 1000
 
 
 # -- Offset Link --
@@ -82,7 +83,7 @@ class ZeroOffset(_Offset):
 
 @schema.link
 class OffsetLink:
-    links = [ZeroOffset]
+    links = [MsOffset]
     name = "offset"
     comment = "resampling offset"
 

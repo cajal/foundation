@@ -1,4 +1,5 @@
 import numpy as np
+from PIL import Image
 from .logging import logger
 
 
@@ -7,7 +8,7 @@ class Video:
         """
         Parameters
         ----------
-        frames : Sequence[PIL.Image]
+        frames : Sequence[Image]
             stimulus frames
         fixed : bool
             fixed frame rate
@@ -15,10 +16,9 @@ class Video:
         self.frames = tuple(frames)
         self.fixed = bool(fixed)
 
-        for frame in self.frames[1:]:
-            assert frame.mode == self.frames[0].mode
-            assert frame.height == self.frames[0].height
-            assert frame.width == self.frames[0].width
+        assert np.unique([f.mode for f in self.frames]).size == 1
+        assert np.unique([f.height for f in self.frames]).size == 1
+        assert np.unique([f.width for f in self.frames]).size == 1
 
     def __len__(self):
         return len(self.frames)
@@ -84,12 +84,36 @@ class Video:
         else:
             raise NotImplementedError(f"Mode {self.mode} has not yet been implemented.")
 
+    @staticmethod
+    def fromarray(array, mode=None, fixed=True):
+        """
+        Returns
+        -------
+        array: 3D array | 4D array
+            [frames, height, width] | [frames, height, width, channels]
+        mode : bool
+            frame mode
+        fixed : bool
+            fixed frame rate
+
+        Returns
+        -------
+        Video
+            new video with tranformed frames
+        """
+        if array.ndim == 4:
+            array = array.squeeze(3)
+        elif array.ndim != 3:
+            raise ValueError("Array must be either 4D or 3D")
+
+        return Video([Image.fromarray(frame, mode=mode) for frame in array], fixed=fixed)
+
     def apply(self, transform):
         """
         Parameters
         ----------
-        tranform : Callable[[PIL.Image], PIL.Image]
-            function that takes a PIL.Image and returns a transformed PIL.Image
+        tranform : Callable[[Image], Image]
+            function that takes a Image and returns a transformed Image
 
         Returns
         -------
