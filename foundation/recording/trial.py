@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.interpolate import interp1d
 from djutils import merge, row_property, row_method
 from foundation.utils.trace import monotonic, frame_index
 from foundation.stimulus import video
@@ -64,6 +65,50 @@ class TrialLink:
     links = [ScanTrial]
     name = "trial"
     comment = "recording trial"
+
+    @row_method
+    def resampled_video(self, rate_key):
+        """
+        Parameters
+        ----------
+        rate_key : foundation.utility.resample.RateLink
+            single tuple
+
+        Returns
+        -------
+        1D array
+            resampled video frame index
+            dtype = int
+        """
+        # flip times
+        flips = self.link.flips
+
+        # trial and video info
+        info = merge(self, TrialBounds, TrialVideo, video.VideoInfo)
+        start, frames = info.fetch1("start", "frames")
+
+        if len(flips) != frames:
+            raise ValueError("Flips do not match video frames.")
+
+        # sampling period
+        period = rate_key.link.period
+
+        # sampling index for each flip
+        index = frame_index(flips - start, period)
+        samples = np.arange(index[-1] + 1)
+
+        # first flip of each sampling index
+        first = np.diff(index, prepend=-1) > 0
+
+        # for each of the samples, get the previous flip/video index
+        previous = interp1d(
+            x=index[first],
+            y=np.where(first)[0],
+            kind="previous",
+        )
+
+        # video frame index for each sample
+        return previous(samples).astype(int)
 
 
 @schema.set
