@@ -26,7 +26,7 @@ class TrialTraces(Files):
     """
 
     @property
-    def keys(self):
+    def scan_keys(self):
         from foundation.recording.scan import (
             ScanTrials,
             ScanResponses,
@@ -34,14 +34,17 @@ class TrialTraces(Files):
             ScanPerspective,
         )
 
-        keys = [
-            trial.TrialSet.Member * ScanTrials * ScanResponses,
-            trial.TrialSet.Member * ScanTrials * ScanModulation,
-            trial.TrialSet.Member * ScanTrials * ScanPerspective,
+        return [
+            trial.TrialSet.Member * ScanTrials * ScanResponses * trace.TraceSamples,
+            trial.TrialSet.Member * ScanTrials * ScanModulation * trace.TraceSamples,
+            trial.TrialSet.Member * ScanTrials * ScanPerspective * trace.TraceSamples,
         ]
-        keys = reduce(add, [dj.U("traces_id", "trial_id") & key for key in keys])
-        keys = keys * (resample.RateLink * resample.OffsetLink * resample.ResampleLink).proj()
-        return keys - self
+
+    @property
+    def keys(self):
+        keys = self.scan_keys
+        keys = [dj.U(*self.primary_key) & key for key in keys]
+        return reduce(add, keys) - self
 
     @property
     def key_source(self):
