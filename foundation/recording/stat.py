@@ -38,17 +38,17 @@ class TraceSummary:
         return keys * trace.TraceSamples.proj() * stat.SummaryLink.proj()
 
     def make(self, key):
-        # trace samples
-        df = (trace.TraceSamples & key).trials
-
         # trial set
         trials = (trial.TrialSet & key).members.fetch("trial_id", order_by="member_id")
 
         # trial set samples
-        a = np.concatenate(df.loc[trials].trace.values)
+        df = (trace.TraceSamples & key).samples.loc[trials]
 
-        # summary statistic of non-nan values
+        # sample values and nans
+        a = np.concatenate(df.trace.values)
         n = np.isnan(a)
+
+        # summary statistic for non-nan values
         summary = (stat.SummaryLink & key).link.stat(a[~n])
 
         # insert key

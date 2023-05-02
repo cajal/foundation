@@ -195,10 +195,10 @@ class TraceTrials:
         """
         Returns
         -------
-        trial.TrialSet.Member
-            members from trial set
+        trial.TrialSet
+            tuple from trial.TrialSet
         """
-        return (trial.TrialSet & self).members
+        return trial.TrialSet & self
 
 
 @schema.computed
@@ -225,8 +225,7 @@ class TraceSamples:
         r = resampler(times=trace_link.times, values=trace_link.values, target_period=period)
 
         # trials
-        trials = (TraceTrials & key).trials
-        trials = merge(trials, trial.TrialBounds)
+        trials = merge((TraceTrials & key).trials.members, trial.TrialBounds)
 
         # sample trials, ordered by member_id
         start, end = trials.fetch("start", "end", order_by="member_id")
@@ -241,7 +240,7 @@ class TraceSamples:
         self.insert1(dict(key, trace=trace, samples=samples, nans=nans))
 
     @row_property
-    def trials(self):
+    def samples(self):
         """
         Returns
         -------
@@ -253,7 +252,7 @@ class TraceSamples:
         key, trace, samples = self.fetch1("KEY", "trace", "samples")
 
         # trials
-        trials = merge((TraceTrials & key).trials, trial.TrialSamples & key)
+        trials = merge((TraceTrials & key).trials.members, trial.TrialSamples & key)
 
         # trial samples, ordered by member_id
         trial_id, trial_samples = trials.fetch("trial_id", "samples", order_by="member_id")

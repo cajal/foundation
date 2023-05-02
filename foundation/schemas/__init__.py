@@ -11,5 +11,6 @@ config["stores"] = {
 
 utility = Schema("foundation_utility")
 stimulus = Schema("foundation_stimulus")
-recording = Schema("foundation_recording")
 scan = Schema("foundation_scan")
+recording = Schema("foundation_recording")
+dataset = Schema("foundation_dataset")

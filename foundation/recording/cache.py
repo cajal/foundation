@@ -35,16 +35,17 @@ class TrialTraces(Files):
         )
 
         return [
-            trial.TrialSet.Member * ScanTrials * ScanResponses * trace.TraceSamples,
-            trial.TrialSet.Member * ScanTrials * ScanModulation * trace.TraceSamples,
-            trial.TrialSet.Member * ScanTrials * ScanPerspective * trace.TraceSamples,
+            trial.TrialSet.Member * ScanTrials * ScanResponses,
+            trial.TrialSet.Member * ScanTrials * ScanModulation,
+            trial.TrialSet.Member * ScanTrials * ScanPerspective,
         ]
 
     @property
     def keys(self):
         keys = self.scan_keys
-        keys = [dj.U(*self.primary_key) & key for key in keys]
-        return reduce(add, keys) - self
+        keys = reduce(add, [dj.U("traces_id", "trial_id") & key for key in keys])
+        keys = keys * (resample.RateLink * resample.OffsetLink * resample.ResampleLink).proj()
+        return keys - self
 
     @property
     def key_source(self):
@@ -79,7 +80,7 @@ class TrialTraces(Files):
             # write traces to memmap
             for i, trace_key in enumerate(tqdm(trace_keys, desc="Traces")):
 
-                df = (trace.TraceSamples & trace_key).trials.loc[trial_ids]
+                df = (trace.TraceSamples & trace_key).samples.loc[trial_ids]
                 memmap[i] = np.concatenate(df.trace.values).astype(np.float32)
                 memmap.flush()
 
