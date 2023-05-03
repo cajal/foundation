@@ -21,7 +21,7 @@ class _Trace:
     """Recording Trace"""
 
     @row_property
-    def trials(self):
+    def trial_set(self):
         """
         Returns
         -------
@@ -68,11 +68,11 @@ class _Scan(_Trace):
     """Scan Trace"""
 
     @row_property
-    def trials(self):
-        trials = pipe_stim.Trial.proj() & self
-        trials = merge(trials, trial.TrialLink.ScanTrial)
-        trials = trial.TrialSet.fill(trials, prompt=False, silent=True)
-        return trial.TrialSet & trials
+    def trial_set(self):
+        key = pipe_stim.Trial.proj() & self
+        key = merge(key, trial.TrialLink.ScanTrial)
+        key = trial.TrialSet.fill(key, prompt=False, silent=True)
+        return trial.TrialSet & key
 
 
 @schema.lookup
@@ -147,17 +147,17 @@ class TraceLink:
     comment = "recording trace"
 
     @row_method
-    def resampled_trials(self, trial_keys, rate_key, offset_key, resample_key):
+    def resampled_trials(self, trial_links, rate_link, offset_link, resample_link):
         """
         Parameters
         ----------
-        trial_keys : foundation.recording.trial.TrialLink
+        trial_links : foundation.recording.trial.TrialLink
             tuples
-        rate_key : foundation.utility.resample.RateLink
+        rate_link : foundation.utility.resample.RateLink
             single tuple
-        offset_key : foundation.utility.resample.OffsetLink
+        offset_link : foundation.utility.resample.OffsetLink
             single tuple
-        resample_key : foundation.utility.resample.ResampleLink
+        resample_link : foundation.utility.resample.ResampleLink
             single tuple
 
         Returns
@@ -170,22 +170,22 @@ class TraceLink:
         valid_trials = trial.TrialSet & merge(self, TraceTrials)
         valid_trials = valid_trials.members
 
-        if trial_keys - valid_trials:
+        if trial_links - valid_trials:
             raise RestrictionError("Requested trials do not belong to the trace.")
 
-        # resampling method
-        period = rate_key.link.period
-        offset = offset_key.link.offset
-        resample = resample_key.link.resample
+        # resampling period, offset, method
+        period = rate_link.link.period
+        offset = offset_link.link.offset
+        resample = resample_link.link.resample
 
-        # trace resampler
+        # trace resampling function
         trace = self.link
-        r = resample(times=trace.times, values=trace.values, target_period=period)
+        f = resample(times=trace.times, values=trace.values, target_period=period)
 
         # resampled trials
-        trial_timing = merge(trial_keys, trial.TrialBounds)
+        trial_timing = merge(trial_links, trial.TrialBounds)
         trial_ids, starts, ends = trial_timing.fetch("trial_id", "start", "end", order_by="start")
-        samples = [r(a, b, offset) for a, b in zip(starts, ends)]
+        samples = [f(a, b, offset) for a, b in zip(starts, ends)]
 
         # pandas Series containing resampled trials
         return pd.Series(
@@ -226,7 +226,7 @@ class TraceTrials:
     """
 
     def make(self, key):
-        key["trials_id"] = (TraceLink & key).link.trials.fetch1("trials_id")
+        key["trials_id"] = (TraceLink & key).link.trial_set.fetch1("trials_id")
         self.insert1(key)
 
 

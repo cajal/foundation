@@ -135,7 +135,6 @@ class Hamming(_Resample):
             target_period=target_period,
         )
 
-
 @schema.lookup
 class LowpassHamming(_Resample):
     definition = """

@@ -67,17 +67,17 @@ class TrialLink:
     comment = "recording trial"
 
     @row_method
-    def resampled_video(self, rate_key):
+    def resampled_video_index(self, rate_link):
         """
         Parameters
         ----------
-        rate_key : foundation.utility.resample.RateLink
+        rate_link : foundation.utility.resample.RateLink
             single tuple
 
         Returns
         -------
         1D array
-            resampled video frame index
+            video frame index
             dtype = int
         """
         # flip times
@@ -90,10 +90,10 @@ class TrialLink:
         if len(flips) != frames:
             raise ValueError("Flips do not match video frames.")
 
-        # sampling period
-        period = rate_key.link.period
+        # resampling period
+        period = rate_link.link.period
 
-        # sampling index for each flip
+        # sample index for each flip
         index = frame_index(flips - start, period)
         samples = np.arange(index[-1] + 1)
 

@@ -1,19 +1,19 @@
 import os
 import numpy as np
 import datajoint as dj
-from djutils import merge, Files
+from djutils import Files
 from tempfile import TemporaryDirectory
-from pandas.testing import assert_series_equal
+from tqdm import tqdm
 from operator import add
 from functools import reduce
-from tqdm import tqdm
+from pandas.testing import assert_series_equal
 from foundation.recording import trial, trace
 from foundation.utility import resample
 from foundation.schemas import recording as schema
 
 
 @schema.computed
-class ResampledVideo(Files):
+class ResampledVideoIndex(Files):
     store = "scratch09"
     definition = """
     -> trial.TrialLink
@@ -25,10 +25,10 @@ class ResampledVideo(Files):
 
     def make(self, key):
         # resampling rate
-        rate_key = resample.RateLink & key
+        rate_link = resample.RateLink & key
 
         # resampled video frame indices
-        index = (trial.TrialLink & key).resampled_video(rate_key)
+        index = (trial.TrialLink & key).resampled_video_index(rate_link)
 
         # save file
         file = os.path.join(self.tuple_dir(key, create=True), "index.npy")
@@ -82,23 +82,21 @@ class ResampledTraces(Files):
         return key * trial.TrialLink.proj()
 
     def make(self, key):
-        # trial set
-        key.pop("trial_id")
-        trial_keys = self.keys & key
-        trial_keys = trial.TrialLink & trial_keys
+        # traces, ordered by member_id
+        trace_keys = (trace.TraceSet & key).members.fetch("KEY", order_by="member_id")
 
-        # resampling method
-        rate_key = resample.RateLink & key
-        offset_key = resample.OffsetLink & key
-        resample_key = resample.ResampleLink & key
+        # trial links
+        key.pop("trial_id")
+        trial_links = trial.TrialLink & (self.keys & key)
+
+        # resampling links
+        rate_link = resample.RateLink & key
+        offset_link = resample.OffsetLink & key
+        resample_link = resample.ResampleLink & key
 
         def sample(trace_key):
-            link = trace.TraceLink & trace_key
-            return link.resampled_trials(trial_keys, rate_key, offset_key, resample_key)
-
-        # trace set, ordered by member_id
-        trace_keys = (trace.TraceSet & key).members
-        trace_keys = trace_keys.fetch("KEY", order_by="member_id")
+            trace_link = trace.TraceLink & trace_key
+            return trace_link.resampled_trials(trial_links, rate_link, offset_link, resample_link)
 
         # sample first trace
         s = sample(trace_keys[0])
