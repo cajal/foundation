@@ -50,7 +50,7 @@ class ScanUnitSet:
         # filtered scan units
         units = scan_unit.FilteredUnits & key
         units = scan_unit.UnitSet & units
-        units = merge(units.members, trace.TraceLink.ScanResponse & key)
+        units = merge(units.members, trace.TraceLink.ScanUnit & key)
 
         # filter traces
         traces = trace.TraceLink & units
