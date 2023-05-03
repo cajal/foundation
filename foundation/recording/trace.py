@@ -1,7 +1,7 @@
 import pandas as pd
 from djutils import merge, row_property, row_method, RestrictionError
 from foundation.recording import trial
-from foundation.scan import timing as scan_timing, pupil as scan_pupil
+from foundation.scan import experiment as scan_exp, pupil as scan_pupil
 from foundation.schemas.pipeline import (
     pipe_fuse,
     pipe_shared,
@@ -78,14 +78,14 @@ class _Scan(_Trace):
 @schema.lookup
 class ScanResponse(_Scan):
     definition = """
-    -> scan_timing.Timing
+    -> scan_exp.Scan
     -> pipe_fuse.ScanSet.Unit
     -> pipe_shared.SpikeMethod
     """
 
     @row_property
     def times(self):
-        times = (scan_timing.Timing & self).fetch1("scan_times")
+        times = (scan_exp.Scan & self).fetch1("scan_times")
         delay = (resolve_pipe(self).ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
         return times + delay
 
@@ -106,7 +106,7 @@ class ScanPupil(_Scan):
 
     @row_property
     def times(self):
-        return (scan_timing.Timing & self).fetch1("eye_times")
+        return (scan_exp.Scan & self).fetch1("eye_times")
 
     @row_property
     def values(self):
@@ -120,13 +120,13 @@ class ScanPupil(_Scan):
 @schema.lookup
 class ScanTreadmill(_Scan):
     definition = """
-    -> scan_timing.Timing
+    -> scan_exp.Scan
     -> pipe_tread.Treadmill
     """
 
     @row_property
     def times(self):
-        return (scan_timing.Timing & self).fetch1("treadmill_times")
+        return (scan_exp.Scan & self).fetch1("treadmill_times")
 
     @row_property
     def values(self):

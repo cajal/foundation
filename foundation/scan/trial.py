@@ -1,5 +1,5 @@
 from djutils import merge, row_method
-from foundation.scan import timing, pupil
+from foundation.scan import experiment, pupil
 from foundation.schemas.pipeline import pipe_stim, pipe_shared
 from foundation.schemas import scan as schema
 
@@ -52,7 +52,7 @@ class TrialFilterSet:
 @schema.computed
 class FilteredTrials:
     definition = """
-    -> timing.Timing
+    -> experiment.Scan
     -> TrialFilterSet
     ---
     -> TrialSet

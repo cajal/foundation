@@ -3,7 +3,7 @@ from djutils import merge
 from foundation.recording import trial, trace
 from foundation.stimulus import video
 from foundation.scan import (
-    timing as scan_timing,
+    experiment as scan_exp,
     pupil as scan_pupil,
     trial as scan_trial,
     unit as scan_unit,
@@ -64,7 +64,7 @@ class ScanUnitSet:
 @schema.computed
 class ScanPerspectiveSet:
     definition = """
-    -> scan_timing.Timing
+    -> scan_exp.Scan
     -> pipe_shared.TrackingMethod
     -> trace.TraceFilterSet
     ---
@@ -74,7 +74,7 @@ class ScanPerspectiveSet:
     def make(self, key):
         # scan pupil traces
         pupils = merge(
-            scan_timing.Timing & key,
+            scan_exp.Scan & key,
             scan_pupil.PupilTrace & key,
             trace.TraceLink.ScanPupil,
         )
@@ -92,7 +92,7 @@ class ScanPerspectiveSet:
 @schema.computed
 class ScanModulationSet:
     definition = """
-    -> scan_timing.Timing
+    -> scan_exp.Scan
     -> pipe_shared.TrackingMethod
     -> trace.TraceFilterSet
     ---
@@ -102,7 +102,7 @@ class ScanModulationSet:
     def make(self, key):
         # scan pupil trace
         pupil = merge(
-            scan_timing.Timing & key,
+            scan_exp.Scan & key,
             scan_pupil.PupilTrace & key,
             trace.TraceLink.ScanPupil,
         )
@@ -110,7 +110,7 @@ class ScanModulationSet:
 
         # scan treadmill trace
         tread = merge(
-            scan_timing.Timing & key,
+            scan_exp.Scan & key,
             trace.TraceLink.ScanTreadmill,
         )
 
@@ -166,8 +166,8 @@ def populate_scan(
         table.insert(keys, ignore_extra_fields=True, skip_duplicates=True)
 
     # scan timing
-    populate(scan_timing.Timing, scan_key)
-    insert(trace.ScanTreadmill, scan_timing.Timing & scan_key)
+    populate(scan_exp.Scan, scan_key)
+    insert(trace.ScanTreadmill, scan_exp.Scan & scan_key)
 
     # scan pupil
     key = dict(scan_key, tracking_method=tracking_method)

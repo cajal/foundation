@@ -23,12 +23,12 @@ class _Recording:
         """
         Returns
         -------
-        trial.TrialSet
-            tuple from trial.TrialSet
-        trace.TraceSet
-            tuple from trace.TraceSet
-        TraceDataType
-            tuple from TraceDataType
+        foundation.recording.trial.TrialSet
+            single tuple
+        foundation.recording.trace.TraceSet
+            single tuple
+        foundation.dataset.recording.TraceDataType
+            single tuple
         """
         raise NotImplementedError()
 

@@ -11,7 +11,7 @@ from foundation.schemas import scan as schema
 
 
 @schema.computed
-class Timing:
+class Scan:
     definition = """
     -> pipe_exp.Scan
     ---
