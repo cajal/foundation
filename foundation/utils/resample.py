@@ -239,3 +239,42 @@ class Hamming(Trace):
             y = np.convolve(y, f, mode="same")
 
         return y
+
+
+class LowpassHamming(Trace):
+    """Lowpass Hamming filtered trace"""
+
+    def __init__(self, times, values, target_period, lowpass_period):
+        """
+        Parameters
+        -------
+        times : 1D array
+            trace times, monotonically increasing
+        values : 1D array
+            trace values, same length as times
+        target_period : float
+            target sampling period
+        lowpass_period : float
+            lowpass filter period
+        """
+        self.lowpass_period = lowpass_period
+
+        super().__init__(times=times, values=values, target_period=target_period)
+
+    @property
+    def x(self):
+        return fill_nans(self.transform_times(self.times))
+
+    @property
+    def y(self):
+        y = fill_nans(self.transform_values(self.values))
+
+        if self.lowpass_period > self.source_period:
+            r = round(self.lowpass_period / self.source_period)
+            h = windows.hamming(r * 2 + 1)
+            f = h / h.sum()
+            y = np.convolve(y, f, mode="same")
+
+            print(self.lowpass_period, self.source_period, r)
+
+        return y

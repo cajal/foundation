@@ -126,9 +126,33 @@ class Hamming(_Resample):
 
     @row_method
     def resampler(self, times, values, target_period):
+
         from foundation.utils.resample import Hamming
 
-        return Hamming(times, values, target_period)
+        return Hamming(
+            times=times,
+            values=values,
+            target_period=target_period,
+        )
+
+
+@schema.lookup
+class LowpassHamming(_Resample):
+    definition = """
+    lowpass_hz      : decimal(6, 3)     # lowpass filter rate
+    """
+
+    @row_method
+    def resampler(self, times, values, target_period):
+
+        from foundation.utils.resample import LowpassHamming
+
+        return LowpassHamming(
+            times=times,
+            values=values,
+            target_period=target_period,
+            lowpass_period=1 / float(self.fetch1("lowpass_hz")),
+        )
 
 
 # -- Resample Link --
@@ -136,6 +160,6 @@ class Hamming(_Resample):
 
 @schema.link
 class ResampleLink:
-    links = [Hamming]
+    links = [Hamming, LowpassHamming]
     name = "resample"
     comment = "trace resampling"
