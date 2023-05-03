@@ -110,7 +110,7 @@ class _Resample:
 
         Returns
         -------
-        foundation.utils.resample.Trace
+        foundation.utils.resample.Resample
             trace resampler
         """
         raise NotImplementedError()

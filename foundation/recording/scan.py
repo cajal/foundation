@@ -15,7 +15,7 @@ from foundation.schemas import recording as schema
 @schema.computed
 class ScanTrialSet:
     definition = """
-    -> scan_trial.FilteredTrials.proj(scan_trial_filters_id='trial_filters_id')
+    -> scan_trial.FilteredTrials.proj(scan_trial_filters_id="trial_filters_id")
     -> trial.TrialFilterSet
     ---
     -> trial.TrialSet

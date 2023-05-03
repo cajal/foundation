@@ -109,11 +109,11 @@ def sample_times(start, end, period):
     return np.arange(n) * period + start
 
 
-# ------- Trace Base -------
+# ------- Resample Base -------
 
 
-class Trace:
-    """Trace Base"""
+class Resample:
+    """Resample Base"""
 
     def __init__(self, times, values, target_period):
         """
@@ -206,7 +206,7 @@ class Trace:
 # ------- Trace Types -------
 
 
-class Nans(Trace):
+class Nans(Resample):
     """Trace Nans"""
 
     @property
@@ -221,8 +221,8 @@ class Nans(Trace):
             return nans * 1.0
 
 
-class Hamming(Trace):
-    """Hamming filtered trace"""
+class Hamming(Resample):
+    """Resampling with Hamming filtering"""
 
     @property
     def x(self):
@@ -241,8 +241,8 @@ class Hamming(Trace):
         return y
 
 
-class LowpassHamming(Trace):
-    """Lowpass Hamming filtered trace"""
+class LowpassHamming(Resample):
+    """Resample with Lowpass Hamming filtering"""
 
     def __init__(self, times, values, target_period, lowpass_period):
         """
