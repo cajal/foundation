@@ -26,7 +26,7 @@ class _Trace:
         Returns
         -------
         foundation.recording.trial.TrialSet
-            single tuple
+            tuple
         """
         raise NotImplementedError()
 
@@ -152,13 +152,13 @@ class TraceLink:
         Parameters
         ----------
         trial_links : foundation.recording.trial.TrialLink
-            tuples
+            tuple(s)
         rate_link : foundation.utility.resample.RateLink
-            single tuple
+            tuple
         offset_link : foundation.utility.resample.OffsetLink
-            single tuple
+            tuple
         resample_link : foundation.utility.resample.ResampleLink
-            single tuple
+            tuple
 
         Returns
         -------

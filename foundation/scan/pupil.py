@@ -1,5 +1,5 @@
 import numpy as np
-from foundation.scan import experiment
+from foundation.scan.experiment import Scan
 from foundation.schemas.pipeline import pipe_eye, pipe_stim
 from foundation.schemas import scan as schema
 
@@ -7,7 +7,7 @@ from foundation.schemas import scan as schema
 @schema.computed
 class PupilTrace:
     definition = """
-    -> experiment.Scan
+    -> Scan
     -> pipe_eye.FittedPupil
     pupil_type      : enum("radius", "center_x", "center_y")    # pupil data type
     ---
@@ -49,7 +49,7 @@ class PupilTrace:
 @schema.computed
 class PupilNans:
     definition = """
-    -> experiment.Scan
+    -> Scan
     -> pipe_eye.FittedPupil
     -> pipe_stim.Trial
     ---
@@ -58,13 +58,13 @@ class PupilNans:
 
     @property
     def key_source(self):
-        return pipe_eye.FittedPupil.proj() & experiment.Scan
+        return pipe_eye.FittedPupil.proj() & Scan
 
     def make(self, key):
         from foundation.utils.resample import Nans
 
         # trace timing
-        times = (experiment.Scan & key).fetch1("eye_times")
+        times = (Scan & key).fetch1("eye_times")
         period = np.nanmedian(np.diff(times))
 
         # trace value

@@ -1,5 +1,6 @@
 from djutils import merge, row_method
-from foundation.scan import experiment, pupil
+from foundation.scan.experiment import Scan
+from foundation.scan.pupil import PupilNans
 from foundation.schemas.pipeline import pipe_stim, pipe_shared
 from foundation.schemas import scan as schema
 
@@ -27,7 +28,7 @@ class PupilNansFilter:
 
     @row_method
     def filter(self, trials):
-        key = merge(trials, self, pupil.PupilNans)
+        key = merge(trials, self, PupilNans)
 
         return trials & (key & "nans < max_nans").proj()
 
@@ -52,7 +53,7 @@ class TrialFilterSet:
 @schema.computed
 class FilteredTrials:
     definition = """
-    -> experiment.Scan
+    -> Scan
     -> TrialFilterSet
     ---
     -> TrialSet

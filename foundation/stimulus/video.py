@@ -184,7 +184,7 @@ class VideoLink:
         Parameters
         ----------
         resize_link : foundation.utility.resize.ResizeLink
-            single tuple
+            tuple
         height : int
             target height
         width : int

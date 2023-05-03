@@ -1,7 +1,6 @@
 import numpy as np
 from djutils import merge
 from foundation.recording import trial, trace
-from foundation.stimulus import video
 from foundation.scan import (
     experiment as scan_exp,
     pupil as scan_pupil,

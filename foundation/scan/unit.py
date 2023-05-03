@@ -1,6 +1,6 @@
 import datajoint as dj
 from djutils import merge, row_method
-from foundation.scan import experiment
+from foundation.scan.experiment import Scan
 from foundation.schemas.pipeline import pipe_fuse, pipe_shared, resolve_pipe
 from foundation.schemas import scan as schema
 
@@ -59,7 +59,7 @@ class UnitFilterSet:
 @schema.computed
 class FilteredUnits:
     definition = """
-    -> experiment.Scan
+    -> Scan
     -> UnitFilterSet
     ---
     -> UnitSet
@@ -67,7 +67,7 @@ class FilteredUnits:
 
     @property
     def key_source(self):
-        return experiment.Scan.proj() * UnitFilterSet.proj() & pipe_fuse.ScanDone
+        return Scan.proj() * UnitFilterSet.proj() & pipe_fuse.ScanDone
 
     def make(self, key):
         # scan units

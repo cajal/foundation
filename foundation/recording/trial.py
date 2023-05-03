@@ -31,7 +31,7 @@ class _Trial:
         Returns
         -------
         foundation.stimulus.video.VideoLink
-            single tuple
+            tuple
         """
         raise NotImplementedError()
 
@@ -72,7 +72,7 @@ class TrialLink:
         Parameters
         ----------
         rate_link : foundation.utility.resample.RateLink
-            single tuple
+            tuple
 
         Returns
         -------
