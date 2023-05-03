@@ -59,7 +59,7 @@ class TraceSummary:
 
         # summary statistic for non-nan values
         n = np.isnan(a)
-        s = (stat.SummaryLink & key).link.stat(a[~n])
+        s = (stat.SummaryLink & key).link.summary(a[~n])
 
         # insert key
         self.insert1(dict(key, summary=s, samples=len(a), nans=n.sum()))

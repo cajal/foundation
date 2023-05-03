@@ -36,8 +36,41 @@ class ScanTrialSet:
         self.insert1(dict(key, **trials))
 
 
+class _TraceSet:
+    """Scan Trace Set"""
+
+    def fill_stats(self, trial_key={}, rate_key={}, offset_key={}, resample_key={}, summary_key={}):
+        """
+        Parameters
+        ----------
+        trial_key : datajoint.key -- foundation.recording.trial.TrialLink
+            restriction
+        rate_key : datajoint.key -- foundation.utility.resample.RateLink
+            restriction
+        offset_key : datajoint.key -- foundation.utility.resample.OffsetLink
+            restriction
+        resample_key : datajoint.key -- foundation.utility.resample.ResampleLink
+            restriction
+        summary_key : datajoint.key -- foundation.utility.stat.SummaryLink
+            restriction
+        """
+        from foundation.recording.stat import TraceSummary
+        from foundation.utility import resample, stat
+
+        TraceSummary.populate(
+            (trace.TraceSet.Member & self).proj(),
+            (trial.TrialLink & trial_key).proj(),
+            (resample.RateLink & rate_key).proj(),
+            (resample.OffsetLink & offset_key).proj(),
+            (resample.ResampleLink & resample_key).proj(),
+            (stat.SummaryLink & summary_key).proj(),
+            display_progress=True,
+            reserve_jobs=True,
+        )
+
+
 @schema.computed
-class ScanUnitSet:
+class ScanUnitSet(_TraceSet):
     definition = """
     -> scan_unit.FilteredUnits
     -> trace.TraceFilterSet
@@ -62,7 +95,7 @@ class ScanUnitSet:
 
 
 @schema.computed
-class ScanPerspectiveSet:
+class ScanPerspectiveSet(_TraceSet):
     definition = """
     -> scan_exp.Scan
     -> pipe_shared.TrackingMethod
@@ -90,7 +123,7 @@ class ScanPerspectiveSet:
 
 
 @schema.computed
-class ScanModulationSet:
+class ScanModulationSet(_TraceSet):
     definition = """
     -> scan_exp.Scan
     -> pipe_shared.TrackingMethod
