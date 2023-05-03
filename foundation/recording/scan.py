@@ -43,7 +43,7 @@ class _TraceSet:
         """
         Parameters
         ----------
-        trial_key : datajoint.key -- foundation.recording.trial.TrialLink
+        trial_key : datajoint.key -- foundation.recording.trial.TrialSet
             restriction
         rate_key : datajoint.key -- foundation.utility.resample.RateLink
             restriction
@@ -59,7 +59,7 @@ class _TraceSet:
 
         TraceSummary.populate(
             (trace.TraceSet.Member & self).proj(),
-            (trial.TrialLink & trial_key).proj(),
+            (trial.TrialSet & trial_key).proj(),
             (resample.RateLink & rate_key).proj(),
             (resample.OffsetLink & offset_key).proj(),
             (resample.ResampleLink & resample_key).proj(),
