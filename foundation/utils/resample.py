@@ -275,6 +275,4 @@ class LowpassHamming(Trace):
             f = h / h.sum()
             y = np.convolve(y, f, mode="same")
 
-            print(self.lowpass_period, self.source_period, r)
-
         return y
