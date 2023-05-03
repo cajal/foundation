@@ -20,7 +20,7 @@ class _Video:
         """
         Returns
         -------
-        Video
+        foundation.utils.video.Video
         """
         raise NotImplementedError()
 
@@ -177,6 +177,32 @@ class VideoLink:
     links = [Clip, Monet2, Trippy, GaborSequence, DotSequence, RdkSequence, Frame]
     name = "video"
     comment = "video stimulus"
+
+    @row_method
+    def resized_video(self, resize_link, height, width):
+        """
+        Parameters
+        ----------
+        resize_link : foundation.utility.resize.ResizeLink
+            single tuple
+        height : int
+            target height
+        width : int
+            target width
+
+        Returns
+        -------
+        foundation.utils.video.Video
+            resized video
+        """
+        # load video
+        vid = self.link.video
+
+        # load resize function
+        f = resize_link.link.resize
+
+        # resize video
+        return f(video=vid, height=height, width=width)
 
 
 @schema.set

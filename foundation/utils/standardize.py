@@ -11,27 +11,28 @@ class Standardize:
         """
         Parameters
         ----------
-        homogeneous : 1D array -- [units]
+        homogeneous : 1D array -- [N]
             boolean mask, indicates whether transformation must be homogeneous
         """
         self.homogeneous = np.array(homogeneous, dtype=bool)
         assert self.homogeneous.ndim == 1
 
-    @property
-    def units(self):
+    def __len__(self):
         return self.homogeneous.size
 
-    def __call__(self, a):
+    def __call__(self, a, inverse=False):
         """
         Parameters
         ----------
         a : 2D array
-            values to be standardized -- [samples, units]
+            values to be transformed -- [M, N]
+        inverse : bool
+            inverse transformation
 
         Returns
         -------
         2D array
-            standardized values -- [samples, units]
+            transformed values -- [M, N]
         """
         raise NotImplementedError()
 
@@ -40,15 +41,17 @@ class Standardize:
 
 
 class Affine(Standardize):
+    """Affine Transform"""
+
     def __init__(self, shift, scale, homogeneous, eps=1e-4):
         """
         Parameters
         ----------
-        shift : 1D array -- [units]
+        shift : 1D array -- [N]
             affine shift
-        scale : 1D array -- [units]
+        scale : 1D array -- [N]
             affine scale
-        homogeneous : 1D array -- [units]
+        homogeneous : 1D array -- [N]
             boolean mask, indicates whether transformation must be homogeneous
         """
         super().__init__(homogeneous)
@@ -57,21 +60,26 @@ class Affine(Standardize):
         self.scale = np.array(scale, dtype=float)
 
         assert self.shift.ndim == self.scale.ndim == 1
-        assert self.shift.size == self.scale.size == self.units
+        assert self.shift.size == self.scale.size == len(self)
         assert self.scale.min() > eps
 
-    def __call__(self, a):
-        return (a - self.shift) / self.scale
+    def __call__(self, a, inverse=False):
+        if inverse:
+            return a * self.scale + self.shift
+        else:
+            return (a - self.shift) / self.scale
 
 
 class Scale(Standardize):
+    """Scale Transform"""
+
     def __init__(self, scale, homogeneous, eps=1e-4):
         """
         Parameters
         ----------
-        scale : 1D array -- [units]
-            affine scale
-        homogeneous : 1D array -- [units]
+        scale : 1D array -- [N]
+            divisive scale
+        homogeneous : 1D array -- [N]
             boolean mask, indicates whether transformation must be homogeneous
         """
         super().__init__(homogeneous)
@@ -79,8 +87,11 @@ class Scale(Standardize):
         self.scale = np.array(scale, dtype=float)
 
         assert self.scale.ndim == 1
-        assert self.scale.size == self.units
+        assert self.scale.size == len(self)
         assert np.min(self.scale) > eps
 
-    def __call__(self, a):
-        return a / self.scale
+    def __call__(self, a, inverse=False):
+        if inverse:
+            return a * scale
+        else:
+            return a / self.scale

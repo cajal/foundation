@@ -36,7 +36,7 @@ class _Standardize:
         Returns
         -------
         foundation.utils.standardize.Standardize
-            standardized array -- [samples, size]
+            callable, standardizes data
         """
         raise NotImplementedError()
 

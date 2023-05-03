@@ -18,14 +18,13 @@ class ResizedVideo(Files):
     """
 
     def make(self, key):
-        # load video
-        vid = (video.VideoLink & key).link.video
-
-        # target resolution
+        # video, resize links and resolution
+        video_link = video.VideoLink & key
+        resize_link = resize.ResizeLink & key
         height, width = (resize.Resolution & key).fetch1("height", "width")
 
         # resize video
-        vid = (resize.ResizeLink & key).link.resize(video=vid, height=height, width=width)
+        vid = video_link.resized_video(resize_link=resize_link, height=height, width=width)
 
         # save video
         file = os.path.join(self.tuple_dir(key, create=True), "video.npy")

@@ -1,5 +1,5 @@
 import numpy as np
-from djutils import row_method
+from djutils import row_property
 from foundation.schemas import utility as schema
 
 
@@ -11,18 +11,13 @@ from foundation.schemas import utility as schema
 class _Summary:
     """Summary Statistic"""
 
-    @row_method
-    def stat(self, a):
+    @row_property
+    def summary(self):
         """
-        Parameter
-        ---------
-        a : 1D array
-            array of values
-
         Returns
         -------
-        float
-            summary statistic
+        Callable[[1D array], float]
+            function that takes a 1D array and returns a summary statistic float
         """
         raise NotImplementedError()
 
@@ -35,9 +30,9 @@ class Mean(_Summary):
     name = "mean"
     comment = "arithmetic mean"
 
-    @row_method
-    def stat(self, a):
-        return np.mean(a)
+    @row_property
+    def summary(self):
+        return np.mean
 
 
 @schema.lookup
@@ -46,9 +41,10 @@ class Std(_Summary):
     ddof        : int unsigned      # delta degrees of freedom
     """
 
-    @row_method
-    def stat(self, a):
-        return np.std(a, ddof=self.fetch1("ddof"))
+    @row_property
+    def summary(self):
+        ddof = self.fetch1("ddof")
+        return lambda x: np.std(x, ddof=ddof)
 
 
 # -- Summary Link --

@@ -1,5 +1,4 @@
-from djutils import row_property, row_method
-from foundation.utils.video import Image, Video
+from djutils import row_property
 from foundation.utils.logging import logger
 from foundation.schemas import utility as schema
 
@@ -23,22 +22,13 @@ class Resolution:
 class _Resize:
     """Video Resizing"""
 
-    @row_method
-    def resize(self, video, height, width):
+    @row_property
+    def resize(self):
         """
-        Parameters
-        -------
-        video : Video
-            trace times, monotonically increasing
-        height : int
-            target height (pixels)
-        width : int
-            target width (pixels)
-
         Returns
         -------
-        Video
-            resized video
+        foundation.utils.resize.Resize
+            callable, resizes videos
         """
         raise NotImplementedError()
 
@@ -52,16 +42,14 @@ class PilResample(_Resize):
     resample        : varchar(64)   # resampling filter (PIL.Image.Resampling)
     """
 
-    @row_method
-    def resize(self, video, height, width):
+    @row_property
+    def resize(self):
+        from PIL import Image
+        from foundation.utils.resize import PilResize
 
-        if height == video.height and width == video.width:
-            return video
+        resample = getattr(Image.Resampling, self.fetch1("resample"))
 
-        else:
-            resample = getattr(Image.Resampling, self.fetch1("resample"))
-            resize = lambda frame: frame.resize(size=(width, height), resample=resample)
-            return video.apply(resize)
+        return PilResize(resample)
 
 
 # -- Resize Link --

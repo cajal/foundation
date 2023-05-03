@@ -176,11 +176,11 @@ class TraceLink:
         # resampling method
         period = rate_key.link.period
         offset = offset_key.link.offset
-        resampler = resample_key.link.resampler
+        resample = resample_key.link.resample
 
         # trace resampler
         trace = self.link
-        r = resampler(times=trace.times, values=trace.values, target_period=period)
+        r = resample(times=trace.times, values=trace.values, target_period=period)
 
         # resampled trials
         trial_timing = merge(trial_keys, trial.TrialBounds)

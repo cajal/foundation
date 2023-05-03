@@ -97,7 +97,7 @@ class _Resample:
     """Trace Resampling"""
 
     @row_method
-    def resampler(self, times, values, target_period):
+    def resample(self, times, values, target_period):
         """
         Parameters
         -------
@@ -111,7 +111,7 @@ class _Resample:
         Returns
         -------
         foundation.utils.resample.Resample
-            trace resampler
+            callable, resamples traces
         """
         raise NotImplementedError()
 
@@ -125,7 +125,7 @@ class Hamming(_Resample):
     comment = "hamming trace"
 
     @row_method
-    def resampler(self, times, values, target_period):
+    def resample(self, times, values, target_period):
 
         from foundation.utils.resample import Hamming
 
@@ -143,7 +143,7 @@ class LowpassHamming(_Resample):
     """
 
     @row_method
-    def resampler(self, times, values, target_period):
+    def resample(self, times, values, target_period):
 
         from foundation.utils.resample import LowpassHamming
 
@@ -162,4 +162,4 @@ class LowpassHamming(_Resample):
 class ResampleLink:
     links = [Hamming, LowpassHamming]
     name = "resample"
-    comment = "trace resampling"
+    comment = "resampling method"
