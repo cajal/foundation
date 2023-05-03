@@ -80,7 +80,7 @@ class Scan:
         self.insert1(key)
 
     def fill_videos(self):
-        from foundation.stimulus.video import VideoLink
+        from foundation.stimulus.video import VideoLink, VideoInfo
 
         # scan trials
         trials = pipe_stim.Trial * pipe_stim.Condition & self
@@ -93,22 +93,38 @@ class Scan:
             table = VideoLink.get(stim_type.split(".")[1]).link
             table.insert(keys.proj(), skip_duplicates=True, ignore_extra_fields=True)
 
+        # video link
         VideoLink.fill()
 
+        # compute video
+        VideoInfo.populate(display_progress=True, reserve_jobs=True)
+
     def fill_trials(self):
-        from foundation.recording.trial import ScanTrial, TrialLink
+        from foundation.recording.trial import ScanTrial, TrialLink, TrialBounds, TrialVideo
 
         # scan trials
         trials = pipe_stim.Trial & self
         ScanTrial.insert(trials.proj(), skip_duplicates=True)
 
+        # trial link
         TrialLink.fill()
 
+        # computed trials
+        key = TrialLink.ScanTrial & trials
+        TrialBounds.populate(key, display_progress=True, reserve_jobs=True)
+        TrialVideo.populate(key, display_progress=True, reserve_jobs=True)
+
     def fill_treadmill(self):
-        from foundation.recording.trace import ScanTreadmill, TraceLink
+        from foundation.recording.trace import ScanTreadmill, TraceLink, TraceHomogeneous, TraceTrials
 
         # scan treadmill trace
         tread = pipe_tread.Treadmill & self
         ScanTreadmill.insert(tread.proj(), skip_duplicates=True)
 
+        # trace link
         TraceLink.fill()
+
+        # compute trace
+        key = TraceLink.ScanTreadmill & tread
+        TraceHomogeneous.populate(key, display_progress=True, reserve_jobs=True)
+        TraceTrials.populate(key, display_progress=True, reserve_jobs=True)
