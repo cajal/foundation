@@ -81,3 +81,13 @@ class FilteredUnits:
 
         # insert key
         self.insert1(dict(key, **unit_set))
+
+    def fill_units(self, spike_method=6):
+        from foundation.recording.trace import ScanUnit, TraceLink
+
+        # scan unit traces
+        units = UnitSet.Member & self
+        units = units.proj(spike_method=f"{spike_method}")
+        ScanUnit.insert(units, skip_duplicates=True, ignore_extra_fields=True)
+
+        TraceLink.fill()

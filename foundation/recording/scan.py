@@ -181,7 +181,7 @@ def populate_scan(
 
     units = scan_unit.UnitSet & (scan_unit.FilteredUnits & key)
     units = units.members * pipe_shared.SpikeMethod & dict(spike_method=spike_method)
-    insert(trace.ScanResponse, units)
+    insert(trace.ScanUnit, units)
 
     # scan trials
     key = dict(scan_key, trial_filters_id=scan_trial_filters_id)

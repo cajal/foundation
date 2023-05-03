@@ -76,7 +76,7 @@ class _Scan(_Trace):
 
 
 @schema.lookup
-class ScanResponse(_Scan):
+class ScanUnit(_Scan):
     definition = """
     -> scan_exp.Scan
     -> pipe_fuse.ScanSet.Unit
@@ -142,7 +142,7 @@ class ScanTreadmill(_Scan):
 
 @schema.link
 class TraceLink:
-    links = [ScanResponse, ScanPupil, ScanTreadmill]
+    links = [ScanUnit, ScanPupil, ScanTreadmill]
     name = "trace"
     comment = "recording trace"
 

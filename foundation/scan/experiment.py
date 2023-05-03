@@ -1,6 +1,5 @@
 import numpy as np
 import datajoint as dj
-from djutils import row_method
 from foundation.utils.logging import logger
 from foundation.schemas.pipeline import (
     pipe_exp,
@@ -80,24 +79,22 @@ class Scan:
         key["treadmill_times"] = tread_times
         self.insert1(key)
 
-    @row_method
     def fill_videos(self):
         from foundation.stimulus.video import VideoLink
 
-        # scan conditions
-        trials = pipe_stim.Trial & self
-        conds = pipe_stim.Condition & trials
+        # scan trials
+        trials = pipe_stim.Trial * pipe_stim.Condition & self
 
-        # condition types
-        for stim_type in np.unique(conds.fetch("stimulus_type")):
+        # stimulus types
+        stim_types = dj.U("stimulus_type") & trials
+        for stim_type in stim_types.fetch("stimulus_type"):
 
-            keys = conds & dict(stimulus_type=stim_type)
+            keys = trials & dict(stimulus_type=stim_type)
             table = VideoLink.get(stim_type.split(".")[1]).link
-            table.insert(keys.proj(), skip_duplicates=True)
+            table.insert(keys.proj(), skip_duplicates=True, ignore_extra_fields=True)
 
         VideoLink.fill()
 
-    @row_method
     def fill_trials(self):
         from foundation.recording.trial import ScanTrial, TrialLink
 
@@ -106,3 +103,12 @@ class Scan:
         ScanTrial.insert(trials.proj(), skip_duplicates=True)
 
         TrialLink.fill()
+
+    def fill_treadmill(self):
+        from foundation.recording.trace import ScanTreadmill, TraceLink
+
+        # scan treadmill trace
+        tread = pipe_tread.Treadmill & self
+        ScanTreadmill.insert(tread.proj(), skip_duplicates=True)
+
+        TraceLink.fill()
