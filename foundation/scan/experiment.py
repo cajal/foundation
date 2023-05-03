@@ -1,5 +1,7 @@
 import numpy as np
 import datajoint as dj
+from djutils import row_method
+from foundation.utils.logging import logger
 from foundation.schemas.pipeline import (
     pipe_exp,
     pipe_stim,
@@ -77,3 +79,30 @@ class Scan:
         key["eye_times"] = eye_times
         key["treadmill_times"] = tread_times
         self.insert1(key)
+
+    @row_method
+    def fill_videos(self):
+        from foundation.stimulus.video import VideoLink
+
+        # scan conditions
+        trials = pipe_stim.Trial & self
+        conds = pipe_stim.Condition & trials
+
+        # condition types
+        for stim_type in np.unique(conds.fetch("stimulus_type")):
+
+            keys = conds & dict(stimulus_type=stim_type)
+            table = VideoLink.get(stim_type.split(".")[1]).link
+            table.insert(keys.proj(), skip_duplicates=True)
+
+        VideoLink.fill()
+
+    @row_method
+    def fill_trials(self):
+        from foundation.recording.trial import ScanTrial, TrialLink
+
+        # scan trials
+        trials = pipe_stim.Trial & self
+        ScanTrial.insert(trials.proj(), skip_duplicates=True)
+
+        TrialLink.fill()
