@@ -45,7 +45,8 @@ class TraceSummary:
 
     def make(self, key):
         # trial set
-        trials_key = trial.TrialSet & key
+        trial_keys = (trial.TrialSet & key).members
+        trial_keys = trial.TrialLink & trial_keys
 
         # resampling method
         rate_key = resample.RateLink & key
@@ -53,7 +54,7 @@ class TraceSummary:
         resample_key = resample.ResampleLink & key
 
         # resampled trace
-        a = (trace.TraceLink & key).resampled_trials(trials_key, rate_key, offset_key, resample_key)
+        a = (trace.TraceLink & key).resampled_trials(trial_keys, rate_key, offset_key, resample_key)
         a = np.concatenate(a)
 
         # summary statistic for non-nan values

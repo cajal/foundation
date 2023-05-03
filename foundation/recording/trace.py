@@ -147,12 +147,12 @@ class TraceLink:
     comment = "recording trace"
 
     @row_method
-    def resampled_trials(self, trials_key, rate_key, offset_key, resample_key):
+    def resampled_trials(self, trial_keys, rate_key, offset_key, resample_key):
         """
         Parameters
         ----------
-        trials_key : foundation.recording.trial.TrialSet
-            single tuple
+        trial_keys : foundation.recording.trial.TrialLink
+            tuples
         rate_key : foundation.utility.resample.RateLink
             single tuple
         offset_key : foundation.utility.resample.OffsetLink
@@ -166,14 +166,11 @@ class TraceLink:
             index -- trial_id
             data -- resampled trace
         """
-        # trials
-        trials = trials_key.members
+        # ensure trials are valid
+        valid_trials = trial.TrialSet & merge(self, TraceTrials)
+        valid_trials = valid_trials.members
 
-        # ensure trials belong to trace
-        all_trials = trial.TrialSet & merge(self, TraceTrials)
-        all_trials = all_trials.members
-
-        if (trial.TrialLink & trials).proj() - (trial.TrialLink & all_trials).proj():
+        if trial_keys - valid_trials:
             raise RestrictionError("Requested trials do not belong to the trace.")
 
         # resampling method
@@ -186,8 +183,8 @@ class TraceLink:
         r = resampler(times=trace.times, values=trace.values, target_period=period)
 
         # resampled trials
-        trial_timing = merge(trials, trial.TrialBounds)
-        trial_ids, starts, ends = trial_timing.fetch("trial_id", "start", "end", order_by="member_id")
+        trial_timing = merge(trial_keys, trial.TrialBounds)
+        trial_ids, starts, ends = trial_timing.fetch("trial_id", "start", "end", order_by="start")
         samples = [r(a, b, offset) for a, b in zip(starts, ends)]
 
         # pandas Series containing resampled trials

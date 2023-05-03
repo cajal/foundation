@@ -1,7 +1,6 @@
 import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import windows
-from .signal import lowpass_filter
 
 
 # ------- Trace Functions -------
