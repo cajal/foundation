@@ -1,5 +1,4 @@
-import pandas as pd
-from djutils import merge, row_property, row_method, RestrictionError
+from djutils import merge, row_property
 from foundation.scan.experiment import Scan
 from foundation.scan.pupil import PupilTrace
 from foundation.recording.trial import TrialLink, TrialSet, TrialBounds
@@ -140,53 +139,6 @@ class TraceLink:
     links = [ScanUnit, ScanPupil, ScanTreadmill]
     name = "trace"
     comment = "recording trace"
-
-    @row_method
-    def resampled_trials(self, trial_links, rate_link, offset_link, resample_link):
-        """
-        Parameters
-        ----------
-        trial_links : foundation.recording.trial.TrialLink
-            tuple(s)
-        rate_link : foundation.utility.resample.RateLink
-            tuple
-        offset_link : foundation.utility.resample.OffsetLink
-            tuple
-        resample_link : foundation.utility.resample.ResampleLink
-            tuple
-
-        Returns
-        -------
-        pd.Series
-            index -- trial_id
-            data -- resampled trace
-        """
-        # ensure trials are valid
-        valid_trials = TrialSet & merge(self, TraceTrials)
-        valid_trials = valid_trials.members
-
-        if trial_links - valid_trials:
-            raise RestrictionError("Requested trials do not belong to the trace.")
-
-        # resampling period, offset, method
-        period = rate_link.link.period
-        offset = offset_link.link.offset
-        resample = resample_link.link.resample
-
-        # trace resampling function
-        trace = self.link
-        f = resample(times=trace.times, values=trace.values, target_period=period)
-
-        # resampled trials
-        trial_timing = merge(trial_links, TrialBounds)
-        trial_ids, starts, ends = trial_timing.fetch("trial_id", "start", "end", order_by="start")
-        samples = [f(a, b, offset) for a, b in zip(starts, ends)]
-
-        # pandas Series containing resampled trials
-        return pd.Series(
-            data=samples,
-            index=pd.Index(trial_ids, name="trial_id"),
-        )
 
 
 @schema.set

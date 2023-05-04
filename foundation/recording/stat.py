@@ -45,15 +45,10 @@ class TraceSummary:
 
     def make(self, key):
         # trial set
-        trial_links = trial.TrialLink & (trial.TrialSet & key).members
-
-        # resampling method
-        rate_link = resample.RateLink & key
-        offset_link = resample.OffsetLink & key
-        resample_link = resample.ResampleLink & key
+        trials = trial.TrialLink & (trial.TrialSet & key).members
 
         # resampled trace
-        a = (trace.TraceLink & key).resampled_trials(trial_links, rate_link, offset_link, resample_link)
+        a = (ResampledTraceTrials & trials & key).samples
         a = np.concatenate(a)
 
         # summary statistic for non-nan values
