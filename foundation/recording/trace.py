@@ -50,7 +50,7 @@ class _Trace:
         Returns
         -------
         bool
-            enforce homogeneous transformation
+            homogeneous transformation
         """
         raise NotImplementedError()
 

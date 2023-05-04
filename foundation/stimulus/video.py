@@ -243,6 +243,8 @@ class VideoInfo:
 
 # -------------- Video Filter --------------
 
+# -- Filter Types --
+
 
 @schema.filter_lookup
 class VideoTypeFilter:
@@ -278,11 +280,17 @@ class VideoSetFilter:
             return videos - (VideoSet & self).members
 
 
+# -- Filter --
+
+
 @schema.filter_link
 class VideoFilterLink:
     links = [VideoTypeFilter, VideoSetFilter]
     name = "video_filter"
     comment = "video filter"
+
+
+# -- Filter Set --
 
 
 @schema.filter_link_set
