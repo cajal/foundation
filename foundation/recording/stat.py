@@ -43,7 +43,7 @@ class TraceSummary:
     @property
     def key_source(self):
         keys = self.scan_keys
-        keys = reduce(add, [dj.U("trials_id", "trace_id") & key for key in keys])
+        keys = reduce(add, [dj.U("trace_id", "trials_id") & key for key in keys])
         return keys * (RateLink * OffsetLink * ResampleLink * SummaryLink).proj()
 
     def make(self, key):

@@ -11,7 +11,7 @@ from foundation.utility.resample import RateLink, OffsetLink, ResampleLink
 
 @keys
 class ResampleTrialVideo:
-    keys = [RateLink, TrialLink]
+    keys = [TrialLink, RateLink]
 
     @row_property
     def index(self):
@@ -21,9 +21,9 @@ class ResampleTrialVideo:
         1D array
             video frame index for each of the resampled time points
         """
-        # resampling period and flip times
-        period = (RateLink & self.key).link.period
+        # resampling flip times and period
         flips = (TrialLink & self.key).link.flips
+        period = (RateLink & self.key).link.period
 
         # trial and video info
         info = merge(self.key, TrialBounds, TrialVideo, VideoInfo)
@@ -50,9 +50,9 @@ class ResampleTrialVideo:
 
 @keys
 class ResampleTraceTrials:
-    keys = [RateLink, OffsetLink, ResampleLink, TraceLink, TrialLink]
+    keys = [TraceLink, TrialLink, RateLink, OffsetLink, ResampleLink]
 
-    @key_property(RateLink, OffsetLink, ResampleLink, TraceLink)
+    @key_property(TraceLink, RateLink, OffsetLink, ResampleLink)
     def samples(self):
         """
         Returns
