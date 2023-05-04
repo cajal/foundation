@@ -61,9 +61,9 @@ class ResampledTrialTraces(Files):
         )
 
         return [
-            TrialSet.Member * FilteredScanTrials * FilteredScanUnits,
-            TrialSet.Member * FilteredScanTrials * FilteredScanPerspectives,
-            TrialSet.Member * FilteredScanTrials * FilteredScanModulations,
+            TrialSet.Link * FilteredScanTrials * FilteredScanUnits,
+            TrialSet.Link * FilteredScanTrials * FilteredScanPerspectives,
+            TrialSet.Link * FilteredScanTrials * FilteredScanModulations,
         ]
 
     @property

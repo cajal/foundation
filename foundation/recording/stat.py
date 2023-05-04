@@ -35,9 +35,9 @@ class TraceSummary:
         )
 
         return [
-            TraceSet.Member * FilteredScanUnits * FilteredScanTrials,
-            TraceSet.Member * FilteredScanPerspectives * FilteredScanTrials,
-            TraceSet.Member * FilteredScanModulations * FilteredScanTrials,
+            TraceSet.Link * FilteredScanUnits * FilteredScanTrials,
+            TraceSet.Link * FilteredScanPerspectives * FilteredScanTrials,
+            TraceSet.Link * FilteredScanModulations * FilteredScanTrials,
         ]
 
     @property

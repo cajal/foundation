@@ -103,7 +103,11 @@ class FillScanUnitSummary:
     keys = [FilteredScanTrials, FilteredScanUnits, RateLink, OffsetLink, ResampleLink, SummaryLink]
 
     def fill(self):
-        trace_keys = TraceSet.Member & (FilteredScanUnits & self.key)
+        # trace keys
+        trace_keys = TraceSet.Link & (FilteredScanUnits & self.key)
+
+        # trial keys
         trial_keys = TrialSet & (FilteredScanTrials & self.key)
 
+        # trace summary statistic
         TraceSummary.populate(self.key, trial_keys, trace_keys, reserve_jobs=True, display_progress=True)
