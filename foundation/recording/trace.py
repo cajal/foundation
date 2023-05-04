@@ -1,14 +1,9 @@
 import pandas as pd
 from djutils import merge, row_property, row_method, RestrictionError
-from foundation.recording import trial
-from foundation.scan import experiment as scan_exp, pupil as scan_pupil
-from foundation.schemas.pipeline import (
-    pipe_fuse,
-    pipe_shared,
-    pipe_stim,
-    pipe_tread,
-    resolve_pipe,
-)
+from foundation.scan.experiment import Scan
+from foundation.scan.pupil import PupilTrace
+from foundation.recording.trial import TrialLink, TrialSet, TrialBounds
+from foundation.schemas.pipeline import pipe_fuse, pipe_shared, pipe_stim, pipe_tread, resolve_pipe
 from foundation.schemas import recording as schema
 
 
@@ -56,7 +51,7 @@ class _Trace:
         Returns
         -------
         bool
-            homogeneous transformation of trace values
+            enforce homogeneous transformation
         """
         raise NotImplementedError()
 
@@ -70,22 +65,22 @@ class _Scan(_Trace):
     @row_property
     def trial_set(self):
         key = pipe_stim.Trial.proj() & self
-        key = merge(key, trial.TrialLink.ScanTrial)
-        key = trial.TrialSet.fill(key, prompt=False, silent=True)
-        return trial.TrialSet & key
+        key = merge(key, TrialLink.ScanTrial)
+        key = TrialSet.fill(key, prompt=False, silent=True)
+        return TrialSet & key
 
 
 @schema.lookup
 class ScanUnit(_Scan):
     definition = """
-    -> scan_exp.Scan
+    -> Scan
     -> pipe_fuse.ScanSet.Unit
     -> pipe_shared.SpikeMethod
     """
 
     @row_property
     def times(self):
-        times = (scan_exp.Scan & self).fetch1("scan_times")
+        times = (Scan & self).fetch1("scan_times")
         delay = (resolve_pipe(self).ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
         return times + delay
 
@@ -101,16 +96,16 @@ class ScanUnit(_Scan):
 @schema.lookup
 class ScanPupil(_Scan):
     definition = """
-    -> scan_pupil.PupilTrace
+    -> PupilTrace
     """
 
     @row_property
     def times(self):
-        return (scan_exp.Scan & self).fetch1("eye_times")
+        return (Scan & self).fetch1("eye_times")
 
     @row_property
     def values(self):
-        return (scan_pupil.PupilTrace & self).fetch1("pupil_trace")
+        return (PupilTrace & self).fetch1("pupil_trace")
 
     @row_property
     def homogeneous(self):
@@ -120,13 +115,13 @@ class ScanPupil(_Scan):
 @schema.lookup
 class ScanTreadmill(_Scan):
     definition = """
-    -> scan_exp.Scan
+    -> Scan
     -> pipe_tread.Treadmill
     """
 
     @row_property
     def times(self):
-        return (scan_exp.Scan & self).fetch1("treadmill_times")
+        return (Scan & self).fetch1("treadmill_times")
 
     @row_property
     def values(self):
@@ -167,7 +162,7 @@ class TraceLink:
             data -- resampled trace
         """
         # ensure trials are valid
-        valid_trials = trial.TrialSet & merge(self, TraceTrials)
+        valid_trials = TrialSet & merge(self, TraceTrials)
         valid_trials = valid_trials.members
 
         if trial_links - valid_trials:
@@ -183,7 +178,7 @@ class TraceLink:
         f = resample(times=trace.times, values=trace.values, target_period=period)
 
         # resampled trials
-        trial_timing = merge(trial_links, trial.TrialBounds)
+        trial_timing = merge(trial_links, TrialBounds)
         trial_ids, starts, ends = trial_timing.fetch("trial_id", "start", "end", order_by="start")
         samples = [f(a, b, offset) for a, b in zip(starts, ends)]
 
@@ -222,7 +217,7 @@ class TraceTrials:
     definition = """
     -> TraceLink
     ---
-    -> trial.TrialSet
+    -> TrialSet
     """
 
     def make(self, key):

@@ -1,8 +1,7 @@
 import numpy as np
-from scipy.interpolate import interp1d
 from djutils import merge, row_property, row_method
-from foundation.utils.resample import monotonic, frame_index
-from foundation.stimulus import video
+from foundation.utils.resample import monotonic
+from foundation.stimulus.video import VideoLink, VideoInfo, VideoFilterSet
 from foundation.schemas.pipeline import pipe_stim
 from foundation.schemas import recording as schema
 
@@ -54,7 +53,7 @@ class ScanTrial(_Trial):
         trial = pipe_stim.Trial * pipe_stim.Condition & self
         stim_type = trial.fetch1("stimulus_type")
         stim_type = stim_type.split(".")[1]
-        return video.VideoLink.get(stim_type, trial)
+        return VideoLink.get(stim_type, trial)
 
 
 # -- Trial Link --
@@ -65,50 +64,6 @@ class TrialLink:
     links = [ScanTrial]
     name = "trial"
     comment = "recording trial"
-
-    @row_method
-    def resampled_video_index(self, rate_link):
-        """
-        Parameters
-        ----------
-        rate_link : foundation.utility.resample.RateLink
-            tuple
-
-        Returns
-        -------
-        1D array
-            video frame index
-            dtype = int
-        """
-        # flip times
-        flips = self.link.flips
-
-        # trial and video info
-        info = merge(self, TrialBounds, TrialVideo, video.VideoInfo)
-        start, frames = info.fetch1("start", "frames")
-
-        if len(flips) != frames:
-            raise ValueError("Flips do not match video frames.")
-
-        # resampling period
-        period = rate_link.link.period
-
-        # sample index for each flip
-        index = frame_index(flips - start, period)
-        samples = np.arange(index[-1] + 1)
-
-        # first flip of each sampling index
-        first = np.diff(index, prepend=-1) > 0
-
-        # for each of the samples, get the previous flip/video index
-        previous = interp1d(
-            x=index[first],
-            y=np.where(first)[0],
-            kind="previous",
-        )
-
-        # video frame index for each sample
-        return previous(samples).astype(int)
 
 
 @schema.set
@@ -149,7 +104,7 @@ class TrialVideo:
     definition = """
     -> TrialLink
     ---
-    -> video.VideoLink
+    -> VideoLink
     """
 
     def make(self, key):
@@ -164,18 +119,19 @@ class TrialVideo:
 class TrialVideoFilter:
     filter_type = TrialLink
     definition = """
-    -> video.VideoFilterSet
+    -> VideoFilterSet
     """
 
     @row_method
     def filter(self, trials):
         # trial videos
         trial_videos = merge(trials, TrialVideo)
-        videos = video.VideoLink & trial_videos
+        videos = VideoLink & trial_videos
 
         # filter videos
-        videos = (video.VideoFilterSet & self).filter(videos)
+        videos = (VideoFilterSet & self).filter(videos)
 
+        # filter trials
         return trials & (trial_videos & videos).proj()
 
 
