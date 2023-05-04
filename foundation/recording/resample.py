@@ -11,13 +11,13 @@ from foundation.utility.resample import RateLink, OffsetLink, ResampleLink
 
 @keys
 class ResampledTrialVideo:
-    keys = [TrialLink, RateLink]
+    keys = [RateLink, TrialLink]
 
     @row_property
     def index(self):
-        # flip times and resampling period
-        flips = (TrialLink & self.key).link.flips
+        # resampling period and flip times
         period = (RateLink & self.key).link.period
+        flips = (TrialLink & self.key).link.flips
 
         # trial and video info
         info = merge(self.key, TrialBounds, TrialVideo, VideoInfo)
@@ -44,17 +44,10 @@ class ResampledTrialVideo:
 
 @keys
 class ResampledTraceTrials:
-    keys = [TrialLink, TraceLink, RateLink, OffsetLink, ResampleLink]
+    keys = [RateLink, OffsetLink, ResampleLink, TraceLink, TrialLink]
 
     @property
     def samples(self):
-        # ensure trials are valid
-        valid_trials = TrialSet & merge(self.key, TraceTrials)
-        valid_trials = valid_trials.members
-
-        if self.key - valid_trials:
-            raise RestrictionError("Requested trials do not belong to the trace.")
-
         # resampling period, offset, method
         period = (RateLink & self.key).link.period
         offset = (OffsetLink & self.key).link.offset
@@ -63,6 +56,13 @@ class ResampledTraceTrials:
         # trace resampling function
         trace = (TraceLink & self.key).link
         f = resample(times=trace.times, values=trace.values, target_period=period)
+
+        # ensure trials are valid
+        valid_trials = TrialSet & merge(self.key, TraceTrials)
+        valid_trials = valid_trials.members
+
+        if self.key - valid_trials:
+            raise RestrictionError("Requested trials do not belong to the trace.")
 
         # resampled trials
         trial_timing = merge(self.key, TrialBounds)
