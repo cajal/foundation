@@ -12,15 +12,18 @@ from foundation.schemas import scan as schema
 class UnitSet:
     keys = [pipe_fuse.ScanSet.Unit]
     name = "units"
-    comment = "set of scan units"
+    comment = "scan unit set"
+    part_name = "unit"
 
 
 # -------------- Unit Filter --------------
 
+# -- Filter Types --
+
 
 @schema.filter_lookup
 class UnitMaskType:
-    filter_type = pipe_fuse.ScanSet.Unit
+    ftype = pipe_fuse.ScanSet.Unit
     definition = """
     -> pipe_shared.PipelineVersion
     -> pipe_shared.SegmentationMethod
@@ -39,21 +42,27 @@ class UnitMaskType:
         return units & (key & "type = target")
 
 
+# -- Filter --
+
+
 @schema.filter_link
 class UnitFilterLink:
-    filters = [UnitMaskType]
+    links = [UnitMaskType]
     name = "unit_filter"
     comment = "scan unit filter"
 
 
+# -- Filter Set --
+
+
 @schema.filter_link_set
 class UnitFilterSet:
-    filter_link = UnitFilterLink
+    link = UnitFilterLink
     name = "unit_filters"
-    comment = "set of scan unit filters"
+    comment = "scan unit filter set"
 
 
-# -- Computed Unit Filter --
+# -- Computed Filter --
 
 
 @schema.computed

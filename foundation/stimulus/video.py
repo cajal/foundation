@@ -205,11 +205,11 @@ class VideoLink:
         return f(video=vid, height=height, width=width)
 
 
-@schema.set
+@schema.link_set
 class VideoSet:
-    keys = [VideoLink]
+    link = VideoLink
     name = "videos"
-    comment = "set of video stimuli"
+    comment = "video stimulus set"
 
 
 # -- Computed Video --
@@ -246,7 +246,7 @@ class VideoInfo:
 
 @schema.filter_lookup
 class VideoTypeFilter:
-    filter_type = VideoLink
+    ftype = VideoLink
     definition = """
     video_type      : varchar(128)      # video type
     include         : bool              # include or exclude
@@ -263,7 +263,7 @@ class VideoTypeFilter:
 
 @schema.filter_lookup
 class VideoSetFilter:
-    filter_type = VideoLink
+    ftype = VideoLink
     definition = """
     -> VideoSet
     include         : bool              # include or exclude
@@ -280,13 +280,13 @@ class VideoSetFilter:
 
 @schema.filter_link
 class VideoFilterLink:
-    filters = [VideoTypeFilter, VideoSetFilter]
+    links = [VideoTypeFilter, VideoSetFilter]
     name = "video_filter"
     comment = "video filter"
 
 
 @schema.filter_link_set
 class VideoFilterSet:
-    filter_link = VideoFilterLink
+    link = VideoFilterLink
     name = "video_filters"
-    comment = "set of video filters"
+    comment = "video filter set"

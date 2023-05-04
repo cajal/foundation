@@ -54,16 +54,16 @@ class ResampledTrialTraces(Files):
     @property
     def scan_keys(self):
         from foundation.recording.scan import (
-            ScanTrialSet,
-            ScanUnitSet,
-            ScanModulationSet,
-            ScanPerspectiveSet,
+            FilteredScanTrials,
+            FilteredScanUnits,
+            FilteredScanModulations,
+            FilteredScanPerspectives,
         )
 
         return [
-            TrialSet.Member * ScanTrialSet * ScanUnitSet,
-            TrialSet.Member * ScanTrialSet * ScanPerspectiveSet,
-            TrialSet.Member * ScanTrialSet * ScanModulationSet,
+            TrialSet.Member * FilteredScanTrials * FilteredScanUnits,
+            TrialSet.Member * FilteredScanTrials * FilteredScanPerspectives,
+            TrialSet.Member * FilteredScanTrials * FilteredScanModulations,
         ]
 
     @property
@@ -81,8 +81,8 @@ class ResampledTrialTraces(Files):
         return key * TrialLink.proj()
 
     def make(self, key):
-        # trace keys, ordered by member_id
-        trace_keys = (TraceSet & key).members.fetch("KEY", order_by="member_id")
+        # trace keys, ordered by trace_id
+        trace_keys = (TraceSet & key).members.fetch("KEY", order_by="trace_id")
 
         # trial keys
         key.pop("trial_id")

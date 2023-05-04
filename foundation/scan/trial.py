@@ -12,15 +12,18 @@ from foundation.schemas import scan as schema
 class TrialSet:
     keys = [pipe_stim.Trial]
     name = "trials"
-    comment = "set of scan trials"
+    comment = "scan trial set"
+    part_name = "trial"
 
 
 # -------------- Trial Filter --------------
 
+# -- Filter Types --
+
 
 @schema.filter_lookup
 class PupilNansFilter:
-    filter_type = pipe_stim.Trial
+    ftype = pipe_stim.Trial
     definition = """
     -> pipe_shared.TrackingMethod
     max_nans        : decimal(4, 3)     # maximum tolerated fraction of nans
@@ -33,21 +36,27 @@ class PupilNansFilter:
         return trials & (key & "nans < max_nans").proj()
 
 
+# -- Filter --
+
+
 @schema.filter_link
 class TrialFilterLink:
-    filters = [PupilNansFilter]
+    links = [PupilNansFilter]
     name = "trial_filter"
     comment = "scan trial filter"
 
 
+# -- Filter Set --
+
+
 @schema.filter_link_set
 class TrialFilterSet:
-    filter_link = TrialFilterLink
+    link = TrialFilterLink
     name = "trial_filters"
-    comment = "set of scan trial filters"
+    comment = "scan trial filter set"
 
 
-# -- Computed Trial Filter --
+# -- Computed Filter --
 
 
 @schema.computed

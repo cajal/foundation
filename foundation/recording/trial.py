@@ -56,21 +56,24 @@ class ScanTrial(_Trial):
         return VideoLink.get(stim_type, trial)
 
 
-# -- Trial Link --
+# -- Trial --
 
 
 @schema.link
 class TrialLink:
     links = [ScanTrial]
     name = "trial"
-    comment = "recording trial"
+    comment = "trial"
 
 
-@schema.set
+# -- Trial Set --
+
+
+@schema.link_set
 class TrialSet:
-    keys = [TrialLink]
+    link = TrialLink
     name = "trials"
-    comment = "set of recording trials"
+    comment = "trial set"
 
 
 # -- Computed Trial --
@@ -114,10 +117,12 @@ class TrialVideo:
 
 # -------------- Trial Filter --------------
 
+# -- Filter Types --
+
 
 @schema.filter_lookup
 class TrialVideoFilter:
-    filter_type = TrialLink
+    ftype = TrialLink
     definition = """
     -> VideoFilterSet
     """
@@ -135,15 +140,21 @@ class TrialVideoFilter:
         return trials & (trial_videos & videos).proj()
 
 
+# -- Filter --
+
+
 @schema.filter_link
 class TrialFilterLink:
-    filters = [TrialVideoFilter]
+    links = [TrialVideoFilter]
     name = "trial_filter"
-    comment = "recording trial filter"
+    comment = "trial filter"
+
+
+# -- Filter Set --
 
 
 @schema.filter_link_set
 class TrialFilterSet:
-    filter_link = TrialFilterLink
+    link = TrialFilterLink
     name = "trial_filters"
-    comment = "set of recording trial filters"
+    comment = "trial filter set"

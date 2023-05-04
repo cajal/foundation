@@ -131,21 +131,24 @@ class ScanTreadmill(_Scan):
         return True
 
 
-# -- Trace Link --
+# -- Trace --
 
 
 @schema.link
 class TraceLink:
     links = [ScanUnit, ScanPupil, ScanTreadmill]
     name = "trace"
-    comment = "recording trace"
+    comment = "trace"
 
 
-@schema.set
+# -- Trace Set --
+
+
+@schema.link_set
 class TraceSet:
-    keys = [TraceLink]
+    link = TraceLink
     name = "traces"
-    comment = "set of recording traces"
+    comment = "trace set"
 
 
 # -- Computed Trace --
@@ -179,16 +182,23 @@ class TraceTrials:
 
 # -------------- Trace Filter --------------
 
+# -- Filter Types --
+
+# -- Filter --
+
 
 @schema.filter_link
 class TraceFilterLink:
-    filters = []
+    links = []
     name = "trace_filter"
-    comment = "recording trace filter"
+    comment = "trace filter"
+
+
+# -- Filter Set --
 
 
 @schema.filter_link_set
 class TraceFilterSet:
-    filter_link = TraceFilterLink
+    link = TraceFilterLink
     name = "trace_filters"
-    comment = "set of recording trace filters"
+    comment = "trace filter set"

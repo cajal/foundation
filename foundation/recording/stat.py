@@ -28,16 +28,16 @@ class TraceSummary:
     @property
     def scan_keys(self):
         from foundation.recording.scan import (
-            ScanTrialSet,
-            ScanUnitSet,
-            ScanModulationSet,
-            ScanPerspectiveSet,
+            FilteredScanTrials,
+            FilteredScanUnits,
+            FilteredScanModulations,
+            FilteredScanPerspectives,
         )
 
         return [
-            TraceSet.Member * ScanUnitSet * ScanTrialSet,
-            TraceSet.Member * ScanPerspectiveSet * ScanTrialSet,
-            TraceSet.Member * ScanModulationSet * ScanTrialSet,
+            TraceSet.Member * FilteredScanUnits * FilteredScanTrials,
+            TraceSet.Member * FilteredScanPerspectives * FilteredScanTrials,
+            TraceSet.Member * FilteredScanModulations * FilteredScanTrials,
         ]
 
     @property
