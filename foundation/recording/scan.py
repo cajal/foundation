@@ -117,5 +117,5 @@ class FilteredScanModulations:
         traces = (TraceFilterSet & key).filter(traces)
 
         # trace set
-        traces = trace.TraceSet.fill(traces, prompt=False)
+        traces = TraceSet.fill(traces, prompt=False)
         self.insert1(dict(key, **traces))

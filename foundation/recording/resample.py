@@ -61,6 +61,13 @@ class ResampleTraceTrials:
             index -- trial_id (foundation.recording.trial.TrialLink)
             data -- 1D array (resampled trace values)
         """
+        # ensure trials are valid
+        valid_trials = TrialSet & merge(self.key, TraceTrials)
+        valid_trials = valid_trials.members
+
+        if self.key - valid_trials:
+            raise RestrictionError("Requested trials do not belong to the trace.")
+
         # resampling period, offset, method
         period = (RateLink & self.key).link.period
         offset = (OffsetLink & self.key).link.offset
@@ -69,13 +76,6 @@ class ResampleTraceTrials:
         # trace resampling function
         trace = (TraceLink & self.key).link
         f = resample(times=trace.times, values=trace.values, target_period=period)
-
-        # ensure trials are valid
-        valid_trials = TrialSet & merge(self.key, TraceTrials)
-        valid_trials = valid_trials.members
-
-        if self.key - valid_trials:
-            raise RestrictionError("Requested trials do not belong to the trace.")
 
         # resampled trials
         trial_timing = merge(self.key, TrialBounds)
