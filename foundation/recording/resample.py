@@ -10,7 +10,7 @@ from foundation.utility.resample import RateLink, OffsetLink, ResampleLink
 
 
 @keys
-class ResampledTrialVideo:
+class ResampleTrialVideo:
     keys = [RateLink, TrialLink]
 
     @row_property
@@ -49,7 +49,7 @@ class ResampledTrialVideo:
 
 
 @keys
-class ResampledTraceTrials:
+class ResampleTraceTrials:
     keys = [RateLink, OffsetLink, ResampleLink, TraceLink, TrialLink]
 
     @key_property(RateLink, OffsetLink, ResampleLink, TraceLink)

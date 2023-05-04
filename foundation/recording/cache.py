@@ -10,16 +10,16 @@ from pandas.testing import assert_series_equal
 from foundation.utility.resample import RateLink, OffsetLink, ResampleLink
 from foundation.recording.trial import TrialLink, TrialSet
 from foundation.recording.trace import TraceLink, TraceSet
-from foundation.recording.resample import ResampledTrialVideo, ResampledTraceTrials
+from foundation.recording.resample import ResampleTrialVideo, ResampleTraceTrials
 from foundation.schemas import recording as schema
 
 
 @schema.computed
-class ResampledVideoIndex(Files):
+class ResampledTrialVideo(Files):
     store = "scratch09"
     definition = """
-    -> RateLink
     -> TrialLink
+    -> RateLink
     ---
     index       : filepath@scratch09    # npy file, [samples]
     samples     : int unsigned          # number of samples
@@ -38,14 +38,14 @@ class ResampledVideoIndex(Files):
 
 
 @schema.computed
-class ResampledTraces(Files):
+class ResampledTrialTraces(Files):
     store = "scratch09"
     definition = """
+    -> TrialLink
+    -> TraceSet
     -> RateLink
     -> OffsetLink
     -> ResampleLink
-    -> TraceSet
-    -> TrialLink
     ---
     traces      : filepath@scratch09    # npy file, [samples, traces]
     finite      : bool                  # all values finite
@@ -90,7 +90,7 @@ class ResampledTraces(Files):
 
         # resample trace
         def samples(trace_key):
-            return (ResampledTraceTrials & key & trial_keys & trace_key).samples
+            return (ResampleTraceTrials & key & trial_keys & trace_key).samples
 
         # resample first trace
         s = samples(trace_keys[0])
