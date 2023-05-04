@@ -1,16 +1,32 @@
 from djutils import keys
-from foundation.schemas.pipeline import pipe_stim
+from foundation.schemas.pipeline import pipe_stim, pipe_tread, pipe_shared
 from foundation.utility.resample import RateLink, OffsetLink, ResampleLink
 from foundation.utility.stat import SummaryLink
 from foundation.scan.experiment import Scan
+from foundation.scan.pupil import PupilTrace
+from foundation.scan.unit import UnitSet, FilteredUnits
 from foundation.recording.scan import FilteredScanTrials, FilteredScanUnits
 from foundation.recording.stat import TraceSummary
-from foundation.recording.trial import ScanTrial, TrialLink, TrialSet, TrialBounds, TrialVideo
-from foundation.recording.trace import TraceLink, TraceSet
+from foundation.recording.trial import (
+    ScanTrial,
+    TrialLink,
+    TrialSet,
+    TrialBounds,
+    TrialVideo,
+)
+from foundation.recording.trace import (
+    ScanUnit,
+    ScanPupil,
+    ScanTreadmill,
+    TraceLink,
+    TraceSet,
+    TraceHomogeneous,
+    TraceTrials,
+)
 
 
 @keys
-class ScanTrials:
+class FillScanTrial:
     keys = [Scan]
 
     def fill(self):
@@ -28,7 +44,62 @@ class ScanTrials:
 
 
 @keys
-class ScanUnitSummary:
+class FillScanTreadmill:
+    keys = [Scan]
+
+    def fill(self):
+        # trace keys
+        key = pipe_tread.Treadmill & self.key
+        ScanTreadmill.insert(key.proj(), skip_duplicates=True)
+
+        # trace link
+        TraceLink.fill()
+
+        # computed trace
+        key = TraceLink.ScanTreadmill & key
+        TraceHomogeneous.populate(key, display_progress=True, reserve_jobs=True)
+        TraceTrials.populate(key, display_progress=True, reserve_jobs=True)
+
+
+@keys
+class FillScanPupil:
+    keys = [PupilTrace]
+
+    def fill(self):
+        # trace keys
+        key = PupilTrace & self.key
+        ScanPupil.insert(key.proj(), skip_duplicates=True)
+
+        # trace link
+        TraceLink.fill()
+
+        # computed trace
+        key = TraceLink.ScanPupil & key
+        TraceHomogeneous.populate(key, display_progress=True, reserve_jobs=True)
+        TraceTrials.populate(key, display_progress=True, reserve_jobs=True)
+
+
+@keys
+class FillScanUnit:
+    keys = [FilteredUnits, pipe_shared.SpikeMethod]
+
+    def fill(self):
+        # trace keys
+        key = FilteredUnits & self.key
+        key = (UnitSet & key).members * self.key
+        ScanUnit.insert(key, skip_duplicates=True, ignore_extra_fields=True)
+
+        # trace link
+        TraceLink.fill()
+
+        # computed trace
+        key = TraceLink.ScanUnit & key
+        TraceHomogeneous.populate(key, display_progress=True, reserve_jobs=True)
+        TraceTrials.populate(key, display_progress=True, reserve_jobs=True)
+
+
+@keys
+class FillScanUnitSummary:
     keys = [FilteredScanTrials, FilteredScanUnits, RateLink, OffsetLink, ResampleLink, SummaryLink]
 
     def fill(self):

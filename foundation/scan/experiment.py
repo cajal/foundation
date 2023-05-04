@@ -72,18 +72,3 @@ class Scan:
         key["eye_times"] = eye_times
         key["treadmill_times"] = tread_times
         self.insert1(key)
-
-    def fill_treadmill(self):
-        from foundation.recording.trace import ScanTreadmill, TraceLink, TraceHomogeneous, TraceTrials
-
-        # scan treadmill trace
-        tread = pipe_tread.Treadmill & self
-        ScanTreadmill.insert(tread.proj(), skip_duplicates=True)
-
-        # trace link
-        TraceLink.fill()
-
-        # compute trace
-        key = TraceLink.ScanTreadmill & tread
-        TraceHomogeneous.populate(key, display_progress=True, reserve_jobs=True)
-        TraceTrials.populate(key, display_progress=True, reserve_jobs=True)
