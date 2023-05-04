@@ -7,8 +7,10 @@ from tqdm import tqdm
 from operator import add
 from functools import reduce
 from pandas.testing import assert_series_equal
-from foundation.recording import trial, trace
-from foundation.utility import resample
+from foundation.utility.resample import RateLink, OffsetLink, ResampleLink
+from foundation.recording.trial import TrialLink, TrialSet
+from foundation.recording.trace import TraceLink, TraceSet
+from foundation.recording.resample import ResampledTrialVideo, ResampledTraceTrials
 from foundation.schemas import recording as schema
 
 
@@ -16,19 +18,16 @@ from foundation.schemas import recording as schema
 class ResampledVideoIndex(Files):
     store = "scratch09"
     definition = """
-    -> trial.TrialLink
-    -> resample.RateLink
+    -> TrialLink
+    -> RateLink
     ---
     index       : filepath@scratch09    # npy file, [samples]
     samples     : int unsigned          # number of samples
     """
 
     def make(self, key):
-        # resampling rate
-        rate_link = resample.RateLink & key
-
         # resampled video frame indices
-        index = (trial.TrialLink & key).resampled_video_index(rate_link)
+        index = (ResampledTrialVideo & key).index
 
         # save file
         file = os.path.join(self.tuple_dir(key, create=True), "index.npy")
@@ -42,11 +41,11 @@ class ResampledVideoIndex(Files):
 class ResampledTraces(Files):
     store = "scratch09"
     definition = """
-    -> trace.TraceSet
-    -> resample.RateLink
-    -> resample.OffsetLink
-    -> resample.ResampleLink
-    -> trial.TrialLink
+    -> TraceSet
+    -> RateLink
+    -> OffsetLink
+    -> ResampleLink
+    -> TrialLink
     ---
     traces      : filepath@scratch09    # npy file, [samples, traces]
     finite      : bool                  # all values finite
@@ -62,44 +61,39 @@ class ResampledTraces(Files):
         )
 
         return [
-            trial.TrialSet.Member * ScanTrialSet * ScanUnitSet,
-            trial.TrialSet.Member * ScanTrialSet * ScanPerspectiveSet,
-            trial.TrialSet.Member * ScanTrialSet * ScanModulationSet,
+            TrialSet.Member * ScanTrialSet * ScanUnitSet,
+            TrialSet.Member * ScanTrialSet * ScanPerspectiveSet,
+            TrialSet.Member * ScanTrialSet * ScanModulationSet,
         ]
 
     @property
     def keys(self):
         keys = self.scan_keys
         keys = reduce(add, [dj.U("traces_id", "trial_id") & key for key in keys])
-        keys = keys & (trace.TraceSet & "members > 0")
-        keys = keys * (resample.RateLink * resample.OffsetLink * resample.ResampleLink).proj()
+        keys = keys & (TraceSet & "members > 0")
+        keys = keys * (RateLink * OffsetLink * ResampleLink).proj()
         return keys - self
 
     @property
     def key_source(self):
         key = dj.U("traces_id", "rate_id", "offset_id", "resample_id")
         key = key.aggr(self.keys, trial_id="min(trial_id)")
-        return key * trial.TrialLink.proj()
+        return key * TrialLink.proj()
 
     def make(self, key):
-        # traces, ordered by member_id
-        trace_keys = (trace.TraceSet & key).members.fetch("KEY", order_by="member_id")
+        # trace keys, ordered by member_id
+        trace_keys = (TraceSet & key).members.fetch("KEY", order_by="member_id")
 
-        # trial links
+        # trial keys
         key.pop("trial_id")
-        trial_links = trial.TrialLink & (self.keys & key)
+        trial_keys = TrialLink & (self.keys & key)
 
-        # resampling links
-        rate_link = resample.RateLink & key
-        offset_link = resample.OffsetLink & key
-        resample_link = resample.ResampleLink & key
+        # resample trace
+        def samples(trace_key):
+            return (ResampledTraceTrials & key & trial_keys & trace_key).samples
 
-        def sample(trace_key):
-            trace_link = trace.TraceLink & trace_key
-            return trace_link.resampled_trials(trial_links, rate_link, offset_link, resample_link)
-
-        # sample first trace
-        s = sample(trace_keys[0])
+        # resample first trace
+        s = samples(trace_keys[0])
         n = s.apply(lambda x: x.size)
 
         with TemporaryDirectory() as tmpdir:
@@ -119,8 +113,8 @@ class ResampledTraces(Files):
             # write other traces to memmap
             for i, trace_key in enumerate(tqdm(trace_keys[1:], desc="Traces")):
 
-                # sample trace
-                _s = sample(trace_key)
+                # resample trace
+                _s = samples(trace_key)
                 _n = _s.apply(lambda x: x.size)
 
                 # ensure trial ids and sample sizes match

@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
-from djutils import keys, merge, row_property, RestrictionError
+from djutils import keys, merge, row_property, key_property, RestrictionError
 from foundation.utils.resample import frame_index
 from foundation.stimulus.video import VideoInfo
 from foundation.recording.trial import TrialLink, TrialSet, TrialBounds, TrialVideo
@@ -15,6 +15,12 @@ class ResampledTrialVideo:
 
     @row_property
     def index(self):
+        """
+        Returns
+        -------
+        1D array
+            video frame index for each of the resampled time points
+        """
         # resampling period and flip times
         period = (RateLink & self.key).link.period
         flips = (TrialLink & self.key).link.flips
@@ -46,8 +52,15 @@ class ResampledTrialVideo:
 class ResampledTraceTrials:
     keys = [RateLink, OffsetLink, ResampleLink, TraceLink, TrialLink]
 
-    @property
+    @key_property(RateLink, OffsetLink, ResampleLink, TraceLink)
     def samples(self):
+        """
+        Returns
+        -------
+        pd.Series
+            index -- trial_id (foundation.recording.trial.TrialLink)
+            data -- 1D array (resampled trace values)
+        """
         # resampling period, offset, method
         period = (RateLink & self.key).link.period
         offset = (OffsetLink & self.key).link.offset
