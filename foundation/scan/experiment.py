@@ -73,41 +73,6 @@ class Scan:
         key["treadmill_times"] = tread_times
         self.insert1(key)
 
-    def fill_videos(self):
-        from foundation.stimulus.video import VideoLink, VideoInfo
-
-        # scan trials
-        trials = pipe_stim.Trial * pipe_stim.Condition & self
-
-        # stimulus types
-        stim_types = dj.U("stimulus_type") & trials
-        for stim_type in stim_types.fetch("stimulus_type"):
-
-            keys = trials & dict(stimulus_type=stim_type)
-            table = VideoLink.get(stim_type.split(".")[1]).link
-            table.insert(keys.proj(), skip_duplicates=True, ignore_extra_fields=True)
-
-        # video link
-        VideoLink.fill()
-
-        # compute video
-        VideoInfo.populate(display_progress=True, reserve_jobs=True)
-
-    def fill_trials(self):
-        from foundation.recording.trial import ScanTrial, TrialLink, TrialBounds, TrialVideo
-
-        # scan trials
-        trials = pipe_stim.Trial & self
-        ScanTrial.insert(trials.proj(), skip_duplicates=True)
-
-        # trial link
-        TrialLink.fill()
-
-        # computed trials
-        key = TrialLink.ScanTrial & trials
-        TrialBounds.populate(key, display_progress=True, reserve_jobs=True)
-        TrialVideo.populate(key, display_progress=True, reserve_jobs=True)
-
     def fill_treadmill(self):
         from foundation.recording.trace import ScanTreadmill, TraceLink, TraceHomogeneous, TraceTrials
 

@@ -90,25 +90,3 @@ class FilteredUnits:
 
         # insert key
         self.insert1(dict(key, **unit_set))
-
-    def fill_units(self, spike_key={"spike_method": 6}):
-        """
-        Parameters
-        ----------
-        spike_key : datajoint.key
-            key for pipe_shared.SpikeMethod
-        """
-        from foundation.recording.trace import ScanUnit, TraceLink, TraceHomogeneous, TraceTrials
-
-        # scan unit traces
-        units = UnitSet.Member & self
-        units = units * (pipe_shared.SpikeMethod & spike_key).proj()
-        ScanUnit.insert(units, skip_duplicates=True, ignore_extra_fields=True)
-
-        # trace link
-        TraceLink.fill()
-
-        # compute trace
-        key = TraceLink.ScanUnit & units
-        TraceHomogeneous.populate(key, display_progress=True, reserve_jobs=True)
-        TraceTrials.populate(key, display_progress=True, reserve_jobs=True)

@@ -31,20 +31,6 @@ class PupilTrace:
         ]
         self.insert(keys)
 
-    def fill_pupils(self):
-        from foundation.recording.trace import ScanPupil, TraceLink, TraceHomogeneous, TraceTrials
-
-        # scan pupil traces
-        ScanPupil.insert(self.proj(), skip_duplicates=True)
-
-        # trace link
-        TraceLink.fill()
-
-        # compute trace
-        key = TraceLink.ScanUnit & self
-        TraceHomogeneous.populate(key, display_progress=True, reserve_jobs=True)
-        TraceTrials.populate(key, display_progress=True, reserve_jobs=True)
-
 
 @schema.computed
 class PupilNans:
