@@ -18,8 +18,8 @@ from foundation.schemas import recording as schema
 class ResampledVideoIndex(Files):
     store = "scratch09"
     definition = """
-    -> TrialLink
     -> RateLink
+    -> TrialLink
     ---
     index       : filepath@scratch09    # npy file, [samples]
     samples     : int unsigned          # number of samples
@@ -41,10 +41,10 @@ class ResampledVideoIndex(Files):
 class ResampledTraces(Files):
     store = "scratch09"
     definition = """
-    -> TraceSet
     -> RateLink
     -> OffsetLink
     -> ResampleLink
+    -> TraceSet
     -> TrialLink
     ---
     traces      : filepath@scratch09    # npy file, [samples, traces]
