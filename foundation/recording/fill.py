@@ -5,8 +5,12 @@ from foundation.utility.stat import SummaryLink
 from foundation.scan.experiment import Scan
 from foundation.scan.pupil import PupilTrace
 from foundation.scan.unit import UnitSet, FilteredUnits
-from foundation.recording.scan import FilteredScanTrials, FilteredScanUnits
-from foundation.recording.stat import TraceSummary
+from foundation.recording.scan import (
+    FilteredScanTrials,
+    FilteredScanPerspectives,
+    FilteredScanModulations,
+    FilteredScanUnits,
+)
 from foundation.recording.trial import (
     ScanTrial,
     TrialLink,
@@ -23,6 +27,7 @@ from foundation.recording.trace import (
     TraceHomogeneous,
     TraceTrials,
 )
+from foundation.recording.stat import TraceSummary
 
 
 @keys
@@ -99,14 +104,38 @@ class FillScanUnit:
 
 
 @keys
+class FillScanPerspectiveSummary:
+    keys = [FilteredScanTrials, FilteredScanPerspectives, RateLink, OffsetLink, ResampleLink, SummaryLink]
+
+    def fill(self):
+        # keys
+        trace_keys = TraceSet.Link & (FilteredScanPerspectives & self.key)
+        trial_keys = TrialSet & (FilteredScanTrials & self.key)
+
+        # trace summary statistic
+        TraceSummary.populate(self.key, trial_keys, trace_keys, reserve_jobs=True, display_progress=True)
+
+
+@keys
+class FillScanModulationSummary:
+    keys = [FilteredScanTrials, FilteredScanModulations, RateLink, OffsetLink, ResampleLink, SummaryLink]
+
+    def fill(self):
+        # keys
+        trace_keys = TraceSet.Link & (FilteredScanModulations & self.key)
+        trial_keys = TrialSet & (FilteredScanTrials & self.key)
+
+        # trace summary statistic
+        TraceSummary.populate(self.key, trial_keys, trace_keys, reserve_jobs=True, display_progress=True)
+
+
+@keys
 class FillScanUnitSummary:
     keys = [FilteredScanTrials, FilteredScanUnits, RateLink, OffsetLink, ResampleLink, SummaryLink]
 
     def fill(self):
-        # trace keys
+        # keys
         trace_keys = TraceSet.Link & (FilteredScanUnits & self.key)
-
-        # trial keys
         trial_keys = TrialSet & (FilteredScanTrials & self.key)
 
         # trace summary statistic
