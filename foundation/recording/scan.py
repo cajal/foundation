@@ -1,25 +1,24 @@
 import numpy as np
 from djutils import merge
-from foundation.scan.experiment import Scan
-from foundation.scan.pupil import PupilTrace
-from foundation.scan.trial import FilteredTrials, TrialSet as ScanTrialSet
-from foundation.scan.unit import FilteredUnits, UnitSet
+from foundation.virtual import scan
+from foundation.virtual.bridge import pipe_shared, pipe_stim
 from foundation.recording.trial import TrialLink, TrialSet, TrialFilterSet
 from foundation.recording.trace import TraceLink, TraceSet, TraceFilterSet
-from foundation.virtual.bridge import pipe_shared, pipe_stim
 from foundation.schemas import recording as schema
 
 
 @schema.computed
 class FilteredScanTrials:
     definition = """
-    -> FilteredTrials.proj(scan_filters_id="trial_filters_id")
+    -> scan.FilteredTrials.proj(scan_filters_id="trial_filters_id")
     -> TrialFilterSet
     ---
     -> TrialSet
     """
 
     def make(self, key):
+        from foundation.scan.trial import FilteredTrials, TrialSet as ScanTrialSet
+
         # filtered scan trials
         trials = FilteredTrials.proj(..., scan_filters_id="trial_filters_id") & key
         trials = ScanTrialSet & trials
@@ -37,7 +36,7 @@ class FilteredScanTrials:
 @schema.computed
 class FilteredScanPerspectives:
     definition = """
-    -> Scan
+    -> scan.Scan
     -> pipe_shared.TrackingMethod
     -> TraceFilterSet
     ---
@@ -45,10 +44,11 @@ class FilteredScanPerspectives:
     """
 
     def make(self, key):
+
         # scan pupil traces
         pupils = merge(
-            Scan & key,
-            PupilTrace & key,
+            scan.Scan & key,
+            scan.PupilTrace & key,
             TraceLink.ScanPupil,
         )
         pupils &= [dict(pupil_type="center_x"), dict(pupil_type="center_y")]
@@ -65,7 +65,7 @@ class FilteredScanPerspectives:
 @schema.computed
 class FilteredScanModulations:
     definition = """
-    -> Scan
+    -> scan.Scan
     -> pipe_shared.TrackingMethod
     -> TraceFilterSet
     ---
@@ -73,17 +73,18 @@ class FilteredScanModulations:
     """
 
     def make(self, key):
+
         # scan pupil trace
         pupil = merge(
-            Scan & key,
-            PupilTrace & key,
+            scan.Scan & key,
+            scan.PupilTrace & key,
             TraceLink.ScanPupil,
         )
         pupil &= dict(pupil_type="radius")
 
         # scan treadmill trace
         tread = merge(
-            Scan & key,
+            scan.Scan & key,
             TraceLink.ScanTreadmill,
         )
 
@@ -99,7 +100,7 @@ class FilteredScanModulations:
 @schema.computed
 class FilteredScanUnits:
     definition = """
-    -> FilteredUnits
+    -> scan.FilteredUnits
     -> pipe_shared.SpikeMethod
     -> TraceFilterSet
     ---
@@ -107,6 +108,8 @@ class FilteredScanUnits:
     """
 
     def make(self, key):
+        from foundation.scan.unit import FilteredUnits, UnitSet
+
         # filtered scan units
         units = FilteredUnits & key
         units = UnitSet & units

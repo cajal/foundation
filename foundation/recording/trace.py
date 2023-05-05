@@ -1,8 +1,7 @@
 from djutils import merge, row_property
-from foundation.scan.experiment import Scan
-from foundation.scan.pupil import PupilTrace
-from foundation.recording.trial import TrialLink, TrialSet, TrialBounds
+from foundation.virtual import scan
 from foundation.virtual.bridge import pipe_fuse, pipe_shared, pipe_stim, pipe_tread, resolve_pipe
+from foundation.recording.trial import TrialLink, TrialSet, TrialBounds
 from foundation.schemas import recording as schema
 
 
@@ -72,14 +71,14 @@ class _Scan(_Trace):
 @schema.lookup
 class ScanUnit(_Scan):
     definition = """
-    -> Scan
+    -> scan.Scan
     -> pipe_fuse.ScanSet.Unit
     -> pipe_shared.SpikeMethod
     """
 
     @row_property
     def times(self):
-        times = (Scan & self).fetch1("scan_times")
+        times = (scan.Scan & self).fetch1("scan_times")
         delay = (resolve_pipe(self).ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
         return times + delay
 
@@ -95,16 +94,16 @@ class ScanUnit(_Scan):
 @schema.lookup
 class ScanPupil(_Scan):
     definition = """
-    -> PupilTrace
+    -> scan.PupilTrace
     """
 
     @row_property
     def times(self):
-        return (Scan & self).fetch1("eye_times")
+        return (scan.Scan & self).fetch1("eye_times")
 
     @row_property
     def values(self):
-        return (PupilTrace & self).fetch1("pupil_trace")
+        return (scan.PupilTrace & self).fetch1("pupil_trace")
 
     @row_property
     def homogeneous(self):
@@ -114,13 +113,13 @@ class ScanPupil(_Scan):
 @schema.lookup
 class ScanTreadmill(_Scan):
     definition = """
-    -> Scan
+    -> scan.Scan
     -> pipe_tread.Treadmill
     """
 
     @row_property
     def times(self):
-        return (Scan & self).fetch1("treadmill_times")
+        return (scan.Scan & self).fetch1("treadmill_times")
 
     @row_property
     def values(self):

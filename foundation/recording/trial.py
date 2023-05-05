@@ -1,8 +1,8 @@
 import numpy as np
 from djutils import merge, row_property, row_method
 from foundation.utils.resample import monotonic
-from foundation.virtual.bridge import pipe_stim
 from foundation.virtual import stimulus
+from foundation.virtual.bridge import pipe_stim
 from foundation.schemas import recording as schema
 
 
