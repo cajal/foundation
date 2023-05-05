@@ -1,124 +1,107 @@
-from djutils import merge, row_property
-from foundation.recording import trial, trace, scan
+from djutils import row_property
+from foundation.recording.scan import (
+    FilteredScanTrials,
+    FilteredScanPerspectives,
+    FilteredScanModulations,
+    FilteredScanUnits,
+)
+from foundation.recording.trial import TrialSet
+from foundation.recording.trace import TraceSet
+from foundation.dataset.dtype import DtypeLink
 from foundation.schemas import dataset as schema
 
 
-# @schema.lookup
-# class TraceDataType:
-#     definition = """
-#     trace_dtype     : varchar(64)       # trace data type
-#     """
+# -------------- Recording --------------
+
+# -- Recording Base --
 
 
-# # -------------- Recording --------------
+class _Recording:
+    """Recording Dataset"""
 
-# # -- Recording Base --
+    @row_property
+    def trial_set(self):
+        """
+        Returns
+        -------
+        foundation.recording.trial.TrialSet
+            single tuple
+        """
+        raise NotImplementedError()
 
-
-# class _Recording:
-#     """Recording Dataset"""
-
-#     @row_property
-#     def trials_traces(self):
-#         """
-#         Returns
-#         -------
-#         foundation.recording.trial.TrialSet
-#             single tuple
-#         foundation.recording.trace.TraceSet
-#             single tuple
-#         foundation.dataset.recording.TraceDataType
-#             single tuple
-#         """
-#         raise NotImplementedError()
-
-
-# # -- Recording Types --
-
-
-# @schema.lookup
-# class ScanUnit(_Recording):
-#     definition = """
-#     -> scan.ScanTrialSet
-#     -> scan.ScanUnitSet
-#     """
-
-#     @row_property
-#     def trials_traces(self):
-#         return (
-#             trial.TrialSet & (scan.ScanTrialSet & self),
-#             trace.TraceSet & (scan.ScanUnitSet & self),
-#             TraceDataType & dict(trace_dtype="neuron"),
-#         )
+    @row_property
+    def trace_sets(self):
+        """
+        Yields
+        ------
+        foundation.recording.trace.TraceSet
+            single tuple
+        foundation.dataset.dtype.DtypeLink
+            single tuple
+        """
+        raise NotImplementedError()
 
 
-# @schema.lookup
-# class ScanPerspective(_Recording):
-#     definition = """
-#     -> scan.ScanTrialSet
-#     -> scan.ScanPerspectiveSet
-#     """
-
-#     @row_property
-#     def trials_traces(self):
-#         return (
-#             trial.TrialSet & (scan.ScanTrialSet & self),
-#             trace.TraceSet & (scan.ScanPerspectiveSet & self),
-#             TraceDataType & dict(trace_dtype="perspective"),
-#         )
+# -- Recording Types --
 
 
-# @schema.lookup
-# class ScanModulation(_Recording):
-#     definition = """
-#     -> scan.ScanTrialSet
-#     -> scan.ScanModulationSet
-#     """
+@schema.lookup
+class Scan(_Recording):
+    definition = """
+    -> FilteredScanTrials
+    -> FilteredScanPerspectives
+    -> FilteredScanModulations
+    -> FilteredScanUnits
+    """
 
-#     @row_property
-#     def trials_traces(self):
-#         return (
-#             trial.TrialSet & (scan.ScanTrialSet & self),
-#             trace.TraceSet & (scan.ScanModulationSet & self),
-#             TraceDataType & dict(trace_dtype="modulation"),
-#         )
+    @row_property
+    def trial_set(self):
+        return TrialSet & (FilteredScanTrials & self)
 
-
-# # -- Recording Links --
-
-
-# @schema.link
-# class RecordingLink:
-#     links = [ScanUnit, ScanPerspective, ScanModulation]
-#     name = "recording"
-#     comment = "recording dataset"
-
-
-# @schema.set
-# class RecordingSet:
-#     keys = [RecordingLink]
-#     name = "recordings"
-#     comment = "set of recording datasets"
+    @row_property
+    def trace_sets(self):
+        for scan_set, dtype_part in [
+            [FilteredScanPerspectives, DtypeLink.ScanPerspective],
+            [FilteredScanModulations, DtypeLink.ScanModulation],
+            [FilteredScanUnits, DtypeLink.ScanUnit],
+        ]:
+            key = scan_set & self
+            trace_set = TraceSet & key
+            dtype = DtypeLink & (dtype_part & key)
+            yield trace_set, dtype
 
 
-# # -- Computed Recording --
+# -- Recording --
 
 
-# @schema.computed
-# class RecordingData:
-#     definition = """
-#     -> RecordingLink
-#     ---
-#     -> trial.TrialSet
-#     -> trace.TraceSet
-#     -> TraceDataType
-#     """
+@schema.link
+class RecordingLink:
+    links = [Scan]
+    name = "recording"
+    comment = "recording"
 
-#     def make(self, key):
-#         trials, traces, dtype = (RecordingLink & key).link.trials_traces
 
-#         key["trials_id"] = trials.fetch1("trials_id")
-#         key["traces_id"] = traces.fetch1("traces_id")
-#         key["trace_dtype"] = dtype.fetch1("trace_dtype")
+# -- Recording Set --
 
-#         self.insert1(key)
+
+@schema.link_set
+class RecordingSet:
+    link = RecordingLink
+    name = "recordings"
+    comment = "recording set"
+
+
+# -- Computed Recording --
+
+
+@schema.computed
+class RecordingTrials:
+    definition = """
+    -> RecordingLink
+    ---
+    -> TrialSet
+    """
+
+    def make(self, key):
+        key["trials_id"] = (RecordingLink & key).link.trial_set.fetch1("trials_id")
+        self.insert1(key)

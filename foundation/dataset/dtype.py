@@ -1,15 +1,14 @@
 from djutils import row_property
 from foundation.utility.stat import SummaryLink
-from foundation.utility.standardize import StandardizeLink
 from foundation.recording.trace import TraceFilterSet
 from foundation.schemas.pipeline import pipe_shared
 from foundation.schemas import dataset as schema
 
 
-# -------------- Data --------------
+# -------------- Dtype --------------
 
 
-# -- Data Types --
+# -- Dtype Types --
 
 
 @schema.lookup
@@ -36,11 +35,11 @@ class ScanModulation:
     """
 
 
-# -- Data Link --
+# -- Dtype --
 
 
 @schema.link
-class DataLink:
+class DtypeLink:
     links = [ScanUnit, ScanPerspective, ScanModulation]
-    name = "data"
+    name = "dtype"
     comment = "data type"

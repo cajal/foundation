@@ -35,31 +35,6 @@ class FilteredScanTrials:
 
 
 @schema.computed
-class FilteredScanUnits:
-    definition = """
-    -> FilteredUnits
-    -> pipe_shared.SpikeMethod
-    -> TraceFilterSet
-    ---
-    -> TraceSet
-    """
-
-    def make(self, key):
-        # filtered scan units
-        units = FilteredUnits & key
-        units = UnitSet & units
-        units = merge(units.members, TraceLink.ScanUnit & key)
-
-        # filter traces
-        traces = TraceLink & units
-        traces = (TraceFilterSet & key).filter(traces)
-
-        # trace set
-        traces = TraceSet.fill(traces, prompt=False)
-        self.insert1(dict(key, **traces))
-
-
-@schema.computed
 class FilteredScanPerspectives:
     definition = """
     -> Scan
@@ -114,6 +89,31 @@ class FilteredScanModulations:
 
         # filter traces
         traces = TraceLink & [pupil, tread]
+        traces = (TraceFilterSet & key).filter(traces)
+
+        # trace set
+        traces = TraceSet.fill(traces, prompt=False)
+        self.insert1(dict(key, **traces))
+
+
+@schema.computed
+class FilteredScanUnits:
+    definition = """
+    -> FilteredUnits
+    -> pipe_shared.SpikeMethod
+    -> TraceFilterSet
+    ---
+    -> TraceSet
+    """
+
+    def make(self, key):
+        # filtered scan units
+        units = FilteredUnits & key
+        units = UnitSet & units
+        units = merge(units.members, TraceLink.ScanUnit & key)
+
+        # filter traces
+        traces = TraceLink & units
         traces = (TraceFilterSet & key).filter(traces)
 
         # trace set
