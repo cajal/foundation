@@ -1,5 +1,6 @@
-import datajoint as dj
+from datajoint import create_virtual_module
 
-stimulus = dj.create_virtual_module("stimulus", "foundation_stimulus", create_schema=True)
-scan = dj.create_virtual_module("scan", "foundation_scan", create_schema=True)
-recording = dj.create_virtual_module("recording", "foundation_recording", create_schema=True)
+utility = create_virtual_module("utility", "foundation_utility", create_schema=True)
+stimulus = create_virtual_module("stimulus", "foundation_stimulus", create_schema=True)
+scan = create_virtual_module("scan", "foundation_scan", create_schema=True)
+recording = create_virtual_module("recording", "foundation_recording", create_schema=True)

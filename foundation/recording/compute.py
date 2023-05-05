@@ -3,15 +3,24 @@ import pandas as pd
 from scipy.interpolate import interp1d
 from djutils import keys, merge, row_property, key_property, RestrictionError
 from foundation.utils.resample import frame_index
+from foundation.utility.stat import SummaryLink
+from foundation.utility.standardize import StandardizeLink
 from foundation.stimulus.video import VideoInfo
 from foundation.recording.trial import TrialLink, TrialSet, TrialBounds, TrialVideo
-from foundation.recording.trace import TraceLink, TraceTrials
+from foundation.recording.trace import TraceLink, TraceSet, TraceTrials
 from foundation.utility.resample import RateLink, OffsetLink, ResampleLink
 
 
 @keys
-class ResampleTrialVideo:
-    keys = [TrialLink, RateLink]
+class VideoIndex:
+    """Trial video index"""
+
+    @property
+    def key_list(self):
+        return [
+            TrialLink,
+            RateLink,
+        ]
 
     @row_property
     def index(self):
@@ -49,8 +58,18 @@ class ResampleTrialVideo:
 
 
 @keys
-class ResampleTraceTrials:
-    keys = [TraceLink, TrialLink, RateLink, OffsetLink, ResampleLink]
+class TraceResample:
+    """Trace samples"""
+
+    @property
+    def key_list(self):
+        return [
+            TraceLink,
+            TrialLink,
+            RateLink,
+            OffsetLink,
+            ResampleLink,
+        ]
 
     @key_property(TraceLink, RateLink, OffsetLink, ResampleLink)
     def samples(self):
@@ -87,3 +106,71 @@ class ResampleTraceTrials:
             data=samples,
             index=pd.Index(trial_ids, name="trial_id"),
         )
+
+
+@keys
+class TraceSummary:
+    """Trace summary statistics"""
+
+    @property
+    def key_list(self):
+        return [
+            TraceLink,
+            TrialSet,
+            RateLink,
+            OffsetLink,
+            ResampleLink,
+            SummaryLink,
+        ]
+
+    @row_property
+    def summary(self):
+        # trial set
+        trial_keys = (TrialSet & self.key).members
+
+        # resampled trace
+        samples = (TraceResample & self.key & trial_keys).samples
+        samples = np.concatenate(samples)
+
+        # summary statistic
+        return (SummaryLink & self.key).link.summary(samples)
+
+
+@keys
+class TraceStandardize:
+    """Trace standardization"""
+
+    @property
+    def key_list(self):
+        return [
+            TraceSet,
+            TrialSet,
+            RateLink,
+            OffsetLink,
+            ResampleLink,
+            StandardizeLink,
+        ]
+
+    @row_property
+    def transform(self):
+        # trace and stat keys
+        trace_keys = (TraceSet & self.key).members
+        stat_keys = (StandardizeLink & self.key).link.summary_keys
+
+        # homogeneous mask
+        hom = merge(trace_keys, TraceHomogeneous)
+        hom = hom.fetch("homogeneous", order_by="trace_id ASC")
+        hom = hom.astype(bool)
+
+        # summary stats
+        keys = trace_keys * self.key * stat_keys
+        keys = merge(keys, TraceSummary)
+
+        stats = dict()
+        for summary_id, df in keys.fetch(format="frame").groupby("summary_id"):
+
+            df = df.sort_values("trace_id", ascending=True)
+            stats[summary_id] = df.summary.values
+
+        # standarization transform
+        return (StandardizeLink & self.key).link.standardize(homogeneous=hom, **stats)

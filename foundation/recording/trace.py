@@ -1,5 +1,5 @@
 from djutils import merge, row_property
-from foundation.virtual import scan
+from foundation.virtual import scan, utility
 from foundation.virtual.bridge import pipe_fuse, pipe_shared, pipe_stim, pipe_tread, resolve_pipe
 from foundation.recording.trial import TrialLink, TrialSet, TrialBounds
 from foundation.schemas import recording as schema
@@ -176,6 +176,26 @@ class TraceTrials:
 
     def make(self, key):
         key["trials_id"] = (TraceLink & key).link.trial_set.fetch1("trials_id")
+        self.insert1(key)
+
+
+@schema.computed
+class TraceSummary:
+    definition = """
+    -> TraceLink
+    -> TrialSet
+    -> utility.RateLink
+    -> utility.OffsetLink
+    -> utility.ResampleLink
+    -> utility.SummaryLink
+    ---
+    summary = NULL      : float     # summary statistic
+    """
+
+    def make(self, key):
+        from foundation.recording.compute import TraceSummary
+
+        key["summary"] = (TraceSummary & key).summary
         self.insert1(key)
 
 
