@@ -1,6 +1,6 @@
 import numpy as np
 from foundation.scan.experiment import Scan
-from foundation.schemas.pipeline import pipe_eye, pipe_stim
+from foundation.virtual.bridge import pipe_eye, pipe_stim
 from foundation.schemas import scan as schema
 
 

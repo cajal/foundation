@@ -1,7 +1,7 @@
 import datajoint as dj
 from djutils import merge, row_method
 from foundation.scan.experiment import Scan
-from foundation.schemas.pipeline import pipe_fuse, pipe_shared, resolve_pipe
+from foundation.virtual.bridge import pipe_fuse, pipe_shared, resolve_pipe
 from foundation.schemas import scan as schema
 
 

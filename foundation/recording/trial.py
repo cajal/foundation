@@ -2,7 +2,7 @@ import numpy as np
 from djutils import merge, row_property, row_method
 from foundation.utils.resample import monotonic
 from foundation.stimulus.video import VideoLink, VideoInfo, VideoFilterSet
-from foundation.schemas.pipeline import pipe_stim
+from foundation.virtual.bridge import pipe_stim
 from foundation.schemas import recording as schema
 
 

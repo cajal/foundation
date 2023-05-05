@@ -1,7 +1,7 @@
 import numpy as np
 import datajoint as dj
 from foundation.utils.logging import logger
-from foundation.schemas.pipeline import pipe_exp, pipe_stim, pipe_eye, pipe_tread, resolve_pipe
+from foundation.virtual.bridge import pipe_exp, pipe_stim, pipe_eye, pipe_tread, resolve_pipe
 from foundation.schemas import scan as schema
 
 

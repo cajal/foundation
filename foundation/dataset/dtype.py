@@ -1,7 +1,6 @@
 from djutils import row_property
-from foundation.utility.stat import SummaryLink
-from foundation.recording.trace import TraceFilterSet
-from foundation.schemas.pipeline import pipe_shared
+from foundation.virtual.bridge import pipe_shared
+from foundation.virtual import recording
 from foundation.schemas import dataset as schema
 
 
@@ -15,7 +14,7 @@ from foundation.schemas import dataset as schema
 class ScanUnit:
     definition = """
     -> pipe_shared.SpikeMethod
-    -> TraceFilterSet
+    -> recording.TraceFilterSet
     """
 
 
@@ -23,7 +22,7 @@ class ScanUnit:
 class ScanPerspective:
     definition = """
     -> pipe_shared.TrackingMethod
-    -> TraceFilterSet
+    -> recording.TraceFilterSet
     """
 
 
@@ -31,7 +30,7 @@ class ScanPerspective:
 class ScanModulation:
     definition = """
     -> pipe_shared.TrackingMethod
-    -> TraceFilterSet
+    -> recording.TraceFilterSet
     """
 
 

@@ -6,7 +6,7 @@ from foundation.scan.trial import FilteredTrials, TrialSet as ScanTrialSet
 from foundation.scan.unit import FilteredUnits, UnitSet
 from foundation.recording.trial import TrialLink, TrialSet, TrialFilterSet
 from foundation.recording.trace import TraceLink, TraceSet, TraceFilterSet
-from foundation.schemas.pipeline import pipe_shared, pipe_stim
+from foundation.virtual.bridge import pipe_shared, pipe_stim
 from foundation.schemas import recording as schema
 
 

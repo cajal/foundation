@@ -1,12 +1,5 @@
-from djutils import row_property
-from foundation.recording.scan import (
-    FilteredScanTrials,
-    FilteredScanPerspectives,
-    FilteredScanModulations,
-    FilteredScanUnits,
-)
-from foundation.recording.trial import TrialSet
-from foundation.recording.trace import TraceSet
+from djutils import merge, row_property
+from foundation.virtual import recording
 from foundation.dataset.dtype import DtypeLink
 from foundation.schemas import dataset as schema
 
@@ -24,7 +17,7 @@ class _Recording:
         """
         Returns
         -------
-        foundation.recording.trial.TrialSet
+        foundation.recording.trial.TrialSet (virtual)
             single tuple
         """
         raise NotImplementedError()
@@ -34,9 +27,9 @@ class _Recording:
         """
         Yields
         ------
-        foundation.dataset.dtype.DtypeLink
+        foundation.dataset.dtype.DtypeLink  (virtual)
             single tuple
-        foundation.recording.trace.TraceSet
+        foundation.recording.trace.TraceSet (virtual)
             single tuple
         """
         raise NotImplementedError()
@@ -48,26 +41,26 @@ class _Recording:
 @schema.lookup
 class Scan(_Recording):
     definition = """
-    -> FilteredScanTrials
-    -> FilteredScanPerspectives
-    -> FilteredScanModulations
-    -> FilteredScanUnits
+    -> recording.FilteredScanTrials
+    -> recording.FilteredScanPerspectives
+    -> recording.FilteredScanModulations
+    -> recording.FilteredScanUnits
     """
 
     @row_property
     def trial_set(self):
-        return TrialSet & (FilteredScanTrials & self)
+        return recording.TrialSet & (recording.FilteredScanTrials & self)
 
     @row_property
     def trace_sets(self):
         for dtype_part, scan_set in [
-            [DtypeLink.ScanPerspective, FilteredScanPerspectives],
-            [DtypeLink.ScanModulation, FilteredScanModulations],
-            [DtypeLink.ScanUnit, FilteredScanUnits],
+            [DtypeLink.ScanPerspective, recording.FilteredScanPerspectives],
+            [DtypeLink.ScanModulation, recording.FilteredScanModulations],
+            [DtypeLink.ScanUnit, recording.FilteredScanUnits],
         ]:
             key = scan_set & self
-            dtype = DtypeLink & (dtype_part & key)
-            trace_set = TraceSet & key
+            dtype = DtypeLink & merge(key, dtype_part)
+            trace_set = recording.TraceSet & key
             yield dtype, trace_set
 
 
@@ -99,14 +92,12 @@ class RecordingTrials:
     definition = """
     -> RecordingLink
     ---
-    -> TrialSet
+    -> recording.TrialSet
     """
 
     def make(self, key):
         trials = (RecordingLink & key).link.trial_set
-
         trials_id = trials.fetch1("trials_id")
-
         self.insert1(dict(key, trials_id=trials_id))
 
 
@@ -116,7 +107,7 @@ class RecordingTraces:
     -> RecordingLink
     -> DtypeLink
     ---
-    -> TraceSet
+    -> recording.TraceSet
     """
 
     @property
@@ -125,8 +116,6 @@ class RecordingTraces:
 
     def make(self, key):
         for dtype, traces in (RecordingLink & key).link.trace_sets:
-
             dtype_id = dtype.fetch1("dtype_id")
             traces_id = traces.fetch1("traces_id")
-
             self.insert1(dict(key, dtype_id=dtype_id, traces_id=traces_id))

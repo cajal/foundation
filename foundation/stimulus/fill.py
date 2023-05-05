@@ -1,7 +1,7 @@
 from datajoint import U
 from djutils import keys
 from foundation.stimulus.video import VideoLink, VideoInfo
-from foundation.schemas.pipeline import pipe_exp, pipe_stim
+from foundation.virtual.bridge import pipe_exp, pipe_stim
 
 
 @keys

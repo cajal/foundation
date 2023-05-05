@@ -2,7 +2,7 @@ from djutils import merge, row_property
 from foundation.scan.experiment import Scan
 from foundation.scan.pupil import PupilTrace
 from foundation.recording.trial import TrialLink, TrialSet, TrialBounds
-from foundation.schemas.pipeline import pipe_fuse, pipe_shared, pipe_stim, pipe_tread, resolve_pipe
+from foundation.virtual.bridge import pipe_fuse, pipe_shared, pipe_stim, pipe_tread, resolve_pipe
 from foundation.schemas import recording as schema
 
 

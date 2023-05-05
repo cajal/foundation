@@ -1,7 +1,7 @@
 from djutils import merge, row_method
 from foundation.scan.experiment import Scan
 from foundation.scan.pupil import PupilNans
-from foundation.schemas.pipeline import pipe_stim, pipe_shared
+from foundation.virtual.bridge import pipe_stim, pipe_shared
 from foundation.schemas import scan as schema
 
 

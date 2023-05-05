@@ -1,5 +1,5 @@
 from djutils import keys
-from foundation.schemas.pipeline import pipe_stim, pipe_tread, pipe_shared
+from foundation.virtual.bridge import pipe_stim, pipe_tread, pipe_shared
 from foundation.utility.resample import RateLink, OffsetLink, ResampleLink
 from foundation.utility.stat import SummaryLink
 from foundation.scan.experiment import Scan
