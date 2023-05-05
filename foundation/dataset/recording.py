@@ -103,8 +103,11 @@ class RecordingTrials:
     """
 
     def make(self, key):
-        key["trials_id"] = (RecordingLink & key).link.trial_set.fetch1("trials_id")
-        self.insert1(key)
+        trials = (RecordingLink & key).link.trial_set
+
+        trials_id = trials.fetch1("trials_id")
+
+        self.insert1(dict(key, trials_id=trials_id))
 
 
 @schema.computed
@@ -121,7 +124,9 @@ class RecordingTraces:
         return RecordingLink.proj()
 
     def make(self, key):
-        for trial, dtype in (RecordingLink & key).link.trace_sets:
-            key["traces_id"] = trial.fetch1("traces_id")
-            key["dtype_id"] = dtype.fetch1("dtype_id")
-            self.insert1(key)
+        for traces, dtype in (RecordingLink & key).link.trace_sets:
+
+            traces_id = traces.fetch1("traces_id")
+            dtype_id = dtype.fetch1("dtype_id")
+
+            self.insert1(dict(key, traces_id=traces_id, dtype_id=dtype_id))
