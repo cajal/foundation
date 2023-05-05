@@ -105,3 +105,23 @@ class RecordingTrials:
     def make(self, key):
         key["trials_id"] = (RecordingLink & key).link.trial_set.fetch1("trials_id")
         self.insert1(key)
+
+
+@schema.computed
+class RecordingTraces:
+    definition = """
+    -> RecordingLink
+    -> TraceSet
+    ---
+    -> DtypeLink
+    """
+
+    @property
+    def key_source(self):
+        return RecordingLink.proj()
+
+    def make(self, key):
+        for trial, dtype in (RecordingLink & key).link.trace_sets:
+            key["traces_id"] = trial.fetch1("traces_id")
+            key["dtype_id"] = dtype.fetch1("dtype_id")
+            self.insert1(key)
