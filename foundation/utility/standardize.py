@@ -1,6 +1,6 @@
 import numpy as np
 from djutils import row_property, row_method
-from foundation.utility import stat
+from foundation.utility.stat import SummaryLink
 from foundation.schemas import utility as schema
 
 
@@ -47,13 +47,13 @@ class _Standardize:
 @schema.lookup
 class Affine(_Standardize):
     definition = """
-    -> stat.SummaryLink.proj(summary_id_shift="summary_id")
-    -> stat.SummaryLink.proj(summary_id_scale="summary_id")
+    -> SummaryLink.proj(summary_id_shift="summary_id")
+    -> SummaryLink.proj(summary_id_scale="summary_id")
     """
 
     @row_property
     def summary_keys(self):
-        return stat.SummaryLink & [dict(summary_id=v) for v in self.fetch1().values()]
+        return SummaryLink & [dict(summary_id=v) for v in self.fetch1().values()]
 
     @row_method
     def standardize(self, homogeneous, **kwargs):
@@ -69,12 +69,12 @@ class Affine(_Standardize):
 @schema.lookup
 class Scale(_Standardize):
     definition = """
-    -> stat.SummaryLink
+    -> SummaryLink
     """
 
     @row_property
     def summary_keys(self):
-        return stat.SummaryLink & self
+        return SummaryLink & self
 
     @row_method
     def standardize(self, homogeneous, **kwargs):
