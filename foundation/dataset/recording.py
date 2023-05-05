@@ -34,9 +34,9 @@ class _Recording:
         """
         Yields
         ------
-        foundation.recording.trace.TraceSet
-            single tuple
         foundation.dataset.dtype.DtypeLink
+            single tuple
+        foundation.recording.trace.TraceSet
             single tuple
         """
         raise NotImplementedError()
@@ -60,15 +60,15 @@ class Scan(_Recording):
 
     @row_property
     def trace_sets(self):
-        for scan_set, dtype_part in [
-            [FilteredScanPerspectives, DtypeLink.ScanPerspective],
-            [FilteredScanModulations, DtypeLink.ScanModulation],
-            [FilteredScanUnits, DtypeLink.ScanUnit],
+        for dtype_part, scan_set in [
+            [DtypeLink.ScanPerspective, FilteredScanPerspectives],
+            [DtypeLink.ScanModulation, FilteredScanModulations],
+            [DtypeLink.ScanUnit, FilteredScanUnits],
         ]:
             key = scan_set & self
-            trace_set = TraceSet & key
             dtype = DtypeLink & (dtype_part & key)
-            yield trace_set, dtype
+            trace_set = TraceSet & key
+            yield dtype, trace_set
 
 
 # -- Recording --
@@ -114,9 +114,9 @@ class RecordingTrials:
 class RecordingTraces:
     definition = """
     -> RecordingLink
-    -> TraceSet
-    ---
     -> DtypeLink
+    ---
+    -> TraceSet
     """
 
     @property
@@ -124,9 +124,9 @@ class RecordingTraces:
         return RecordingLink.proj()
 
     def make(self, key):
-        for traces, dtype in (RecordingLink & key).link.trace_sets:
+        for dtype, traces in (RecordingLink & key).link.trace_sets:
 
-            traces_id = traces.fetch1("traces_id")
             dtype_id = dtype.fetch1("dtype_id")
+            traces_id = traces.fetch1("traces_id")
 
-            self.insert1(dict(key, traces_id=traces_id, dtype_id=dtype_id))
+            self.insert1(dict(key, dtype_id=dtype_id, traces_id=traces_id))
