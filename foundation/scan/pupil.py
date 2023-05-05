@@ -17,7 +17,7 @@ class PupilTrace:
     def make(self, key):
         # fetch pupil fits
         fits = pipe_eye.FittedPupil.Circle & key
-        radius, center = fits.fetch("radius", "center", order_by="frame_id")
+        radius, center = fits.fetch("radius", "center", order_by="frame_id ASC")
 
         # fill nans
         center = [np.array([np.nan, np.nan]) if c is None else c for c in center]
@@ -62,7 +62,7 @@ class PupilNans:
 
         # trials
         trials = pipe_stim.Trial & key
-        trials, flips = trials.fetch("trial_idx", "flip_times", order_by="trial_idx", squeeze=True)
+        trials, flips = trials.fetch("trial_idx", "flip_times", order_by="trial_idx ASC", squeeze=True)
 
         keys = []
         for trial, flip in zip(trials, flips):

@@ -79,7 +79,7 @@ class ResampleTraceTrials:
 
         # resampled trials
         trial_timing = merge(self.key, TrialBounds)
-        trial_ids, starts, ends = trial_timing.fetch("trial_id", "start", "end", order_by="start")
+        trial_ids, starts, ends = trial_timing.fetch("trial_id", "start", "end", order_by="start ASC")
         samples = [f(a, b, offset) for a, b in zip(starts, ends)]
 
         # pandas Series containing resampled trials

@@ -93,7 +93,8 @@ class GaborSequence(_Video):
     def video(self):
         sequence = (pipe_stim.GaborSequence & self).fetch1()
 
-        movs = (pipe_gabor.Sequence.Gabor * pipe_gabor.Gabor & sequence).fetch("movie", order_by="sequence_id")
+        movs = pipe_gabor.Sequence.Gabor * pipe_gabor.Gabor & sequence
+        movs = movs.fetch("movie", order_by="sequence_id ASC")
         assert len(movs) == sequence["sequence_length"]
 
         return Video([Image.fromarray(frame, mode="L") for frame in np.concatenate(movs)])
@@ -109,11 +110,12 @@ class DotSequence(_Video):
     def video(self):
         sequence = (pipe_stim.DotSequence & self).fetch1()
 
-        images = (pipe_dot.Dot * pipe_dot.Sequence.Dot * pipe_dot.Display & sequence).fetch("image", order_by="dot_id")
-        assert len(images) == sequence["sequence_length"]
+        imgs = pipe_dot.Dot * pipe_dot.Sequence.Dot * pipe_dot.Display & sequence
+        imgs = imgs.fetch("image", order_by="dot_id ASC")
+        assert len(imgs) == sequence["sequence_length"]
 
         n_frames, id_trace = (pipe_dot.Trace * pipe_dot.Display & sequence).fetch1("n_frames", "id_trace")
-        frames = np.stack(images[id_trace])
+        frames = np.stack(imgs[id_trace])
         assert len(frames) == n_frames
 
         return Video([Image.fromarray(frame, mode="L") for frame in frames])
@@ -177,32 +179,6 @@ class VideoLink:
     links = [Clip, Monet2, Trippy, GaborSequence, DotSequence, RdkSequence, Frame]
     name = "video"
     comment = "video stimulus"
-
-    @row_method
-    def resized_video(self, resize_link, height, width):
-        """
-        Parameters
-        ----------
-        resize_link : foundation.utility.resize.ResizeLink
-            tuple
-        height : int
-            target height
-        width : int
-            target width
-
-        Returns
-        -------
-        foundation.utils.video.Video
-            resized video
-        """
-        # load video
-        vid = self.link.video
-
-        # load resize function
-        f = resize_link.link.resize
-
-        # resize video
-        return f(video=vid, height=height, width=width)
 
 
 @schema.link_set

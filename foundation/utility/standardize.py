@@ -30,8 +30,8 @@ class _Standardize:
         homogeneous : 1D array
             boolean mask -- whether transformation must be homogeneous -- [size]
         **kwargs
-            summary statistic key : 1D array
-                summary statistic value -- [size]
+            key -- summary_id
+            value -- 1D array -- [size]
 
         Returns
         -------
@@ -56,7 +56,7 @@ class Affine(_Standardize):
         return stat.SummaryLink & [dict(summary_id=v) for v in self.fetch1().values()]
 
     @row_method
-    def standardizer(self, homogeneous, **kwargs):
+    def standardize(self, homogeneous, **kwargs):
         from foundation.utils.standardize import Affine
 
         shift_key, scale_key = self.fetch1("summary_id_shift", "summary_id_scale")
@@ -77,7 +77,7 @@ class Scale(_Standardize):
         return stat.SummaryLink & self
 
     @row_method
-    def standardizer(self, homogeneous, **kwargs):
+    def standardize(self, homogeneous, **kwargs):
         from foundation.utils.standardize import Scale
 
         key = self.fetch1("summary_id")
