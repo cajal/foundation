@@ -1,8 +1,8 @@
 import numpy as np
 from djutils import merge, row_property, row_method
 from foundation.utils.resample import monotonic
-from foundation.stimulus.video import VideoLink, VideoInfo, VideoFilterSet
 from foundation.virtual.bridge import pipe_stim
+from foundation.virtual import stimulus
 from foundation.schemas import recording as schema
 
 
@@ -29,7 +29,7 @@ class _Trial:
         """
         Returns
         -------
-        foundation.stimulus.video.VideoLink
+        foundation.stimulus.video.VideoLink (virtual)
             tuple
         """
         raise NotImplementedError()
@@ -53,7 +53,7 @@ class ScanTrial(_Trial):
         trial = pipe_stim.Trial * pipe_stim.Condition & self
         stim_type = trial.fetch1("stimulus_type")
         stim_type = stim_type.split(".")[1]
-        return VideoLink.get(stim_type, trial)
+        return stimulus.VideoLink.get(stim_type, trial)
 
 
 # -- Trial --
@@ -107,7 +107,7 @@ class TrialVideo:
     definition = """
     -> TrialLink
     ---
-    -> VideoLink
+    -> stimulus.VideoLink
     """
 
     def make(self, key):
@@ -124,11 +124,13 @@ class TrialVideo:
 class TrialVideoFilter:
     ftype = TrialLink
     definition = """
-    -> VideoFilterSet
+    -> stimulus.VideoFilterSet
     """
 
     @row_method
     def filter(self, trials):
+        from foundation.stimulus.video import VideoLink, VideoFilterSet
+
         # trial videos
         trial_videos = merge(trials, TrialVideo)
         videos = VideoLink & trial_videos
