@@ -3,7 +3,6 @@ import numpy as np
 from djutils import Files
 from foundation.virtual import utility
 from foundation.stimulus.video import VideoLink
-from foundation.utility.resize import ResizeLink, Resolution
 from foundation.schemas import stimulus as schema
 
 
