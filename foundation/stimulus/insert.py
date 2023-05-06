@@ -1,5 +1,5 @@
 from datajoint import U
-from djutils import keys
+from djutils import keys, merge
 from foundation.virtual.bridge import pipe_exp, pipe_stim
 from foundation.virtual import utility
 from foundation.stimulus.video import VideoLink, VideoInfo
@@ -55,4 +55,15 @@ class ScanCache:
         ]
 
     def fill(self):
-        ResizedVideo.populate(self.key, reserve_jobs=True, display_progress=True)
+        # trials
+        trials = pipe_stim.Trial * pipe_stim.Condition & self.key
+
+        # stimulus types
+        stim_types = U("stimulus_type") & trials
+        stim_types = [s.split(".")[1] for s in stim_types.fetch("stimulus_type")]
+
+        # video links
+        key = [VideoLink.get(s, trials).proj() for s in stim_types]
+
+        # cache resized videos
+        ResizedVideo.populate(key, self.key, reserve_jobs=True, display_progress=True)
