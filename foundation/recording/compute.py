@@ -1,7 +1,11 @@
+import os
 import numpy as np
 import pandas as pd
+from pandas.testing import assert_series_equal
 from scipy.interpolate import interp1d
-from djutils import keys, merge, row_property, key_property, RestrictionError
+from tempfile import TemporaryDirectory
+from tqdm import tqdm
+from djutils import keys, merge, row_property, key_property, Files, RestrictionError
 from foundation.utils.resample import frame_index
 from foundation.utility.stat import SummaryLink
 from foundation.utility.standardize import StandardizeLink
@@ -77,8 +81,8 @@ class ResampleTrace:
         Returns
         -------
         pd.Series
-            index -- trial_id (foundation.recording.trial.TrialLink)
-            data -- 1D array (resampled trace values)
+            index -- str : trial_id (foundation.recording.trial.TrialLink)
+            data -- 1D array : resampled trace values
         """
         # ensure trials are valid
         valid_trials = TrialSet & merge(self.key, TraceTrials)
@@ -98,7 +102,7 @@ class ResampleTrace:
 
         # resampled trials
         trial_timing = merge(self.key, TrialBounds)
-        trial_ids, starts, ends = trial_timing.fetch("trial_id", "start", "end", order_by="start ASC")
+        trial_ids, starts, ends = trial_timing.fetch("trial_id", "start", "end", order_by=TrialSet.order)
         samples = [f(a, b, offset) for a, b in zip(starts, ends)]
 
         # pandas Series containing resampled trials
@@ -143,7 +147,87 @@ class SummarizeTrace:
 
 
 @keys
-class StandardizeTrace:
+class ResampleTraces:
+    """Resample trace"""
+
+    @property
+    def key_list(self):
+        return [
+            TraceSet,
+            TrialSet,
+            RateLink,
+            OffsetLink,
+            ResampleLink,
+        ]
+
+    @row_property
+    def samples(self):
+        """
+        Yields (ordered by TraceSet.order)
+        ------
+        str
+            trial_id (foundation.recording.trial.TrialLink)
+        1D array
+            resampled traces -- [samples, traces]
+        """
+        # traces
+        traces = (TraceSet & self.key).ordered_keys
+
+        # trials
+        trials = (TrialSet & self.key).members
+
+        # resample function
+        def samples(trace):
+            return (ResampleTrace & trace & trials & self.key).samples
+
+        # resample first trace
+        s = samples(traces[0])
+        n = s.apply(lambda x: x.size)
+
+        # progress bar
+        progress = tqdm(desc="Traces", total=len(traces))
+
+        with TemporaryDirectory() as tmpdir:
+
+            # temporary memmap
+            memmap = np.memmap(
+                filename=os.path.join(tmpdir, "traces.dat"),
+                shape=(len(traces), np.concatenate(s).size),
+                dtype=np.float32,
+                mode="w+",
+            )
+
+            # write first trace to memmap
+            memmap[0] = np.concatenate(s).astype(np.float32)
+            memmap.flush()
+            progress.update(n=1)
+
+            # write other traces to memmap
+            for i, trace_key in enumerate(traces[1:]):
+
+                # resample trace
+                _s = samples(trace_key)
+                _n = _s.apply(lambda x: x.size)
+                progress.update(n=1)
+
+                # ensure trial ids and sample sizes match
+                assert_series_equal(n, _n)
+
+                # write to memmap
+                memmap[i + 1] = np.concatenate(_s).astype(np.float32)
+                memmap.flush()
+                progress.update(n=1)
+
+            # yield traces from memmap
+            j = 0
+            for trial_id, trial_n in n.items():
+                traces = memmap[:, j : j + trial_n].T
+                j += trial_n
+                yield trial_id, np.array(traces)
+
+
+@keys
+class StandardizeTraces:
     """Trace standardization"""
 
     @property
