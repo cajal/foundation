@@ -82,7 +82,7 @@ class ResampledTrialTraces(Files):
 
     def make(self, key):
         # trace keys, ordered by trace_id
-        trace_keys = (TraceSet & key).members.fetch("KEY", order_by="trace_id ASC")
+        trace_keys = (TraceSet & key).ordered_keys
 
         # trial keys
         key.pop("trial_id")
