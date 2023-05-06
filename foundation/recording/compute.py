@@ -223,7 +223,7 @@ class SummarizeTrace:
 
 
 @keys
-class StandardizeTraces:
+class StandardTraces:
     """Trace standardization"""
 
     @property
@@ -243,7 +243,7 @@ class StandardizeTraces:
         Returns
         -------
         foundation.utility.standardize.StandardizeLink
-            trace set transformer
+            trace set standardization
         """
         # trace and stat keys
         trace_keys = (TraceSet & self.key).members
