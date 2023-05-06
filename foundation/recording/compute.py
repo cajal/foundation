@@ -12,8 +12,8 @@ from foundation.utility.resample import RateLink, OffsetLink, ResampleLink
 
 
 @keys
-class TrialVideo:
-    """Trial Video"""
+class ResampleVideo:
+    """Resample trial video"""
 
     @property
     def key_list(self):
@@ -58,8 +58,8 @@ class TrialVideo:
 
 
 @keys
-class TraceTrials:
-    """Trace samples"""
+class ResampleTrace:
+    """Resample trace"""
 
     @property
     def key_list(self):
@@ -109,8 +109,8 @@ class TraceTrials:
 
 
 @keys
-class TraceSummary:
-    """Trace summary statistics"""
+class SummarizeTrace:
+    """Summarize trace"""
 
     @property
     def key_list(self):
@@ -125,11 +125,17 @@ class TraceSummary:
 
     @row_property
     def statistic(self):
+        """
+        Returns
+        -------
+        float
+            trace summary statistic
+        """
         # trial set
         trial_keys = (TrialSet & self.key).members
 
         # resampled trace
-        samples = (TraceTrials & self.key & trial_keys).samples
+        samples = (ResampleTrace & self.key & trial_keys).samples
         samples = np.concatenate(samples)
 
         # summary statistic
@@ -137,7 +143,7 @@ class TraceSummary:
 
 
 @keys
-class TraceStandardize:
+class StandardizeTrace:
     """Trace standardization"""
 
     @property
@@ -153,6 +159,12 @@ class TraceStandardize:
 
     @row_property
     def transform(self):
+        """
+        Returns
+        -------
+        foundation.utility.standardize.StandardizeLink
+            trace set transformer
+        """
         # trace and stat keys
         trace_keys = (TraceSet & self.key).members
         stat_keys = (StandardizeLink & self.key).link.summary_keys

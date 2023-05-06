@@ -193,9 +193,9 @@ class TraceSummary:
     """
 
     def make(self, key):
-        from foundation.recording.compute import TraceSummary
+        from foundation.recording.compute import SummarizeTrace
 
-        key["summary"] = (TraceSummary & key).statistic
+        key["summary"] = (SummarizeTrace & key).statistic
         self.insert1(key)
 
 
