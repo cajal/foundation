@@ -53,7 +53,7 @@ class ResampledTraces(Filepath):
     def make(self, key):
         from foundation.recording.compute import ResampleTraces
 
-        # resample traces
+        # resamples traces
         traces = (ResampleTraces & key).traces
 
         # trace values finite
