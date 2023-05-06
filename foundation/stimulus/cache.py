@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from djutils import Files
+from foundation.virtual import utility
 from foundation.stimulus.video import VideoLink
 from foundation.utility.resize import ResizeLink, Resolution
 from foundation.schemas import stimulus as schema
@@ -11,24 +12,21 @@ class ResizedVideo(Files):
     store = "scratch09"
     definition = """
     -> VideoLink
-    -> ResizeLink
-    -> Resolution
+    -> utility.ResizeLink
+    -> utility.Resolution
     ---
     video       : filepath@scratch09    # npy file, [frames, height, width, channels]
     """
 
     def make(self, key):
-        # video, resize links and resolution
-        video_link = VideoLink & key
-        resize_link = ResizeLink & key
-        height, width = (Resolution & key).fetch1("height", "width")
+        from foundation.stimulus.compute import ResizeVideo
 
         # resize video
-        vid = video_link.resized_video(resize_link=resize_link, height=height, width=width)
+        video = (ResizeVideo & key).video
 
         # save video
         file = os.path.join(self.tuple_dir(key, create=True), "video.npy")
-        np.save(file, vid.array)
+        np.save(file, video.array)
 
         # insert key
         self.insert1(dict(key, video=file))
