@@ -59,4 +59,4 @@ class PilResample(_Resize):
 class ResizeLink:
     links = [PilResample]
     name = "resize"
-    comment = "video resizing"
+    comment = "resizing method"

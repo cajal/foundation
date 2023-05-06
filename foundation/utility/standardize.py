@@ -23,7 +23,7 @@ class _Standardize:
         raise NotImplementedError()
 
     @row_method
-    def standardizer(self, homogeneous, **kwargs):
+    def standardize(self, homogeneous, **kwargs):
         """
         Parameter
         ---------

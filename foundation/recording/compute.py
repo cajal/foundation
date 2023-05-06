@@ -223,7 +223,7 @@ class SummarizeTrace:
 
 
 @keys
-class StandardTraces:
+class StandardizeTraces:
     """Trace standardization"""
 
     @property
