@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from datajoint import U
-from djutils import Files
+from djutils import Filepath
 from operator import add
 from functools import reduce
 from foundation.virtual import utility
@@ -12,7 +12,7 @@ from foundation.schemas import recording as schema
 
 
 @schema.computed
-class ResampledVideo(Files):
+class ResampledVideo(Filepath):
     store = "scratch09"
     definition = """
     -> TrialLink
@@ -37,7 +37,7 @@ class ResampledVideo(Files):
 
 
 @schema.computed
-class ResampledTraces(Files):
+class ResampledTraces(Filepath):
     store = "scratch09"
     definition = """
     -> TraceSet
@@ -78,12 +78,15 @@ class ResampledTraces(Files):
         # reampled traces for each trial
         for trial_id, traces in (ResampleTraces & key & trials).trials:
 
+            # trial key
+            _key = dict(key, trial_id=trial_id)
+
             # trace values finite
             finite = np.isfinite(traces).all()
 
             # save file
-            file = os.path.join(self.tuple_dir(key, create=True), "traces.npy")
+            file = os.path.join(self.tuple_dir(_key, create=True), "traces.npy")
             np.save(file, traces)
 
             # insert key
-            self.insert1(dict(key, traces=file, finite=bool(finite)))
+            self.insert1(dict(_key, traces=file, finite=bool(finite)))

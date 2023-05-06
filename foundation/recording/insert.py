@@ -147,6 +147,43 @@ class ScanVideoCache:
             utility.RateLink,
         ]
 
-    def make(self, key):
+    def fill(self):
         trials = TrialSet.Link & (ScanTrials & self.key)
         ResampledVideo.populate(trials, self.key, display_progress=True, reserve_jobs=True)
+
+
+@keys
+class ScanUnitCache:
+    """Cache resampled scan unit traces"""
+
+    @property
+    def key_list(self):
+        return [
+            ScanUnits,
+            utility.RateLink,
+            utility.OffsetLink,
+            utility.ResampleLink,
+        ]
+
+    def fill(self):
+        traces = TraceSet & (ScanUnits & self.key)
+        ResampledTraces.populate(traces, self.key, display_progress=True, reserve_jobs=True)
+
+
+@keys
+class ScanBehaviorCache:
+    """Cache resampled scan unit traces"""
+
+    @property
+    def key_list(self):
+        return [
+            ScanPerspectives,
+            ScanModulations,
+            utility.RateLink,
+            utility.OffsetLink,
+            utility.ResampleLink,
+        ]
+
+    def fill(self):
+        traces = TraceSet & [(ScanPerspectives & self.key), (ScanModulations & self.key)]
+        ResampledTraces.populate(traces, self.key, display_progress=True, reserve_jobs=True)

@@ -1,13 +1,13 @@
 import os
 import numpy as np
-from djutils import Files
+from djutils import Filepath
 from foundation.virtual import utility
 from foundation.stimulus.video import VideoLink
 from foundation.schemas import stimulus as schema
 
 
 @schema.computed
-class ResizedVideo(Files):
+class ResizedVideo(Filepath):
     store = "scratch09"
     definition = """
     -> VideoLink

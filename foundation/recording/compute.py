@@ -5,7 +5,7 @@ from pandas.testing import assert_series_equal
 from scipy.interpolate import interp1d
 from tempfile import TemporaryDirectory
 from tqdm import tqdm
-from djutils import keys, merge, row_property, key_property, Files, RestrictionError
+from djutils import keys, merge, row_property, key_property, Filepath, RestrictionError
 from foundation.utils.resample import frame_index
 from foundation.utility.stat import SummaryLink
 from foundation.utility.standardize import StandardizeLink
