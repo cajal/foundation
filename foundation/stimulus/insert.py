@@ -1,5 +1,5 @@
 from datajoint import U
-from djutils import keys, merge
+from djutils import keys
 from foundation.virtual.bridge import pipe_exp, pipe_stim
 from foundation.virtual import utility
 from foundation.stimulus.video import VideoLink, VideoInfo
@@ -22,23 +22,22 @@ class Scan:
 
         # stimulus types
         stim_types = U("stimulus_type") & trials
-        stim_keys = dict()
+        link_types = []
 
         for stim_type in stim_types.fetch("stimulus_type"):
 
             keys = trials & dict(stimulus_type=stim_type)
             stype = stim_type.split(".")[1]
+            link_types.append(stype)
 
             table = getattr(VideoLink, stype)._link
             table.insert(keys.proj(), skip_duplicates=True, ignore_extra_fields=True)
-
-            stim_keys[stype] = keys
 
         # video links
         VideoLink.fill()
 
         # compute video
-        keys = [VideoLink.get(k, v).proj() for k, v in stim_keys.items()]
+        keys = [VideoLink.get(_, trials).proj() for _ in link_types]
         VideoInfo.populate(keys, reserve_jobs=True, display_progress=True)
 
 
@@ -60,10 +59,10 @@ class ScanCache:
 
         # stimulus types
         stim_types = U("stimulus_type") & trials
-        stim_types = [s.split(".")[1] for s in stim_types.fetch("stimulus_type")]
+        link_types = [s.split(".")[1] for s in stim_types.fetch("stimulus_type")]
 
         # video links
-        key = [VideoLink.get(s, trials).proj() for s in stim_types]
+        key = [VideoLink.get(_, trials).proj() for _ in link_types]
 
         # cache resized videos
         ResizedVideo.populate(key, self.key, reserve_jobs=True, display_progress=True)
