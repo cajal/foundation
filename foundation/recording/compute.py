@@ -76,7 +76,7 @@ class ResampleTrace:
         ]
 
     @key_property(TraceLink, RateLink, OffsetLink, ResampleLink)
-    def samples(self):
+    def trials(self):
         """
         Returns
         -------
@@ -119,7 +119,7 @@ class ResampleTraces:
     @property
     def key_list(self):
         return [
-            TraceSet,
+            TraceSet & "members > 0",
             TrialLink,
             RateLink,
             OffsetLink,
@@ -127,7 +127,7 @@ class ResampleTraces:
         ]
 
     @key_property(TraceSet, RateLink, OffsetLink, ResampleLink)
-    def samples(self):
+    def trials(self):
         """
         Yields (TraceSet.order)
         ------
@@ -141,7 +141,7 @@ class ResampleTraces:
 
         # resample function
         def samples(trace):
-            return (ResampleTrace & trace & self.key).samples
+            return (ResampleTrace & trace & self.key).trials
 
         # resample first trace
         s = samples(traces[0])
@@ -196,7 +196,7 @@ class SummarizeTrace:
     def key_list(self):
         return [
             TraceLink,
-            TrialSet,
+            TrialSet & "members > 0",
             RateLink,
             OffsetLink,
             ResampleLink,
@@ -215,7 +215,7 @@ class SummarizeTrace:
         trial_keys = (TrialSet & self.key).members
 
         # resampled trace
-        samples = (ResampleTrace & self.key & trial_keys).samples
+        samples = (ResampleTrace & self.key & trial_keys).trials
         samples = np.concatenate(samples)
 
         # summary statistic
@@ -229,8 +229,8 @@ class StandardizeTraces:
     @property
     def key_list(self):
         return [
-            TraceSet,
-            TrialSet,
+            TraceSet & "members > 0",
+            TrialSet & "members > 0",
             RateLink,
             OffsetLink,
             ResampleLink,

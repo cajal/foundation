@@ -8,7 +8,7 @@ from foundation.schemas import recording as schema
 
 
 @schema.computed
-class FilteredScanTrials:
+class ScanTrials:
     definition = """
     -> scan.FilteredTrials.proj(scan_filters_id="trial_filters_id")
     -> TrialFilterSet
@@ -34,7 +34,7 @@ class FilteredScanTrials:
 
 
 @schema.computed
-class FilteredScanPerspectives:
+class ScanPerspectives:
     definition = """
     -> scan.Scan
     -> pipe_shared.TrackingMethod
@@ -44,7 +44,6 @@ class FilteredScanPerspectives:
     """
 
     def make(self, key):
-
         # scan pupil traces
         pupils = merge(
             scan.Scan & key,
@@ -63,7 +62,7 @@ class FilteredScanPerspectives:
 
 
 @schema.computed
-class FilteredScanModulations:
+class ScanModulations:
     definition = """
     -> scan.Scan
     -> pipe_shared.TrackingMethod
@@ -73,7 +72,6 @@ class FilteredScanModulations:
     """
 
     def make(self, key):
-
         # scan pupil trace
         pupil = merge(
             scan.Scan & key,
@@ -98,7 +96,7 @@ class FilteredScanModulations:
 
 
 @schema.computed
-class FilteredScanUnits:
+class ScanUnits:
     definition = """
     -> scan.FilteredUnits
     -> pipe_shared.SpikeMethod

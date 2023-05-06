@@ -21,11 +21,12 @@ from foundation.recording.trace import (
     TraceSummary,
 )
 from foundation.recording.scan import (
-    FilteredScanTrials,
-    FilteredScanPerspectives,
-    FilteredScanModulations,
-    FilteredScanUnits,
+    ScanTrials,
+    ScanPerspectives,
+    ScanModulations,
+    ScanUnits,
 )
+from foundation.recording.cache import ResampledVideo, ResampledTraces
 
 
 @keys
@@ -85,10 +86,10 @@ class Scan:
         TraceTrials.populate(key, display_progress=True, reserve_jobs=True)
 
         # filtered scan trials ansd traces
-        FilteredScanTrials.populate(self.key, display_progress=True, reserve_jobs=True)
-        FilteredScanPerspectives.populate(self.key, display_progress=True, reserve_jobs=True)
-        FilteredScanModulations.populate(self.key, display_progress=True, reserve_jobs=True)
-        FilteredScanUnits.populate(self.key, display_progress=True, reserve_jobs=True)
+        ScanTrials.populate(self.key, display_progress=True, reserve_jobs=True)
+        ScanPerspectives.populate(self.key, display_progress=True, reserve_jobs=True)
+        ScanModulations.populate(self.key, display_progress=True, reserve_jobs=True)
+        ScanUnits.populate(self.key, display_progress=True, reserve_jobs=True)
 
 
 @keys
@@ -98,8 +99,8 @@ class ScanUnitSummary:
     @property
     def key_list(self):
         return [
-            FilteredScanTrials,
-            FilteredScanUnits,
+            ScanTrials,
+            ScanUnits,
             utility.RateLink,
             utility.OffsetLink,
             utility.ResampleLink,
@@ -107,7 +108,7 @@ class ScanUnitSummary:
         ]
 
     def fill(self):
-        key = TraceSet.Link * TrialSet.proj() * FilteredScanTrials * FilteredScanUnits * self.key
+        key = TraceSet.Link * TrialSet.proj() * ScanTrials * ScanUnits * self.key
         TraceSummary.populate(key, display_progress=True, reserve_jobs=True)
 
 
@@ -118,9 +119,9 @@ class ScanBehaviorSummary:
     @property
     def key_list(self):
         return [
-            FilteredScanTrials,
-            FilteredScanPerspectives,
-            FilteredScanModulations,
+            ScanTrials,
+            ScanPerspectives,
+            ScanModulations,
             utility.RateLink,
             utility.OffsetLink,
             utility.ResampleLink,
@@ -129,7 +130,23 @@ class ScanBehaviorSummary:
 
     def fill(self):
         key = [
-            TraceSet.Link * TrialSet.proj() * FilteredScanTrials * FilteredScanPerspectives * self.key,
-            TraceSet.Link * TrialSet.proj() * FilteredScanTrials * FilteredScanModulations * self.key,
+            TraceSet.Link * TrialSet.proj() * ScanTrials * ScanPerspectives * self.key,
+            TraceSet.Link * TrialSet.proj() * ScanTrials * ScanModulations * self.key,
         ]
         TraceSummary.populate(key, display_progress=True, reserve_jobs=True)
+
+
+@keys
+class ScanVideoCache:
+    """Cache resampled scan trial videos"""
+
+    @property
+    def key_list(self):
+        return [
+            ScanTrials,
+            utility.RateLink,
+        ]
+
+    def make(self, key):
+        trials = TrialSet.Link & (ScanTrials & self.key)
+        ResampledVideo.populate(trials, self.key, display_progress=True, reserve_jobs=True)
