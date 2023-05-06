@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name: foundation-recording
 spec:
-  parallelism: 20
+  parallelism: 30
   backoffLimit: 50
   template:
     spec:
@@ -74,5 +74,5 @@ spec:
                       - at-compute003
                       - at-compute004
                       - at-compute005
-                      - at-compute006
+                      # - at-compute006
                       - jr-compute001
