@@ -29,8 +29,8 @@ from foundation.recording.scan import (
 
 
 @keys
-class ScanDataset:
-    """Scan dataset"""
+class Scan:
+    """Scan recording"""
 
     @property
     def key_list(self):

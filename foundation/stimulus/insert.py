@@ -1,12 +1,18 @@
 from datajoint import U
 from djutils import keys
-from foundation.stimulus.video import VideoLink, VideoInfo
 from foundation.virtual.bridge import pipe_exp, pipe_stim
+from foundation.stimulus.video import VideoLink, VideoInfo
 
 
 @keys
-class ScanVideo:
-    keys = [pipe_exp.Scan]
+class Scan:
+    """Scan stimulus"""
+
+    @property
+    def key_list(self):
+        return [
+            pipe_exp.Scan,
+        ]
 
     def fill(self):
         # scan trials
