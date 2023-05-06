@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name: foundation-recording
 spec:
-  parallelism: 2
+  parallelism: 20
   backoffLimit: 50
   template:
     spec:
