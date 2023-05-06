@@ -1,9 +1,8 @@
 import os
 import numpy as np
 import pandas as pd
-from pandas.testing import assert_series_equal
 from scipy.interpolate import interp1d
-from tempfile import TemporaryDirectory
+import multiprocessing as mp
 from tqdm import tqdm
 from djutils import keys, merge, row_property, key_property, Filepath, RestrictionError
 from foundation.utils.resample import frame_index
@@ -112,9 +111,20 @@ class ResampleTrace:
         )
 
 
+def _init_resample_trace(key, connection):
+    p = mp.current_process()
+    p.key = key
+    connection.connect()
+
+
+def _resample_trace(trace):
+    p = mp.current_process()
+    return (ResampleTrace & trace & p.key).trials.item()
+
+
 @keys
 class ResampleTraces:
-    """Resample traces"""
+    """Resample trace"""
 
     @property
     def key_list(self):
@@ -126,66 +136,29 @@ class ResampleTraces:
             ResampleLink,
         ]
 
-    @key_property(TraceSet, RateLink, OffsetLink, ResampleLink)
-    def trials(self):
+    @row_property
+    def traces(self):
         """
-        Yields (TraceSet.order)
+        Returns
         ------
-        str
-            trial_id (foundation.recording.trial.TrialLink)
-        1D array
-            resampled traces -- [samples, traces]
+        2D array -- [samples, traces (TraceSet.order)]
+            resampled traces
         """
-        # traces
         traces = (TraceSet & self.key).ordered_keys
+        key = self.key.fetch1("KEY")
+        n = min(int(os.getenv("FOUNDATION_MP", 1)), mp.cpu_count(), len(traces))
 
-        # resample function
-        def samples(trace):
-            return (ResampleTrace & trace & self.key).trials
+        if n == 1:
+            samples = ((ResampleTrace & trace & key).trials.item() for trace in traces)
+            traces = list(tqdm(samples, total=len(traces), desc="Traces"))
 
-        # resample first trace
-        s = samples(traces[0])
-        n = s.apply(lambda x: x.size)
+        else:
+            connection = self.key.connection
+            with mp.Pool(n, _init_resample_trace, (key, connection)) as p:
+                samples = p.imap(_resample_trace, traces)
+                traces = list(tqdm(samples, total=len(traces), desc="Traces"))
 
-        # progress bar
-        progress = tqdm(desc="Traces", total=len(traces))
-
-        with TemporaryDirectory() as tmpdir:
-
-            # temporary memmap
-            memmap = np.memmap(
-                filename=os.path.join(tmpdir, "traces.dat"),
-                shape=(len(traces), sum(n)),
-                dtype=np.float32,
-                mode="w+",
-            )
-
-            # write first trace to memmap
-            memmap[0] = np.concatenate(s).astype(np.float32)
-            memmap.flush()
-            progress.update(n=1)
-
-            # write other traces to memmap
-            for i, trace_key in enumerate(traces[1:]):
-
-                # resample trace
-                _s = samples(trace_key)
-                _n = _s.apply(lambda x: x.size)
-
-                # ensure trial ids and sample sizes match
-                assert_series_equal(n, _n)
-
-                # write to memmap
-                memmap[i + 1] = np.concatenate(_s).astype(np.float32)
-                memmap.flush()
-                progress.update(n=1)
-
-            # yield resampled traces from memmap
-            j = 0
-            for trial_id, trial_n in n.items():
-                traces = memmap[:, j : j + trial_n].T
-                j += trial_n
-                yield trial_id, np.array(traces)
+        return np.stack(traces, 1)
 
 
 @keys

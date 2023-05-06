@@ -1,5 +1,4 @@
 from djutils import row_property
-from foundation.utils.logging import logger
 from foundation.schemas import utility as schema
 
 

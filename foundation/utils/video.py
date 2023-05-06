@@ -1,6 +1,5 @@
 import numpy as np
 from PIL import Image
-from .logging import logger
 
 
 class Video:

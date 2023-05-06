@@ -1,4 +1,5 @@
 from djutils import keys, merge
+from foundation.utils import multiprocess
 from foundation.virtual.bridge import pipe_stim, pipe_tread, pipe_shared
 from foundation.virtual import scan, utility
 from foundation.recording.trial import (
@@ -159,15 +160,22 @@ class ScanUnitCache:
     @property
     def key_list(self):
         return [
+            ScanTrials,
             ScanUnits,
             utility.RateLink,
             utility.OffsetLink,
             utility.ResampleLink,
         ]
 
-    def fill(self):
+    def fill(self, processes=1):
+        trials = TrialSet.Link & (ScanTrials & self.key)
+        trials = trials.proj()
+
         traces = TraceSet & (ScanUnits & self.key)
-        ResampledTraces.populate(traces, self.key, display_progress=True, reserve_jobs=True)
+        traces = traces.proj()
+
+        with multiprocess(processes):
+            ResampledTraces.populate(trials, traces, self.key, display_progress=True, reserve_jobs=True)
 
 
 @keys
@@ -177,6 +185,7 @@ class ScanBehaviorCache:
     @property
     def key_list(self):
         return [
+            ScanTrials,
             ScanPerspectives,
             ScanModulations,
             utility.RateLink,
@@ -184,6 +193,12 @@ class ScanBehaviorCache:
             utility.ResampleLink,
         ]
 
-    def fill(self):
+    def fill(self, processes=1):
+        trials = TrialSet.Link & (ScanTrials & self.key)
+        trials = trials.proj()
+
         traces = TraceSet & [(ScanPerspectives & self.key), (ScanModulations & self.key)]
-        ResampledTraces.populate(traces, self.key, display_progress=True, reserve_jobs=True)
+        traces = traces.proj()
+
+        with multiprocess(processes):
+            ResampledTraces.populate(trials, traces, self.key, display_progress=True, reserve_jobs=True)

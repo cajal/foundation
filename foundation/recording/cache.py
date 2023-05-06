@@ -50,43 +50,18 @@ class ResampledTraces(Filepath):
     finite      : bool                  # all values finite
     """
 
-    @property
-    def keys(self):
-        keys = [
-            ScanUnits * ScanTrials * TrialSet.Link,
-            ScanPerspectives * ScanTrials * TrialSet.Link,
-            ScanModulations * ScanTrials * TrialSet.Link,
-        ]
-        keys = reduce(add, [U("traces_id", "trial_id") & key for key in keys])
-        keys = keys * utility.RateLink.proj() * utility.OffsetLink.proj() * utility.ResampleLink.proj()
-        return keys - self
-
-    @property
-    def key_source(self):
-        key = U("traces_id", "rate_id", "offset_id", "resample_id")
-        key = key.aggr(self.keys, trial_id="min(trial_id)")
-
-        return key * TrialLink.proj()
-
     def make(self, key):
         from foundation.recording.compute import ResampleTraces
 
-        # trials
-        key.pop("trial_id")
-        trials = TrialLink & (self.keys & key)
+        # resample traces
+        traces = (ResampleTraces & key).traces
 
-        # reampled traces for each trial
-        for trial_id, traces in (ResampleTraces & key & trials).trials:
+        # trace values finite
+        finite = np.isfinite(traces).all()
 
-            # trial key
-            _key = dict(key, trial_id=trial_id)
+        # save file
+        file = os.path.join(self.tuple_dir(key, create=True), "traces.npy")
+        np.save(file, traces)
 
-            # trace values finite
-            finite = np.isfinite(traces).all()
-
-            # save file
-            file = os.path.join(self.tuple_dir(_key, create=True), "traces.npy")
-            np.save(file, traces)
-
-            # insert key
-            self.insert1(dict(_key, traces=file, finite=bool(finite)))
+        # insert key
+        self.insert1(dict(key, traces=file, finite=bool(finite)))
