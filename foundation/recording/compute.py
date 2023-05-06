@@ -155,7 +155,7 @@ class ResampleTraces:
             # temporary memmap
             memmap = np.memmap(
                 filename=os.path.join(tmpdir, "traces.dat"),
-                shape=(len(traces), np.concatenate(s).size),
+                shape=(len(traces), sum(n)),
                 dtype=np.float32,
                 mode="w+",
             )
