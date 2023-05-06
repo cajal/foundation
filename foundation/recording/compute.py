@@ -114,7 +114,7 @@ class ResampleTrace:
 
 @keys
 class ResampleTraces:
-    """Resample trace"""
+    """Resample traces"""
 
     @property
     def key_list(self):
