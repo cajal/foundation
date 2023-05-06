@@ -12,8 +12,8 @@ from foundation.utility.resample import RateLink, OffsetLink, ResampleLink
 
 
 @keys
-class VideoIndex:
-    """Trial video index"""
+class TrialVideo:
+    """Trial Video"""
 
     @property
     def key_list(self):
@@ -58,7 +58,7 @@ class VideoIndex:
 
 
 @keys
-class TraceResample:
+class TraceTrials:
     """Trace samples"""
 
     @property
@@ -124,12 +124,12 @@ class TraceSummary:
         ]
 
     @row_property
-    def summary(self):
+    def statistic(self):
         # trial set
         trial_keys = (TrialSet & self.key).members
 
         # resampled trace
-        samples = (TraceResample & self.key & trial_keys).samples
+        samples = (TraceTrials & self.key & trial_keys).samples
         samples = np.concatenate(samples)
 
         # summary statistic
