@@ -1,4 +1,3 @@
-import os
 import numpy as np
 from djutils import Filepath
 from foundation.virtual import utility
@@ -23,8 +22,8 @@ class ResizedVideo(Filepath):
         video = (ResizeVideo & key).video
 
         # save video
-        file = self.createpath(key, "video", "npy")
-        np.save(file, video.array)
+        filepath = self.createpath(key, "video", "npy")
+        np.save(filepath, video.array)
 
         # insert key
-        self.insert1(dict(key, video=file))
+        self.insert1(dict(key, video=filepath))

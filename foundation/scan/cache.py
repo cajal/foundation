@@ -1,0 +1,28 @@
+import numpy as np
+from djutils import Filepath
+from foundation.virtual.bridge import pipe_shared
+from foundation.scan.unit import UnitSet
+from foundation.schemas import scan as schema
+
+
+@schema.computed
+class UnitsActivity(Filepath):
+    definition = """
+    -> UnitSet
+    -> pipe_shared.SpikeMethod
+    ---
+    activity        : filepath@scratch09    # npy file, [samples, units]
+    """
+
+    def make(self, key):
+        from foundation.scan.compute import LoadActivity
+
+        # load activity
+        activity = (LoadActivity & key).activity
+
+        # save activity
+        filepath = self.createpath(key, "activity", "npy")
+        np.save(filepath, activity)
+
+        # insert key
+        self.insert1(dict(key, activity=filepath))

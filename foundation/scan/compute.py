@@ -1,0 +1,39 @@
+import numpy as np
+from djutils import keys, merge, rowproperty
+from foundation.utils import logger
+from foundation.virtual.bridge import pipe_fuse, pipe_shared, resolve_pipe
+from foundation.scan.unit import UnitSet, FilteredUnits
+
+
+@keys
+class LoadActivity:
+    """Scan unit set activity"""
+
+    @property
+    def key_list(self):
+        return [
+            UnitSet & FilteredUnits,
+            pipe_shared.SpikeMethod & "spike_method in (5, 6)",
+        ]
+
+    @rowproperty
+    def activity(self):
+        """
+        Returns
+        -------
+        2D array -- [samples, units]
+            scan unit activity, units ordered by 'units_index'
+        """
+        # unit set
+        units = (UnitSet & self.key).members
+
+        # unit activity
+        pipe = resolve_pipe(self.key)
+        activity = pipe.Activity.Trace & self.key
+
+        # load activity
+        traces = merge(units, activity)
+        logger.info(f"Loading {len(traces)} activity traces")
+        traces = traces.fetch("trace", order_by="units_index")
+
+        return np.stack(traces)
