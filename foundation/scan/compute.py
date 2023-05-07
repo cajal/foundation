@@ -24,16 +24,10 @@ class LoadActivity:
         2D array -- [samples, units]
             scan unit activity, units ordered by 'units_index'
         """
-        # unit set
-        units = (UnitSet & self.key).members
-
-        # unit activity
-        pipe = resolve_pipe(self.key)
-        activity = pipe.Activity.Trace & self.key
-
-        # load activity
-        traces = merge(units, activity)
+        traces = merge(
+            (UnitSet & self.key).members,
+            resolve_pipe(self.key).Activity.Trace & self.key,
+        )
         logger.info(f"Loading {len(traces)} activity traces")
         traces = traces.fetch("trace", order_by="units_index")
-
         return np.stack(traces)
