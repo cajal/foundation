@@ -11,7 +11,7 @@ class UnitsActivity(Filepath):
     -> UnitSet
     -> pipe_shared.SpikeMethod
     ---
-    activity        : filepath@scratch09    # npy file, [samples, units]
+    activity        : filepath@scratch09    # npy file, [units, samples]
     """
 
     def make(self, key):

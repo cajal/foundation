@@ -21,7 +21,7 @@ class LoadActivity:
         """
         Returns
         -------
-        2D array -- [samples, units]
+        2D array -- [units, samples]
             scan unit activity, units ordered by 'units_index'
         """
         traces = merge(
