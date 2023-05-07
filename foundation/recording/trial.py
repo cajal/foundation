@@ -50,10 +50,12 @@ class ScanTrial(_Trial):
 
     @rowproperty
     def video(self):
+        from foundation.stimulus.video import VideoLink
+
         trial = pipe_stim.Trial * pipe_stim.Condition & self
         stim_type = trial.fetch1("stimulus_type")
         stim_type = stim_type.split(".")[1]
-        return stimulus.VideoLink.get(stim_type, trial)
+        return VideoLink.get(stim_type, trial)
 
 
 # -- Trial --
