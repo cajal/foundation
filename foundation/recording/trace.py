@@ -1,4 +1,4 @@
-from djutils import merge, row_property
+from djutils import merge, rowproperty
 from foundation.virtual import scan, utility
 from foundation.virtual.bridge import pipe_fuse, pipe_shared, pipe_stim, pipe_tread, resolve_pipe
 from foundation.recording.trial import TrialLink, TrialSet, TrialBounds
@@ -13,7 +13,7 @@ from foundation.schemas import recording as schema
 class _Trace:
     """Recording Trace"""
 
-    @row_property
+    @rowproperty
     def trial_set(self):
         """
         Returns
@@ -23,7 +23,7 @@ class _Trace:
         """
         raise NotImplementedError()
 
-    @row_property
+    @rowproperty
     def times(self):
         """
         Returns
@@ -33,7 +33,7 @@ class _Trace:
         """
         raise NotImplementedError()
 
-    @row_property
+    @rowproperty
     def values(self):
         """
         Returns
@@ -43,7 +43,7 @@ class _Trace:
         """
         raise NotImplementedError()
 
-    @row_property
+    @rowproperty
     def homogeneous(self):
         """
         Returns
@@ -60,7 +60,7 @@ class _Trace:
 class _Scan(_Trace):
     """Scan Trace"""
 
-    @row_property
+    @rowproperty
     def trial_set(self):
         key = pipe_stim.Trial.proj() & self
         key = merge(key, TrialLink.ScanTrial)
@@ -76,17 +76,17 @@ class ScanUnit(_Scan):
     -> pipe_shared.SpikeMethod
     """
 
-    @row_property
+    @rowproperty
     def times(self):
         times = (scan.Scan & self).fetch1("scan_times")
         delay = (resolve_pipe(self).ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
         return times + delay
 
-    @row_property
+    @rowproperty
     def values(self):
         return (resolve_pipe(self).Activity.Trace & self).fetch1("trace").clip(0)
 
-    @row_property
+    @rowproperty
     def homogeneous(self):
         return True
 
@@ -97,15 +97,15 @@ class ScanPupil(_Scan):
     -> scan.PupilTrace
     """
 
-    @row_property
+    @rowproperty
     def times(self):
         return (scan.Scan & self).fetch1("eye_times")
 
-    @row_property
+    @rowproperty
     def values(self):
         return (scan.PupilTrace & self).fetch1("pupil_trace")
 
-    @row_property
+    @rowproperty
     def homogeneous(self):
         return False
 
@@ -117,15 +117,15 @@ class ScanTreadmill(_Scan):
     -> pipe_tread.Treadmill
     """
 
-    @row_property
+    @rowproperty
     def times(self):
         return (scan.Scan & self).fetch1("treadmill_times")
 
-    @row_property
+    @rowproperty
     def values(self):
         return (pipe_tread.Treadmill & self).fetch1("treadmill_vel")
 
-    @row_property
+    @rowproperty
     def homogeneous(self):
         return True
 

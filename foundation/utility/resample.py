@@ -1,4 +1,4 @@
-from djutils import row_property, row_method
+from djutils import rowproperty, rowmethod
 from foundation.schemas import utility as schema
 
 
@@ -10,7 +10,7 @@ from foundation.schemas import utility as schema
 class _Rate:
     """Resampling Rate"""
 
-    @row_property
+    @rowproperty
     def period(self):
         """
         Returns
@@ -30,7 +30,7 @@ class Hz(_Rate):
     hz          : decimal(9, 6)         # samples per second
     """
 
-    @row_property
+    @rowproperty
     def period(self):
         return 1 / float(self.fetch1("hz"))
 
@@ -53,7 +53,7 @@ class RateLink:
 class _Offset:
     """Resampling Offset"""
 
-    @row_property
+    @rowproperty
     def offset(self):
         """
         Returns
@@ -73,7 +73,7 @@ class MsOffset(_Offset):
     ms_offset       : int unsigned      # millisecond offset
     """
 
-    @row_property
+    @rowproperty
     def offset(self):
         return self.fetch1("ms_offset") / 1000
 
@@ -96,7 +96,7 @@ class OffsetLink:
 class _Resample:
     """Trace Resampling"""
 
-    @row_method
+    @rowmethod
     def resample(self, times, values, target_period):
         """
         Parameters
@@ -124,7 +124,7 @@ class Hamming(_Resample):
     name = "hamming"
     comment = "hamming trace"
 
-    @row_method
+    @rowmethod
     def resample(self, times, values, target_period):
 
         from foundation.utils.resample import Hamming
@@ -142,7 +142,7 @@ class LowpassHamming(_Resample):
     lowpass_hz      : decimal(6, 3)     # lowpass filter rate
     """
 
-    @row_method
+    @rowmethod
     def resample(self, times, values, target_period):
 
         from foundation.utils.resample import LowpassHamming

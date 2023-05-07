@@ -1,4 +1,4 @@
-from djutils import merge, row_property
+from djutils import merge, rowproperty
 from foundation.virtual import recording
 from foundation.dataset.dtype import DtypeLink
 from foundation.schemas import dataset as schema
@@ -12,7 +12,7 @@ from foundation.schemas import dataset as schema
 class _Recording:
     """Recording Dataset"""
 
-    @row_property
+    @rowproperty
     def trial_set(self):
         """
         Returns
@@ -22,7 +22,7 @@ class _Recording:
         """
         raise NotImplementedError()
 
-    @row_property
+    @rowproperty
     def trace_sets(self):
         """
         Yields
@@ -47,11 +47,11 @@ class Scan(_Recording):
     -> recording.FilteredScanUnits
     """
 
-    @row_property
+    @rowproperty
     def trial_set(self):
         return recording.TrialSet & (recording.FilteredScanTrials & self)
 
-    @row_property
+    @rowproperty
     def trace_sets(self):
         for dtype_part, scan_set in [
             [DtypeLink.ScanPerspective, recording.FilteredScanPerspectives],

@@ -1,5 +1,5 @@
 import numpy as np
-from djutils import row_property
+from djutils import rowproperty
 from foundation.schemas import utility as schema
 
 
@@ -11,7 +11,7 @@ from foundation.schemas import utility as schema
 class _Summary:
     """Summary Statistic"""
 
-    @row_property
+    @rowproperty
     def summary(self):
         """
         Returns
@@ -30,7 +30,7 @@ class Mean(_Summary):
     name = "mean"
     comment = "arithmetic mean"
 
-    @row_property
+    @rowproperty
     def summary(self):
         return np.mean
 
@@ -41,7 +41,7 @@ class Std(_Summary):
     ddof        : int unsigned      # delta degrees of freedom
     """
 
-    @row_property
+    @rowproperty
     def summary(self):
         ddof = self.fetch1("ddof")
         return lambda x: np.std(x, ddof=ddof)

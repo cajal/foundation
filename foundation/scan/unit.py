@@ -1,5 +1,5 @@
 import datajoint as dj
-from djutils import merge, row_method
+from djutils import merge, rowmethod
 from foundation.scan.experiment import Scan
 from foundation.virtual.bridge import pipe_fuse, pipe_shared, resolve_pipe
 from foundation.schemas import scan as schema
@@ -31,7 +31,7 @@ class UnitMaskType:
     -> pipe_shared.MaskType
     """
 
-    @row_method
+    @rowmethod
     def filter(self, units):
         pipe = resolve_pipe(units)
         key = merge(

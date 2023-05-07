@@ -1,5 +1,5 @@
 import numpy as np
-from djutils import merge, row_property, row_method
+from djutils import merge, rowproperty, rowmethod
 from foundation.utils.resample import monotonic
 from foundation.virtual import stimulus
 from foundation.virtual.bridge import pipe_stim
@@ -14,7 +14,7 @@ from foundation.schemas import recording as schema
 class _Trial:
     """Recording Trial"""
 
-    @row_property
+    @rowproperty
     def flips(self):
         """
         Returns
@@ -24,7 +24,7 @@ class _Trial:
         """
         raise NotImplementedError()
 
-    @row_property
+    @rowproperty
     def video(self):
         """
         Returns
@@ -44,11 +44,11 @@ class ScanTrial(_Trial):
     -> pipe_stim.Trial
     """
 
-    @row_property
+    @rowproperty
     def flips(self):
         return (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
 
-    @row_property
+    @rowproperty
     def video(self):
         trial = pipe_stim.Trial * pipe_stim.Condition & self
         stim_type = trial.fetch1("stimulus_type")
@@ -127,7 +127,7 @@ class TrialVideoFilter:
     -> stimulus.VideoFilterSet
     """
 
-    @row_method
+    @rowmethod
     def filter(self, trials):
         from foundation.stimulus.video import VideoLink, VideoFilterSet
 

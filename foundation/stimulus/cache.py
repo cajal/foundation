@@ -8,7 +8,6 @@ from foundation.schemas import stimulus as schema
 
 @schema.computed
 class ResizedVideo(Filepath):
-    store = "scratch09"
     definition = """
     -> VideoLink
     -> utility.ResizeLink
@@ -24,7 +23,7 @@ class ResizedVideo(Filepath):
         video = (ResizeVideo & key).video
 
         # save video
-        file = os.path.join(self.tuple_dir(key, create=True), "video.npy")
+        file = self.createpath(key, "video", "npy")
         np.save(file, video.array)
 
         # insert key

@@ -1,5 +1,5 @@
 import numpy as np
-from djutils import row_property, row_method
+from djutils import rowproperty, rowmethod
 from foundation.utility.stat import SummaryLink
 from foundation.schemas import utility as schema
 
@@ -12,7 +12,7 @@ from foundation.schemas import utility as schema
 class _Standardize:
     """Standardize using Summary statistics"""
 
-    @row_property
+    @rowproperty
     def summary_keys(self):
         """
         Returns
@@ -22,7 +22,7 @@ class _Standardize:
         """
         raise NotImplementedError()
 
-    @row_method
+    @rowmethod
     def standardize(self, homogeneous, **kwargs):
         """
         Parameter
@@ -51,11 +51,11 @@ class Affine(_Standardize):
     -> SummaryLink.proj(summary_id_scale="summary_id")
     """
 
-    @row_property
+    @rowproperty
     def summary_keys(self):
         return SummaryLink & [dict(summary_id=v) for v in self.fetch1().values()]
 
-    @row_method
+    @rowmethod
     def standardize(self, homogeneous, **kwargs):
         from foundation.utils.standardize import Affine
 
@@ -72,11 +72,11 @@ class Scale(_Standardize):
     -> SummaryLink
     """
 
-    @row_property
+    @rowproperty
     def summary_keys(self):
         return SummaryLink & self
 
-    @row_method
+    @rowmethod
     def standardize(self, homogeneous, **kwargs):
         from foundation.utils.standardize import Scale
 

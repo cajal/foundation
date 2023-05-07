@@ -1,7 +1,7 @@
 import io
 import av
 import numpy as np
-from djutils import row_property, row_method
+from djutils import rowproperty, rowmethod
 from foundation.utils.video import Image, Video
 from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
 from foundation.schemas import stimulus as schema
@@ -15,7 +15,7 @@ from foundation.schemas import stimulus as schema
 class _Video:
     """Stimlus Frames"""
 
-    @row_property
+    @rowproperty
     def video(self):
         """
         Returns
@@ -34,7 +34,7 @@ class Clip(_Video):
     -> pipe_stim.Clip
     """
 
-    @row_property
+    @rowproperty
     def video(self):
         clip = pipe_stim.Movie * pipe_stim.Movie.Clip * pipe_stim.Clip & self
         clip, start, end, fps = clip.fetch1("clip", "skip_time", "cut_after", "frame_rate")
@@ -65,7 +65,7 @@ class Monet2(_Video):
     -> pipe_stim.Monet2
     """
 
-    @row_property
+    @rowproperty
     def video(self):
         movie = (pipe_stim.Monet2 & self).fetch1("movie").squeeze(2)
         return Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
@@ -77,7 +77,7 @@ class Trippy(_Video):
     -> pipe_stim.Trippy
     """
 
-    @row_property
+    @rowproperty
     def video(self):
         movie = (stimulus.Trippy & self).fetch1("movie")
         return Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
@@ -89,7 +89,7 @@ class GaborSequence(_Video):
     -> pipe_stim.GaborSequence
     """
 
-    @row_property
+    @rowproperty
     def video(self):
         sequence = (pipe_stim.GaborSequence & self).fetch1()
 
@@ -106,7 +106,7 @@ class DotSequence(_Video):
     -> pipe_stim.DotSequence
     """
 
-    @row_property
+    @rowproperty
     def video(self):
         sequence = (pipe_stim.DotSequence & self).fetch1()
 
@@ -127,7 +127,7 @@ class RdkSequence(_Video):
     -> pipe_stim.RdkSequence
     """
 
-    @row_property
+    @rowproperty
     def video(self):
         sequence = (pipe_stim.RdkSequence & self).fetch1()
 
@@ -153,7 +153,7 @@ class Frame(_Video):
     -> pipe_stim.Frame
     """
 
-    @row_property
+    @rowproperty
     def video(self):
         tup = pipe_stim.StaticImage.Image * pipe_stim.Frame & self
         image, pre_blank = tup.fetch1("image", "pre_blank_period")
@@ -230,7 +230,7 @@ class VideoTypeFilter:
     include         : bool              # include or exclude
     """
 
-    @row_method
+    @rowmethod
     def filter(self, videos):
 
         if self.fetch1("include"):
@@ -247,7 +247,7 @@ class VideoSetFilter:
     include         : bool              # include or exclude
     """
 
-    @row_method
+    @rowmethod
     def filter(self, videos):
 
         if self.fetch1("include"):

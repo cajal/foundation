@@ -4,7 +4,7 @@ import pandas as pd
 from scipy.interpolate import interp1d
 import multiprocessing as mp
 from tqdm import tqdm
-from djutils import keys, merge, row_property, key_property, Filepath, RestrictionError
+from djutils import keys, merge, rowproperty, key_property, RestrictionError
 from foundation.utils.resample import frame_index
 from foundation.utility.stat import SummaryLink
 from foundation.utility.standardize import StandardizeLink
@@ -25,7 +25,7 @@ class ResampleVideo:
             RateLink,
         ]
 
-    @row_property
+    @rowproperty
     def index(self):
         """
         Returns
@@ -136,7 +136,7 @@ class ResampleTraces:
             ResampleLink,
         ]
 
-    @row_property
+    @rowproperty
     def traces(self):
         """
         Returns
@@ -176,7 +176,7 @@ class SummarizeTrace:
             SummaryLink,
         ]
 
-    @row_property
+    @rowproperty
     def statistic(self):
         """
         Returns
@@ -210,7 +210,7 @@ class StandardizeTraces:
             StandardizeLink,
         ]
 
-    @row_property
+    @rowproperty
     def transform(self):
         """
         Returns

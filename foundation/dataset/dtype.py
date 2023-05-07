@@ -1,4 +1,4 @@
-from djutils import row_property
+from djutils import rowproperty
 from foundation.virtual.bridge import pipe_shared
 from foundation.virtual import recording
 from foundation.schemas import dataset as schema

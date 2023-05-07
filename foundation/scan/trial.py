@@ -1,4 +1,4 @@
-from djutils import merge, row_method
+from djutils import merge, rowmethod
 from foundation.scan.experiment import Scan
 from foundation.scan.pupil import PupilNans
 from foundation.virtual.bridge import pipe_stim, pipe_shared
@@ -29,7 +29,7 @@ class PupilNansFilter:
     max_nans        : decimal(4, 3)     # maximum tolerated fraction of nans
     """
 
-    @row_method
+    @rowmethod
     def filter(self, trials):
         key = merge(trials, self, PupilNans)
 
