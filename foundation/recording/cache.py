@@ -13,7 +13,6 @@ from foundation.schemas import recording as schema
 
 @schema.computed
 class ResampledVideo(Filepath):
-    store = "scratch09"
     definition = """
     -> TrialLink
     -> utility.RateLink
@@ -38,7 +37,6 @@ class ResampledVideo(Filepath):
 
 @schema.computed
 class ResampledTraces(Filepath):
-    store = "scratch09"
     definition = """
     -> TraceSet
     -> TrialLink

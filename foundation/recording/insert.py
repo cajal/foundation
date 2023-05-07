@@ -38,8 +38,8 @@ class Scan:
     def key_list(self):
         return [
             scan.Scan,
-            pipe_shared.TrackingMethod,
-            pipe_shared.SpikeMethod,
+            pipe_shared.TrackingMethod & scan.PupilTrace,
+            pipe_shared.SpikeMethod & "spike_method in (5, 6)",
             scan.FilteredTrials.proj(scan_filters_id="trial_filters_id"),
             scan.FilteredUnits,
             TrialFilterSet,
