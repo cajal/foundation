@@ -224,7 +224,7 @@ class VideoInfo:
 
 @schema.lookupfilter
 class VideoTypeFilter:
-    ftype = Video
+    filtertype = Video
     definition = """
     video_type      : varchar(128)      # video type
     include         : bool              # include or exclude
@@ -241,7 +241,7 @@ class VideoTypeFilter:
 
 @schema.lookupfilter
 class VideoSetFilter:
-    ftype = Video
+    filtertype = Video
     definition = """
     -> VideoSet
     include         : bool              # include or exclude

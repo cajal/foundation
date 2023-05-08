@@ -124,7 +124,7 @@ class TrialVideo:
 
 @schema.filter_lookup
 class TrialVideoFilter:
-    ftype = TrialLink
+    filtertype = TrialLink
     definition = """
     -> stimulus.VideoFilterSet
     """

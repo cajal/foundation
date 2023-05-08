@@ -23,7 +23,7 @@ class UnitSet:
 
 @schema.filter_lookup
 class UnitMaskType:
-    ftype = pipe_fuse.ScanSet.Unit
+    filtertype = pipe_fuse.ScanSet.Unit
     definition = """
     -> pipe_shared.PipelineVersion
     -> pipe_shared.SegmentationMethod

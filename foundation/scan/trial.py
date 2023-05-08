@@ -23,7 +23,7 @@ class TrialSet:
 
 @schema.filter_lookup
 class PupilNansFilter:
-    ftype = pipe_stim.Trial
+    filtertype = pipe_stim.Trial
     definition = """
     -> pipe_shared.TrackingMethod
     max_nans        : decimal(4, 3)     # maximum tolerated fraction of nans
