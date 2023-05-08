@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 from tqdm import tqdm
+from datajoint import U
 from djutils import keys, merge, rowproperty, keyproperty, RestrictionError
 from foundation.utils.resample import frame_index
 from foundation.utility.stat import Summary
@@ -243,18 +244,17 @@ class StandardizeTraces:
 
         # homogeneous mask
         hom = merge(trace_keys, TraceHomogeneous)
-        hom = hom.fetch("homogeneous", order_by="trace_id ASC")
+        hom = hom.fetch("homogeneous", order_by="traceset_index")
         hom = hom.astype(bool)
 
         # summary stats
-        keys = trace_keys * self.key * stat_keys
-        keys = merge(keys, TraceSummary)
-
+        key = trace_keys * self.key * stat_keys
+        key = merge(key, TraceSummary)
         stats = dict()
-        for summary_id, df in keys.fetch(format="frame").groupby("summary_id"):
 
-            df = df.sort_values("trace_id", ascending=True)
-            stats[summary_id] = df.summary.values
+        for summary in U("summary_id") & key:
+            sid = summary["summary_id"]
+            stats[sid] = (key & summary).fetch("summary", order_by="traceset_index")
 
         # standarization transform
         return (Standardize & self.key).link.standardize(homogeneous=hom, **stats)
