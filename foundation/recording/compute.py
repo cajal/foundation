@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
 from tqdm import tqdm
-from datajoint import U
 from djutils import keys, merge, rowproperty, keyproperty, RestrictionError
 from foundation.utils.resample import frame_index
 from foundation.utility.stat import Summary
@@ -248,13 +247,14 @@ class StandardizeTraces:
         hom = hom.astype(bool)
 
         # summary stats
-        key = trace_keys * self.key * stat_keys
-        key = merge(key, TraceSummary)
-        stats = dict()
+        stats = trace_keys * self.key * stat_keys
+        stats = merge(stats, TraceSummary)
 
-        for summary in U("summary_id") & key:
-            sid = summary["summary_id"]
-            stats[sid] = (key & summary).fetch("summary", order_by="traceset_index")
+        # collect stats in dict
+        kwargs = dict()
+        for skey in stat_keys.proj():
+            sid = skey["summary_id"]
+            kwargs[sid] = (stats & skey).fetch("summary", order_by="traceset_index")
 
         # standarization transform
-        return (Standardize & self.key).link.standardize(homogeneous=hom, **stats)
+        return (Standardize & self.key).link.standardize(homogeneous=hom, **kwargs)
