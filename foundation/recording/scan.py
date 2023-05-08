@@ -10,7 +10,7 @@ from foundation.schemas import recording as schema
 @schema.computed
 class ScanTrials:
     definition = """
-    -> scan.FilteredTrials.proj(scan_filters_id="trial_filters_id")
+    -> scan.FilteredTrials.proj(scan_filterset_id="trial_filterset_id")
     -> TrialFilterSet
     ---
     -> TrialSet
@@ -20,7 +20,7 @@ class ScanTrials:
         from foundation.scan.trial import FilteredTrials, TrialSet as ScanTrialSet
 
         # filtered scan trials
-        trials = FilteredTrials.proj(..., scan_filters_id="trial_filters_id") & key
+        trials = FilteredTrials.proj(..., scan_filterset_id="trial_filterset_id") & key
         trials = ScanTrialSet & trials
         trials = merge(trials.members, Trial.ScanTrial)
 

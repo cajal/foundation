@@ -175,7 +175,7 @@ class TraceTrials:
     """
 
     def make(self, key):
-        key["trials_id"] = (Trace & key).link.trial_set.fetch1("trials_id")
+        key["trialset_id"] = (Trace & key).link.trial_set.fetch1("trialset_id")
         self.insert1(key)
 
 

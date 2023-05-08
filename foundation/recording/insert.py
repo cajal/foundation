@@ -39,7 +39,7 @@ class Scan:
             scan.Scan,
             pipe_shared.TrackingMethod & scan.PupilTrace,
             pipe_shared.SpikeMethod & "spike_method in (5, 6)",
-            scan.FilteredTrials.proj(scan_filters_id="trial_filterset_id"),
+            scan.FilteredTrials.proj(scan_filterset_id="trial_filterset_id"),
             scan.FilteredUnits,
             TrialFilterSet,
             TraceFilterSet,
@@ -73,7 +73,7 @@ class Scan:
 
         # scan units
         key = merge(self.key, scan.FilteredUnits)
-        key = scan.UnitSet.Unit & key
+        key = scan.UnitSet.Member & key
         ScanUnit.insert(key * self.key, skip_duplicates=True, ignore_extra_fields=True)
         keys.append([Trace.ScanUnit, key])
 
