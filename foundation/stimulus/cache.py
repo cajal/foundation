@@ -9,7 +9,7 @@ from foundation.schemas import stimulus as schema
 class ResizedVideo(Filepath):
     definition = """
     -> Video
-    -> utility.ResizeLink
+    -> utility.Resize
     -> utility.Resolution
     ---
     video       : filepath@scratch09    # npy file, [frames, height, width, channels]

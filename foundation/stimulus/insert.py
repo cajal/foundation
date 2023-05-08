@@ -49,7 +49,7 @@ class ScanCache:
     def key_list(self):
         return [
             pipe_exp.Scan,
-            utility.ResizeLink,
+            utility.Resize,
             utility.Resolution,
         ]
 

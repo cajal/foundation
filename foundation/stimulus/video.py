@@ -157,21 +157,21 @@ class Frame(_Video):
     def video(self):
         tup = pipe_stim.StaticImage.Image * pipe_stim.Frame & self
         image, pre_blank = tup.fetch1("image", "pre_blank_period")
-        image = Image.fromarray(image)
+        image = video.Frame.fromarray(image)
 
         if image.mode == "L":
             blank = np.full([image.height, image.width], 128, dtype=np.uint8)
-            blank = Image.fromarray(blank)
+            blank = video.Frame.fromarray(blank)
         else:
-            raise NotImplementedError(f"Image mode {mode} not implemented")
+            raise NotImplementedError(f"Frame mode {mode} not implemented")
 
         if pre_blank > 0:
-            return Video([blank, image, blank], fixed=False)
+            return video.Video([blank, image, blank], fixed=False)
         else:
-            return Video([image, blank], fixed=False)
+            return video.Video([image, blank], fixed=False)
 
 
-# -- Video Link --
+# -- Video --
 
 
 @schema.link
@@ -194,7 +194,7 @@ class VideoSet:
 @schema.computed
 class VideoInfo:
     definition = """
-    -> VideoLink
+    -> Video
     ---
     frames      : int unsigned  # video frames
     height      : int unsigned  # video height
