@@ -11,9 +11,8 @@ from foundation.schemas import scan as schema
 @schema.set
 class UnitSet:
     keys = [pipe_fuse.ScanSet.Unit]
-    name = "units"
+    name = "unitset"
     comment = "scan unit set"
-    part_name = "unit"
 
 
 # -------------- Unit Filter --------------
@@ -21,8 +20,8 @@ class UnitSet:
 # -- Filter Types --
 
 
-@schema.filter_lookup
-class UnitMaskType:
+@schema.lookupfilter
+class UnitMaskFilter:
     filtertype = pipe_fuse.ScanSet.Unit
     definition = """
     -> pipe_shared.PipelineVersion
@@ -45,9 +44,9 @@ class UnitMaskType:
 # -- Filter --
 
 
-@schema.filter_link
-class UnitFilterLink:
-    links = [UnitMaskType]
+@schema.filterlink
+class UnitFilter:
+    links = [UnitMaskFilter]
     name = "unit_filter"
     comment = "scan unit filter"
 
@@ -55,10 +54,10 @@ class UnitFilterLink:
 # -- Filter Set --
 
 
-@schema.filter_link_set
+@schema.filterlinkset
 class UnitFilterSet:
-    link = UnitFilterLink
-    name = "unit_filters"
+    link = UnitFilter
+    name = "unit_filterset"
     comment = "scan unit filter set"
 
 

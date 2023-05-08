@@ -11,9 +11,8 @@ from foundation.schemas import scan as schema
 @schema.set
 class TrialSet:
     keys = [pipe_stim.Trial]
-    name = "trials"
+    name = "trialset"
     comment = "scan trial set"
-    part_name = "trial"
 
 
 # -------------- Trial Filter --------------
@@ -21,7 +20,7 @@ class TrialSet:
 # -- Filter Types --
 
 
-@schema.filter_lookup
+@schema.lookupfilter
 class PupilNansFilter:
     filtertype = pipe_stim.Trial
     definition = """
@@ -39,8 +38,8 @@ class PupilNansFilter:
 # -- Filter --
 
 
-@schema.filter_link
-class TrialFilterLink:
+@schema.filterlink
+class TrialFilter:
     links = [PupilNansFilter]
     name = "trial_filter"
     comment = "scan trial filter"
@@ -49,10 +48,10 @@ class TrialFilterLink:
 # -- Filter Set --
 
 
-@schema.filter_link_set
+@schema.filterlinkset
 class TrialFilterSet:
-    link = TrialFilterLink
-    name = "trial_filters"
+    link = TrialFilter
+    name = "trial_filterset"
     comment = "scan trial filter set"
 
 
@@ -73,7 +72,7 @@ class FilteredTrials:
         trials = pipe_stim.Trial & key
 
         # filter trials
-        trials = (TrialFilterLink & key).filter(trials)
+        trials = (TrialFilter & key).filter(trials)
 
         # insert trial set
         trial_set = TrialSet.fill(trials, prompt=False)
