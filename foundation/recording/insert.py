@@ -182,7 +182,7 @@ class ScanUnitCache:
 
 @keys
 class ScanBehaviorCache:
-    """Cache resampled scan unit traces"""
+    """Cache resampled scan behavior traces"""
 
     @property
     def key_list(self):
