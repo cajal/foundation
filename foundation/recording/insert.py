@@ -1,5 +1,4 @@
 from djutils import keys, merge
-from foundation.utils import multiprocess
 from foundation.virtual.bridge import pipe_stim, pipe_tread, pipe_shared
 from foundation.virtual import scan, utility
 from foundation.recording.trial import (

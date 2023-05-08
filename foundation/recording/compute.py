@@ -1,14 +1,14 @@
-import os
 import numpy as np
 import pandas as pd
 from scipy.interpolate import interp1d
-import multiprocessing as mp
 from tqdm import tqdm
-from djutils import keys, merge, rowproperty, key_property, RestrictionError
+from djutils import keys, merge, rowproperty, keyproperty, RestrictionError
 from foundation.utils.resample import frame_index
 from foundation.utility.stat import SummaryLink
 from foundation.utility.standardize import StandardizeLink
 from foundation.stimulus.video import VideoInfo
+from foundation.scan.unit import UnitSet, FilteredUnits
+from foundation.scan.cache import UnitsActivity
 from foundation.recording.trial import TrialLink, TrialSet, TrialBounds, TrialVideo
 from foundation.recording.trace import TraceLink, TraceSet, TraceTrials
 from foundation.utility.resample import RateLink, OffsetLink, ResampleLink
@@ -74,7 +74,7 @@ class ResampleTrace:
             ResampleLink,
         ]
 
-    @key_property(TraceLink, RateLink, OffsetLink, ResampleLink)
+    @keyproperty(TraceLink, RateLink, OffsetLink, ResampleLink)
     def trials(self):
         """
         Returns

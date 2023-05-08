@@ -2,7 +2,7 @@ import io
 import av
 import numpy as np
 from djutils import rowproperty, rowmethod
-from foundation.utils.video import Image, Video
+from foundation.utils import video
 from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
 from foundation.schemas import stimulus as schema
 
@@ -56,7 +56,7 @@ class Clip(_Video):
             frame = frame.to_image().convert(mode="L")
             frames.append(frame)
 
-        return Video(frames)
+        return video.Video(frames)
 
 
 @schema.lookup
@@ -68,7 +68,7 @@ class Monet2(_Video):
     @rowproperty
     def video(self):
         movie = (pipe_stim.Monet2 & self).fetch1("movie").squeeze(2)
-        return Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
+        return video.Video([video.Frame.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
 
 
 @schema.lookup
@@ -80,7 +80,7 @@ class Trippy(_Video):
     @rowproperty
     def video(self):
         movie = (stimulus.Trippy & self).fetch1("movie")
-        return Video([Image.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
+        return video.Video([video.Frame.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
 
 
 @schema.lookup
@@ -97,7 +97,7 @@ class GaborSequence(_Video):
         movs = movs.fetch("movie", order_by="sequence_id ASC")
         assert len(movs) == sequence["sequence_length"]
 
-        return Video([Image.fromarray(frame, mode="L") for frame in np.concatenate(movs)])
+        return video.Video([video.Frame.fromarray(frame, mode="L") for frame in np.concatenate(movs)])
 
 
 @schema.lookup
@@ -118,7 +118,7 @@ class DotSequence(_Video):
         frames = np.stack(imgs[id_trace])
         assert len(frames) == n_frames
 
-        return Video([Image.fromarray(frame, mode="L") for frame in frames])
+        return video.Video([video.Frame.fromarray(frame, mode="L") for frame in frames])
 
 
 @schema.lookup
@@ -144,7 +144,7 @@ class RdkSequence(_Video):
                 raise Exception
             movs += [movie]
 
-        return Video([Image.fromarray(frame, mode="L") for frame in np.concatenate(movs)])
+        return video.Video([video.Frame.fromarray(frame, mode="L") for frame in np.concatenate(movs)])
 
 
 @schema.lookup
@@ -175,16 +175,16 @@ class Frame(_Video):
 
 
 @schema.link
-class VideoLink:
+class Video:
     links = [Clip, Monet2, Trippy, GaborSequence, DotSequence, RdkSequence, Frame]
     name = "video"
     comment = "video stimulus"
 
 
-@schema.link_set
+@schema.linkset
 class VideoSet:
-    link = VideoLink
-    name = "videos"
+    link = Video
+    name = "videoset"
     comment = "video stimulus set"
 
 
@@ -205,7 +205,7 @@ class VideoInfo:
     """
 
     def make(self, key):
-        frames = (VideoLink & key).link.video
+        frames = (Video & key).link.video
 
         key["frames"] = len(frames)
         key["height"] = frames.height
@@ -222,9 +222,9 @@ class VideoInfo:
 # -- Filter Types --
 
 
-@schema.filter_lookup
+@schema.lookupfilter
 class VideoTypeFilter:
-    ftype = VideoLink
+    ftype = Video
     definition = """
     video_type      : varchar(128)      # video type
     include         : bool              # include or exclude
@@ -239,9 +239,9 @@ class VideoTypeFilter:
             return videos - self
 
 
-@schema.filter_lookup
+@schema.lookupfilter
 class VideoSetFilter:
-    ftype = VideoLink
+    ftype = Video
     definition = """
     -> VideoSet
     include         : bool              # include or exclude
@@ -259,8 +259,8 @@ class VideoSetFilter:
 # -- Filter --
 
 
-@schema.filter_link
-class VideoFilterLink:
+@schema.filterlink
+class VideoFilter:
     links = [VideoTypeFilter, VideoSetFilter]
     name = "video_filter"
     comment = "video filter"
@@ -269,8 +269,8 @@ class VideoFilterLink:
 # -- Filter Set --
 
 
-@schema.filter_link_set
+@schema.filterlinkset
 class VideoFilterSet:
-    link = VideoFilterLink
-    name = "video_filters"
+    link = VideoFilter
+    name = "video_filterset"
     comment = "video filter set"

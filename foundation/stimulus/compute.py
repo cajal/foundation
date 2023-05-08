@@ -1,6 +1,6 @@
 from djutils import keys, rowproperty
 from foundation.utility.resize import ResizeLink, Resolution
-from foundation.stimulus.video import VideoLink
+from foundation.stimulus.video import Video
 
 
 @keys
@@ -10,7 +10,7 @@ class ResizeVideo:
     @property
     def key_list(self):
         return [
-            VideoLink,
+            Video,
             ResizeLink,
             Resolution,
         ]
@@ -18,7 +18,7 @@ class ResizeVideo:
     @rowproperty
     def video(self):
         # load video
-        video = (VideoLink & self.key).link.video
+        video = (Video & self.key).link.video
 
         # target size
         height, width = (Resolution & self.key).fetch1("height", "width")

@@ -1,5 +1,5 @@
 import numpy as np
-from PIL import Image
+from PIL import Image as Frame
 
 
 class Video:
@@ -7,7 +7,7 @@ class Video:
         """
         Parameters
         ----------
-        frames : Sequence[Image]
+        frames : Sequence[Frame]
             stimulus frames
         fixed : bool
             fixed frame rate
@@ -105,14 +105,14 @@ class Video:
         elif array.ndim != 3:
             raise ValueError("Array must be either 4D or 3D")
 
-        return Video([Image.fromarray(frame, mode=mode) for frame in array], fixed=fixed)
+        return Video([Frame.fromarray(frame, mode=mode) for frame in array], fixed=fixed)
 
     def apply(self, transform):
         """
         Parameters
         ----------
-        tranform : Callable[[Image], Image]
-            function that takes a Image and returns a transformed Image
+        tranform : Callable[[Frame], Frame]
+            function that takes a Frame and returns a transformed Frame
 
         Returns
         -------

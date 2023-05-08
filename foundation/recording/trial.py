@@ -50,12 +50,12 @@ class ScanTrial(_Trial):
 
     @rowproperty
     def video(self):
-        from foundation.stimulus.video import VideoLink
+        from foundation.stimulus.video import Video
 
         trial = pipe_stim.Trial * pipe_stim.Condition & self
         stim_type = trial.fetch1("stimulus_type")
         stim_type = stim_type.split(".")[1]
-        return VideoLink.get(stim_type, trial)
+        return Video.get(stim_type, trial)
 
 
 # -- Trial --
@@ -131,11 +131,11 @@ class TrialVideoFilter:
 
     @rowmethod
     def filter(self, trials):
-        from foundation.stimulus.video import VideoLink, VideoFilterSet
+        from foundation.stimulus.video import Video, VideoFilterSet
 
         # trial videos
         trial_videos = merge(trials, TrialVideo)
-        videos = VideoLink & trial_videos
+        videos = Video & trial_videos
 
         # filter videos
         videos = (VideoFilterSet & self).filter(videos)
