@@ -115,7 +115,7 @@ def sample_times(start, end, period):
 class Resample:
     """Resample Base"""
 
-    def __init__(self, times, values, target_period):
+    def __init__(self, times, values, target_period, target_offset=0):
         """
         Parameters
         -------
@@ -125,6 +125,8 @@ class Resample:
             trace values, same length as times
         target_period : float
             target sampling period
+        target_offset : float
+            target sampling offset
         """
         if not times.ndim == values.ndim == 1:
             raise ValueError("Times and Values must be 1D")
@@ -141,8 +143,9 @@ class Resample:
         self.median_time = np.nanmedian(times)
         self.median_value = np.nanmedian(values)
 
-        self.target_period = target_period
         self.source_period = np.nanmedian(np.diff(times))
+        self.target_period = target_period
+        self.target_offset = target_offset
 
         self.interp = interp1d(
             x=self.x,
@@ -164,6 +167,10 @@ class Resample:
     def kind(self):
         return "linear"
 
+    @property
+    def dtype(self):
+        return np.float32
+
     def transform_times(self, times, inverse=False):
         if inverse:
             return times + self.median_time
@@ -176,7 +183,7 @@ class Resample:
         else:
             return values - self.median_value
 
-    def __call__(self, start, end, offset=0):
+    def __call__(self, start, end):
         """
         Parameters
         ----------
@@ -184,23 +191,21 @@ class Resample:
             start time
         end : float
             end time
-        offset : float
-            offset time
 
         Returns
         -------
         1D array | None
         """
         x = sample_times(
-            start=self.transform_times(start) + offset,
-            end=self.transform_times(end) + offset,
+            start=self.transform_times(start) + self.target_offset,
+            end=self.transform_times(end) + self.target_offset,
             period=self.target_period,
         )
         y = self.transform_values(
             values=self.interp(x),
             inverse=True,
         )
-        return y
+        return y.astype(self.dtype)
 
 
 # ------- Trace Types -------
@@ -212,6 +217,10 @@ class Nans(Resample):
     @property
     def x(self):
         return fill_nans(self.transform_times(self.times))
+
+    @property
+    def dtype(self):
+        return bool
 
     def transform_values(self, values, inverse=False):
         if inverse:
@@ -244,7 +253,7 @@ class Hamming(Resample):
 class LowpassHamming(Resample):
     """Resample with Lowpass Hamming filtering"""
 
-    def __init__(self, times, values, target_period, lowpass_period):
+    def __init__(self, times, values, target_period, lowpass_period, target_offset=0):
         """
         Parameters
         -------
@@ -256,10 +265,12 @@ class LowpassHamming(Resample):
             target sampling period
         lowpass_period : float
             lowpass filter period
+        target_offset : float
+            target sampling offset
         """
         self.lowpass_period = lowpass_period
 
-        super().__init__(times=times, values=values, target_period=target_period)
+        super().__init__(times=times, values=values, target_period=target_period, target_offset=target_offset)
 
     @property
     def x(self):

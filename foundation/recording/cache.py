@@ -28,11 +28,11 @@ class ResampledVideo(Filepath):
         index = (ResampleVideo & key).index
 
         # save file
-        file = os.path.join(self.tuple_dir(key, create=True), "index.npy")
-        np.save(file, index)
+        filepath = self.createpath(key, "index", "npy")
+        np.save(filepath, index)
 
         # insert key
-        self.insert1(dict(key, index=file, samples=len(index)))
+        self.insert1(dict(key, index=filepath, samples=len(index)))
 
 
 @schema.computed
@@ -52,14 +52,14 @@ class ResampledTraces(Filepath):
         from foundation.recording.compute import ResampleTraces
 
         # resamples traces
-        traces = (ResampleTraces & key).traces
+        traces = (ResampleTraces & key).trial
 
         # trace values finite
         finite = np.isfinite(traces).all()
 
         # save file
-        file = os.path.join(self.tuple_dir(key, create=True), "traces.npy")
-        np.save(file, traces)
+        filepath = self.createpath(key, "traces", "npy")
+        np.save(filepath, traces)
 
         # insert key
-        self.insert1(dict(key, traces=file, finite=bool(finite)))
+        self.insert1(dict(key, traces=filepath, finite=bool(finite)))

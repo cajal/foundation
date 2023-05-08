@@ -1,4 +1,4 @@
-from djutils import keys, merge
+from djutils import keys, merge, cache_rowproperty
 from foundation.virtual.bridge import pipe_stim, pipe_tread, pipe_shared
 from foundation.virtual import scan, utility
 from foundation.recording.trial import (
@@ -152,52 +152,54 @@ class ScanVideoCache:
         ResampledVideo.populate(trials, self.key, display_progress=True, reserve_jobs=True)
 
 
-# @keys
-# class ScanUnitCache:
-#     """Cache resampled scan unit traces"""
+@keys
+class ScanUnitCache:
+    """Cache resampled scan unit traces"""
 
-#     @property
-#     def key_list(self):
-#         return [
-#             ScanTrials,
-#             ScanUnits,
-#             utility.Rate,
-#             utility.Offset,
-#             utility.Resample,
-#         ]
+    @property
+    def key_list(self):
+        return [
+            ScanTrials,
+            ScanUnits,
+            utility.Rate,
+            utility.Offset,
+            utility.Resample,
+        ]
 
-#     def fill(self, processes=1):
-#         trials = TrialSet.Member & (ScanTrials & self.key)
-#         trials = trials.proj()
+    def fill(self):
+        from foundation.recording.compute import TraceResampling
 
-#         traces = TraceSet & (ScanUnits & self.key)
-#         traces = traces.proj()
+        key = ScanTrials * ScanUnits * self.key * TrialSet.Member
 
-#         with multiprocess(processes):
-#             ResampledTraces.populate(trials, traces, self.key, display_progress=True, reserve_jobs=True)
+        for trace_set in (TraceSet & key).proj():
+
+            with cache_rowproperty(TraceResampling):
+                ResampledTraces.populate(key, trace_set, display_progress=True, reserve_jobs=True)
 
 
-# @keys
-# class ScanBehaviorCache:
-#     """Cache resampled scan unit traces"""
+@keys
+class ScanBehaviorCache:
+    """Cache resampled scan unit traces"""
 
-#     @property
-#     def key_list(self):
-#         return [
-#             ScanTrials,
-#             ScanPerspectives,
-#             ScanModulations,
-#             utility.Rate,
-#             utility.Offset,
-#             utility.Resample,
-#         ]
+    @property
+    def key_list(self):
+        return [
+            ScanTrials,
+            ScanPerspectives,
+            ScanModulations,
+            utility.Rate,
+            utility.Offset,
+            utility.Resample,
+        ]
 
-#     def fill(self, processes=1):
-#         trials = TrialSet.Member & (ScanTrials & self.key)
-#         trials = trials.proj()
+    def fill(self):
+        from foundation.recording.compute import TraceResampling
 
-#         traces = TraceSet & [(ScanPerspectives & self.key), (ScanModulations & self.key)]
-#         traces = traces.proj()
+        for behavior in [ScanPerspectives, ScanModulations]:
 
-#         with multiprocess(processes):
-#             ResampledTraces.populate(trials, traces, self.key, display_progress=True, reserve_jobs=True)
+            key = ScanTrials * behavior * self.key * TrialSet.Member
+
+            for trace_set in (TraceSet & key).proj():
+
+                with cache_rowproperty(TraceResampling):
+                    ResampledTraces.populate(key, trace_set, display_progress=True, reserve_jobs=True)

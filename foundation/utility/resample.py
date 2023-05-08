@@ -98,7 +98,7 @@ class _Resample:
     """Trace Resampling"""
 
     @rowmethod
-    def resample(self, times, values, target_period):
+    def resample(self, times, values, target_period, target_offset):
         """
         Parameters
         -------
@@ -108,6 +108,8 @@ class _Resample:
             trace values, same length as times
         target_period : float
             target sampling period
+        target_offset : float
+            target sampling offset
 
         Returns
         -------
@@ -126,11 +128,12 @@ class Hamming(_Resample):
     comment = "hamming trace"
 
     @rowmethod
-    def resample(self, times, values, target_period):
+    def resample(self, times, values, target_period, target_offset):
         return resample.Hamming(
             times=times,
             values=values,
             target_period=target_period,
+            target_offset=target_offset,
         )
 
 
@@ -141,12 +144,13 @@ class LowpassHamming(_Resample):
     """
 
     @rowmethod
-    def resample(self, times, values, target_period):
+    def resample(self, times, values, target_period, target_offset):
         return resample.LowpassHamming(
             times=times,
             values=values,
             target_period=target_period,
             lowpass_period=1 / float(self.fetch1("lowpass_hz")),
+            target_offset=target_offset,
         )
 
 

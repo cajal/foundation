@@ -7,8 +7,6 @@ from foundation.utils.resample import frame_index
 from foundation.utility.stat import Summary
 from foundation.utility.standardize import Standardize
 from foundation.stimulus.video import VideoInfo
-from foundation.scan.unit import UnitSet, FilteredUnits
-from foundation.scan.cache import UnitsActivity
 from foundation.recording.trial import Trial, TrialSet, TrialBounds, TrialVideo
 from foundation.recording.trace import Trace, TraceSet, TraceTrials
 from foundation.utility.resample import Rate, Offset, Resample
@@ -61,6 +59,37 @@ class ResampleVideo:
 
 
 @keys
+class TraceResampling:
+    """Trace resampling"""
+
+    @property
+    def key_list(self):
+        return [
+            Trace,
+            Rate,
+            Offset,
+            Resample,
+        ]
+
+    @rowproperty
+    def resample(self):
+        """
+        Returns
+        -------
+        foundation.utils.resample.Resample
+            callable, resamples traces
+        """
+        # resampling period, offset, method
+        period = (Rate & self.key).link.period
+        offset = (Offset & self.key).link.offset
+        resample = (Resample & self.key).link.resample
+
+        # trace resampler
+        trace = (Trace & self.key).link
+        return resample(times=trace.times, values=trace.values, target_period=period, target_offset=offset)
+
+
+@keys
 class ResampleTrace:
     """Resample trace"""
 
@@ -79,30 +108,24 @@ class ResampleTrace:
         """
         Returns
         -------
-        pandas.Series (TrialSet.order)
+        pandas.Series
             index -- str : trial_id (foundation.recording.trial.Trial)
             data -- 1D array : resampled trace values
         """
-        # ensure trials are valid
-        valid_trials = TrialSet & merge(self.key, TraceTrials)
-        valid_trials = valid_trials.members
+        # requested trials
+        trials = merge(self.key, TrialBounds)
 
-        if self.key - valid_trials:
+        # ensure requested trials are valid
+        valid_trials = merge(Trace & self.key, TraceTrials)
+        if trials - (TrialSet & valid_trials).members:
             raise RestrictionError("Requested trials do not belong to the trace.")
 
-        # resampling period, offset, method
-        period = (Rate & self.key).link.period
-        offset = (Offset & self.key).link.offset
-        resample = (Resample & self.key).link.resample
+        # fetch trials, ordered by start time
+        trial_ids, starts, ends = trials.fetch("trial_id", "start", "end", order_by="start")
 
-        # trace resampling function
-        trace = (Trace & self.key).link
-        f = resample(times=trace.times, values=trace.values, target_period=period)
-
-        # resampled trials
-        trial_timing = merge(self.key, TrialBounds)
-        trial_ids, starts, ends = trial_timing.fetch("trial_id", "start", "end", order_by=TrialSet.order)
-        samples = [f(a, b, offset) for a, b in zip(starts, ends)]
+        # trace resampler
+        resample = (TraceResampling & self.key).resample
+        samples = [resample(a, b) for a, b in zip(starts, ends)]
 
         # pandas Series containing resampled trials
         return pd.Series(
@@ -111,20 +134,9 @@ class ResampleTrace:
         )
 
 
-def _init_resample_trace(key, connection):
-    p = mp.current_process()
-    p.key = key
-    connection.connect()
-
-
-def _resample_trace(trace):
-    p = mp.current_process()
-    return (ResampleTrace & trace & p.key).trials.item()
-
-
 @keys
 class ResampleTraces:
-    """Resample trace"""
+    """Resample trace set"""
 
     @property
     def key_list(self):
@@ -137,28 +149,35 @@ class ResampleTraces:
         ]
 
     @rowproperty
-    def traces(self):
+    def trial(self):
         """
         Returns
         ------
-        2D array -- [samples, traces (TraceSet.order)]
-            resampled traces
+        2D array -- [samples, traces]
+            resampled traces, ordered by traceset_index
         """
-        traces = (TraceSet & self.key).ordered_keys
-        key = self.key.fetch1("KEY")
-        n = min(int(os.getenv("FOUNDATION_MP", 1)), mp.cpu_count(), len(traces))
+        # trace set
+        traces = (TraceSet & self.key).members
 
-        if n == 1:
-            samples = ((ResampleTrace & trace & key).trials.item() for trace in traces)
-            traces = list(tqdm(samples, total=len(traces), desc="Traces"))
+        # ensure requested trial is valid
+        valid_trials = Trial
+        for trial_set in TrialSet & merge(traces, TraceTrials):
+            valid_trials &= TrialSet.Member & trial_set
 
-        else:
-            connection = self.key.connection
-            with mp.Pool(n, _init_resample_trace, (key, connection)) as p:
-                samples = p.imap(_resample_trace, traces)
-                traces = list(tqdm(samples, total=len(traces), desc="Traces"))
+        if self.key - valid_trials:
+            raise RestrictionError("Requested trial does not belong to the trace set.")
 
-        return np.stack(traces, 1)
+        # trial start and end times
+        start, end = merge(self.key, TrialBounds).fetch1("start", "end")
+
+        # sample traces
+        traces = traces.fetch("trace_id", order_by="traceset_index", as_dict=True)
+        samples = []
+        for trace in tqdm(traces, desc="Traces"):
+            sample = (TraceResampling & trace & self.key).resample(start, end)
+            samples.append(sample)
+
+        return np.stack(samples, 1)
 
 
 @keys
