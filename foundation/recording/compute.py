@@ -8,7 +8,7 @@ from foundation.utility.stat import Summary
 from foundation.utility.standardize import Standardize
 from foundation.stimulus.video import VideoInfo
 from foundation.recording.trial import Trial, TrialSet, TrialBounds, TrialVideo
-from foundation.recording.trace import Trace, TraceSet, TraceTrials
+from foundation.recording.trace import Trace, TraceSet, TraceHomogeneous, TraceTrials, TraceSummary
 from foundation.utility.resample import Rate, Offset, Resample
 
 

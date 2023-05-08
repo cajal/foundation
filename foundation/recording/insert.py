@@ -199,7 +199,7 @@ class ScanBehaviorCache:
         from foundation.recording.compute import TraceResampling
 
         for behavior in [ScanPerspectives, ScanModulations]:
-            
+
             # all keys
             key = ScanTrials * behavior * self.key * TrialSet.Member
 
