@@ -169,12 +169,15 @@ class ScanUnitCache:
     def fill(self):
         from foundation.recording.compute import TraceResampling
 
+        # all keys
         key = ScanTrials * ScanUnits * self.key * TrialSet.Member
 
-        for trace_set in (TraceSet & key).proj():
+        # break up keys into TraceResampling groups
+        for _key in (TraceSet * utility.Rate * utility.Offset * utility.Resample & key).proj():
 
+            # populate with TraceResampling cacheing
             with cache_rowproperty(TraceResampling):
-                ResampledTraces.populate(key, trace_set, display_progress=True, reserve_jobs=True)
+                ResampledTraces.populate(_key, key, display_progress=True, reserve_jobs=True)
 
 
 @keys
@@ -196,10 +199,13 @@ class ScanBehaviorCache:
         from foundation.recording.compute import TraceResampling
 
         for behavior in [ScanPerspectives, ScanModulations]:
-
+            
+            # all keys
             key = ScanTrials * behavior * self.key * TrialSet.Member
 
-            for trace_set in (TraceSet & key).proj():
+            # break up keys into TraceResampling groups
+            for _key in (TraceSet * utility.Rate * utility.Offset * utility.Resample & key).proj():
 
+                # populate with TraceResampling cacheing
                 with cache_rowproperty(TraceResampling):
-                    ResampledTraces.populate(key, trace_set, display_progress=True, reserve_jobs=True)
+                    ResampledTraces.populate(_key, key, display_progress=True, reserve_jobs=True)
