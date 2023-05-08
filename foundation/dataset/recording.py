@@ -1,6 +1,6 @@
 from djutils import merge, rowproperty
 from foundation.virtual import recording
-from foundation.dataset.dtype import DtypeLink
+from foundation.dataset.dtype import Dtype
 from foundation.schemas import dataset as schema
 
 
@@ -13,7 +13,7 @@ class _Recording:
     """Recording Dataset"""
 
     @rowproperty
-    def trial_set(self):
+    def trialset(self):
         """
         Returns
         -------
@@ -23,7 +23,7 @@ class _Recording:
         raise NotImplementedError()
 
     @rowproperty
-    def trace_sets(self):
+    def tracesets(self):
         """
         Yields
         ------
@@ -41,25 +41,25 @@ class _Recording:
 @schema.lookup
 class Scan(_Recording):
     definition = """
-    -> recording.FilteredScanTrials
-    -> recording.FilteredScanPerspectives
-    -> recording.FilteredScanModulations
-    -> recording.FilteredScanUnits
+    -> recording.ScanTrials
+    -> recording.ScanPerspectives
+    -> recording.ScanModulations
+    -> recording.ScanUnits
     """
 
     @rowproperty
-    def trial_set(self):
-        return recording.TrialSet & (recording.FilteredScanTrials & self)
+    def trialset(self):
+        return recording.TrialSet & (recording.ScanTrials & self)
 
     @rowproperty
-    def trace_sets(self):
+    def tracesets(self):
         for dtype_part, scan_set in [
-            [DtypeLink.ScanPerspective, recording.FilteredScanPerspectives],
-            [DtypeLink.ScanModulation, recording.FilteredScanModulations],
-            [DtypeLink.ScanUnit, recording.FilteredScanUnits],
+            [Dtype.ScanPerspective, recording.ScanPerspectives],
+            [Dtype.ScanModulation, recording.ScanModulations],
+            [Dtype.ScanUnit, recording.ScanUnits],
         ]:
             key = scan_set & self
-            dtype = DtypeLink & merge(key, dtype_part)
+            dtype = Dtype & merge(key, dtype_part)
             trace_set = recording.TraceSet & key
             yield dtype, trace_set
 
@@ -68,7 +68,7 @@ class Scan(_Recording):
 
 
 @schema.link
-class RecordingLink:
+class Recording:
     links = [Scan]
     name = "recording"
     comment = "recording"
@@ -77,10 +77,10 @@ class RecordingLink:
 # -- Recording Set --
 
 
-@schema.link_set
+@schema.linkset
 class RecordingSet:
-    link = RecordingLink
-    name = "recordings"
+    link = Recording
+    name = "recordingset"
     comment = "recording set"
 
 
@@ -90,32 +90,32 @@ class RecordingSet:
 @schema.computed
 class RecordingTrials:
     definition = """
-    -> RecordingLink
+    -> Recording
     ---
     -> recording.TrialSet
     """
 
     def make(self, key):
-        trials = (RecordingLink & key).link.trial_set
-        trials_id = trials.fetch1("trials_id")
-        self.insert1(dict(key, trials_id=trials_id))
+        trials = (Recording & key).link.trialset
+        trialset_id = trials.fetch1("trialset_id")
+        self.insert1(dict(key, trialset_id=trialset_id))
 
 
 @schema.computed
 class RecordingTraces:
     definition = """
-    -> RecordingLink
-    -> DtypeLink
+    -> Recording
+    -> Dtype
     ---
     -> recording.TraceSet
     """
 
     @property
     def key_source(self):
-        return RecordingLink.proj()
+        return Recording.proj()
 
     def make(self, key):
-        for dtype, traces in (RecordingLink & key).link.trace_sets:
+        for dtype, traces in (Recording & key).link.tracesets:
             dtype_id = dtype.fetch1("dtype_id")
-            traces_id = traces.fetch1("traces_id")
-            self.insert1(dict(key, dtype_id=dtype_id, traces_id=traces_id))
+            traceset_id = traces.fetch1("traceset_id")
+            self.insert1(dict(key, dtype_id=dtype_id, traceset_id=traceset_id))

@@ -38,7 +38,7 @@ class ScanModulation:
 
 
 @schema.link
-class DtypeLink:
+class Dtype:
     links = [ScanUnit, ScanPerspective, ScanModulation]
     name = "dtype"
     comment = "data type"
