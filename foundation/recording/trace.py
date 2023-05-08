@@ -1,7 +1,7 @@
 from djutils import merge, rowproperty, MissingError
 from foundation.virtual import scan, utility
 from foundation.virtual.bridge import pipe_fuse, pipe_shared, pipe_stim, pipe_tread, resolve_pipe
-from foundation.recording.trial import TrialLink, TrialSet, TrialBounds
+from foundation.recording.trial import Trial, TrialSet, TrialBounds
 from foundation.schemas import recording as schema
 
 
@@ -63,7 +63,7 @@ class _Scan(_Trace):
     @rowproperty
     def trial_set(self):
         key = pipe_stim.Trial.proj() & self
-        key = merge(key, TrialLink.ScanTrial)
+        key = merge(key, Trial.ScanTrial)
         key = TrialSet.fill(key, prompt=False, silent=True)
         return TrialSet & key
 
@@ -134,7 +134,7 @@ class ScanTreadmill(_Scan):
 
 
 @schema.link
-class TraceLink:
+class Trace:
     links = [ScanUnit, ScanPupil, ScanTreadmill]
     name = "trace"
     comment = "trace"
@@ -143,10 +143,10 @@ class TraceLink:
 # -- Trace Set --
 
 
-@schema.link_set
+@schema.linkset
 class TraceSet:
-    link = TraceLink
-    name = "traces"
+    link = Trace
+    name = "traceset"
     comment = "trace set"
 
 
@@ -156,38 +156,38 @@ class TraceSet:
 @schema.computed
 class TraceHomogeneous:
     definition = """
-    -> TraceLink
+    -> Trace
     ---
     homogeneous     : bool      # homogeneous tranformation
     """
 
     def make(self, key):
-        key["homogeneous"] = (TraceLink & key).link.homogeneous
+        key["homogeneous"] = (Trace & key).link.homogeneous
         self.insert1(key)
 
 
 @schema.computed
 class TraceTrials:
     definition = """
-    -> TraceLink
+    -> Trace
     ---
     -> TrialSet
     """
 
     def make(self, key):
-        key["trials_id"] = (TraceLink & key).link.trial_set.fetch1("trials_id")
+        key["trials_id"] = (Trace & key).link.trial_set.fetch1("trials_id")
         self.insert1(key)
 
 
 @schema.computed
 class TraceSummary:
     definition = """
-    -> TraceLink
+    -> Trace
     -> TrialSet
-    -> utility.RateLink
-    -> utility.OffsetLink
-    -> utility.ResampleLink
-    -> utility.SummaryLink
+    -> utility.Rate
+    -> utility.Offset
+    -> utility.Resample
+    -> utility.Summary
     ---
     summary = NULL      : float     # summary statistic
     """
@@ -206,8 +206,8 @@ class TraceSummary:
 # -- Filter --
 
 
-@schema.filter_link
-class TraceFilterLink:
+@schema.filterlink
+class TraceFilter:
     links = []
     name = "trace_filter"
     comment = "trace filter"
@@ -216,8 +216,8 @@ class TraceFilterLink:
 # -- Filter Set --
 
 
-@schema.filter_link_set
+@schema.filterlinkset
 class TraceFilterSet:
-    link = TraceFilterLink
-    name = "trace_filters"
+    link = TraceFilter
+    name = "trace_filterset"
     comment = "trace filter set"

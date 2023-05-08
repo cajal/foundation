@@ -29,7 +29,7 @@ class _Trial:
         """
         Returns
         -------
-        foundation.stimulus.video.VideoLink (virtual)
+        foundation.stimulus.video.Video (virtual)
             tuple
         """
         raise NotImplementedError()
@@ -62,7 +62,7 @@ class ScanTrial(_Trial):
 
 
 @schema.link
-class TrialLink:
+class Trial:
     links = [ScanTrial]
     name = "trial"
     comment = "trial"
@@ -71,10 +71,10 @@ class TrialLink:
 # -- Trial Set --
 
 
-@schema.link_set
+@schema.linkset
 class TrialSet:
-    link = TrialLink
-    name = "trials"
+    link = Trial
+    name = "trialset"
     comment = "trial set"
 
 
@@ -84,7 +84,7 @@ class TrialSet:
 @schema.computed
 class TrialBounds:
     definition = """
-    -> TrialLink
+    -> Trial
     ---
     start       : double        # trial start time (seconds)
     end         : double        # trial end time (seconds)
@@ -92,7 +92,7 @@ class TrialBounds:
 
     def make(self, key):
         # trial flip times
-        flips = (TrialLink & key).link.flips
+        flips = (Trial & key).link.flips
 
         # verify flip times
         assert np.isfinite(flips).all()
@@ -107,13 +107,13 @@ class TrialBounds:
 @schema.computed
 class TrialVideo:
     definition = """
-    -> TrialLink
+    -> Trial
     ---
-    -> stimulus.VideoLink
+    -> stimulus.Video
     """
 
     def make(self, key):
-        key["video_id"] = (TrialLink & key).link.video.fetch1("video_id")
+        key["video_id"] = (Trial & key).link.video.fetch1("video_id")
         self.insert1(key)
 
 
@@ -122,9 +122,9 @@ class TrialVideo:
 # -- Filter Types --
 
 
-@schema.filter_lookup
+@schema.lookupfilter
 class TrialVideoFilter:
-    filtertype = TrialLink
+    filtertype = Trial
     definition = """
     -> stimulus.VideoFilterSet
     """
@@ -147,8 +147,8 @@ class TrialVideoFilter:
 # -- Filter --
 
 
-@schema.filter_link
-class TrialFilterLink:
+@schema.filterlink
+class TrialFilter:
     links = [TrialVideoFilter]
     name = "trial_filter"
     comment = "trial filter"
@@ -157,8 +157,8 @@ class TrialFilterLink:
 # -- Filter Set --
 
 
-@schema.filter_link_set
+@schema.filterlinkset
 class TrialFilterSet:
-    link = TrialFilterLink
-    name = "trial_filters"
+    link = TrialFilter
+    name = "trial_filterset"
     comment = "trial filter set"

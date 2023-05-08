@@ -9,8 +9,8 @@ from foundation.utility.standardize import Standardize
 from foundation.stimulus.video import VideoInfo
 from foundation.scan.unit import UnitSet, FilteredUnits
 from foundation.scan.cache import UnitsActivity
-from foundation.recording.trial import TrialLink, TrialSet, TrialBounds, TrialVideo
-from foundation.recording.trace import TraceLink, TraceSet, TraceTrials
+from foundation.recording.trial import Trial, TrialSet, TrialBounds, TrialVideo
+from foundation.recording.trace import Trace, TraceSet, TraceTrials
 from foundation.utility.resample import Rate, Offset, Resample
 
 
@@ -21,7 +21,7 @@ class ResampleVideo:
     @property
     def key_list(self):
         return [
-            TrialLink,
+            Trial,
             Rate,
         ]
 
@@ -34,7 +34,7 @@ class ResampleVideo:
             video frame index for each of the resampled time points
         """
         # resampling flip times and period
-        flips = (TrialLink & self.key).link.flips
+        flips = (Trial & self.key).link.flips
         period = (Rate & self.key).link.period
 
         # trial and video info
@@ -67,20 +67,20 @@ class ResampleTrace:
     @property
     def key_list(self):
         return [
-            TraceLink,
-            TrialLink,
+            Trace,
+            Trial,
             Rate,
             Offset,
             Resample,
         ]
 
-    @keyproperty(TraceLink, Rate, Offset, Resample)
+    @keyproperty(Trace, Rate, Offset, Resample)
     def trials(self):
         """
         Returns
         -------
         pandas.Series (TrialSet.order)
-            index -- str : trial_id (foundation.recording.trial.TrialLink)
+            index -- str : trial_id (foundation.recording.trial.Trial)
             data -- 1D array : resampled trace values
         """
         # ensure trials are valid
@@ -96,7 +96,7 @@ class ResampleTrace:
         resample = (Resample & self.key).link.resample
 
         # trace resampling function
-        trace = (TraceLink & self.key).link
+        trace = (Trace & self.key).link
         f = resample(times=trace.times, values=trace.values, target_period=period)
 
         # resampled trials
@@ -130,7 +130,7 @@ class ResampleTraces:
     def key_list(self):
         return [
             TraceSet & "members > 0",
-            TrialLink,
+            Trial,
             Rate,
             Offset,
             Resample,
@@ -168,7 +168,7 @@ class SummarizeTrace:
     @property
     def key_list(self):
         return [
-            TraceLink,
+            Trace,
             TrialSet & "members > 0",
             Rate,
             Offset,
@@ -215,7 +215,7 @@ class StandardizeTraces:
         """
         Returns
         -------
-        foundation.utility.standardize.StandardizeLink
+        foundation.utility.standardize.Standardize
             trace set standardization
         """
         # trace and stat keys

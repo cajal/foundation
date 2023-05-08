@@ -2,8 +2,8 @@ import numpy as np
 from djutils import merge
 from foundation.virtual import scan
 from foundation.virtual.bridge import pipe_shared, pipe_stim
-from foundation.recording.trial import TrialLink, TrialSet, TrialFilterSet
-from foundation.recording.trace import TraceLink, TraceSet, TraceFilterSet
+from foundation.recording.trial import Trial, TrialSet, TrialFilterSet
+from foundation.recording.trace import Trace, TraceSet, TraceFilterSet
 from foundation.schemas import recording as schema
 
 
@@ -22,10 +22,10 @@ class ScanTrials:
         # filtered scan trials
         trials = FilteredTrials.proj(..., scan_filters_id="trial_filters_id") & key
         trials = ScanTrialSet & trials
-        trials = merge(trials.members, TrialLink.ScanTrial)
+        trials = merge(trials.members, Trial.ScanTrial)
 
         # filter trials
-        trials = TrialLink & trials
+        trials = Trial & trials
         trials = (TrialFilterSet & key).filter(trials)
 
         # trial set
@@ -48,12 +48,12 @@ class ScanPerspectives:
         pupils = merge(
             scan.Scan & key,
             scan.PupilTrace & key,
-            TraceLink.ScanPupil,
+            Trace.ScanPupil,
         )
         pupils &= [dict(pupil_type="center_x"), dict(pupil_type="center_y")]
 
         # filter traces
-        traces = TraceLink & pupils
+        traces = Trace & pupils
         traces = (TraceFilterSet & key).filter(traces)
 
         # trace set
@@ -76,18 +76,18 @@ class ScanModulations:
         pupil = merge(
             scan.Scan & key,
             scan.PupilTrace & key,
-            TraceLink.ScanPupil,
+            Trace.ScanPupil,
         )
         pupil &= dict(pupil_type="radius")
 
         # scan treadmill trace
         tread = merge(
             scan.Scan & key,
-            TraceLink.ScanTreadmill,
+            Trace.ScanTreadmill,
         )
 
         # filter traces
-        traces = TraceLink & [pupil, tread]
+        traces = Trace & [pupil, tread]
         traces = (TraceFilterSet & key).filter(traces)
 
         # trace set
@@ -111,10 +111,10 @@ class ScanUnits:
         # filtered scan units
         units = FilteredUnits & key
         units = UnitSet & units
-        units = merge(units.members, TraceLink.ScanUnit & key)
+        units = merge(units.members, Trace.ScanUnit & key)
 
         # filter traces
-        traces = TraceLink & units
+        traces = Trace & units
         traces = (TraceFilterSet & key).filter(traces)
 
         # trace set

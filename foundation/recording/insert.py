@@ -3,7 +3,7 @@ from foundation.virtual.bridge import pipe_stim, pipe_tread, pipe_shared
 from foundation.virtual import scan, utility
 from foundation.recording.trial import (
     ScanTrial,
-    TrialLink,
+    Trial,
     TrialSet,
     TrialFilterSet,
     TrialBounds,
@@ -13,7 +13,7 @@ from foundation.recording.trace import (
     ScanUnit,
     ScanPupil,
     ScanTreadmill,
-    TraceLink,
+    Trace,
     TraceSet,
     TraceFilterSet,
     TraceHomogeneous,
@@ -39,7 +39,7 @@ class Scan:
             scan.Scan,
             pipe_shared.TrackingMethod & scan.PupilTrace,
             pipe_shared.SpikeMethod & "spike_method in (5, 6)",
-            scan.FilteredTrials.proj(scan_filters_id="trial_filters_id"),
+            scan.FilteredTrials.proj(scan_filters_id="trial_filterset_id"),
             scan.FilteredUnits,
             TrialFilterSet,
             TraceFilterSet,
@@ -51,10 +51,10 @@ class Scan:
         ScanTrial.insert(key, skip_duplicates=True, ignore_extra_fields=True)
 
         # trial link
-        TrialLink.fill()
+        Trial.fill()
 
         # computed trial
-        key = TrialLink.ScanTrial & self.key
+        key = Trial.ScanTrial & self.key
         TrialBounds.populate(key, display_progress=True, reserve_jobs=True)
         TrialVideo.populate(key, display_progress=True, reserve_jobs=True)
 
@@ -64,24 +64,24 @@ class Scan:
         # scan pupils
         key = merge(self.key, scan.PupilTrace)
         ScanPupil.insert(key, skip_duplicates=True, ignore_extra_fields=True)
-        keys.append([TraceLink.ScanPupil, key])
+        keys.append([Trace.ScanPupil, key])
 
         # scan treadmill
         key = merge(self.key, pipe_tread.Treadmill)
         ScanTreadmill.insert(key, skip_duplicates=True, ignore_extra_fields=True)
-        keys.append([TraceLink.ScanTreadmill, key])
+        keys.append([Trace.ScanTreadmill, key])
 
         # scan units
         key = merge(self.key, scan.FilteredUnits)
         key = scan.UnitSet.Unit & key
         ScanUnit.insert(key * self.key, skip_duplicates=True, ignore_extra_fields=True)
-        keys.append([TraceLink.ScanUnit, key])
+        keys.append([Trace.ScanUnit, key])
 
         # trace link
-        TraceLink.fill()
+        Trace.fill()
 
         # computed trace
-        key = TraceLink.proj() & [t & k for t, k in keys]
+        key = Trace.proj() & [t & k for t, k in keys]
         TraceHomogeneous.populate(key, display_progress=True, reserve_jobs=True)
         TraceTrials.populate(key, display_progress=True, reserve_jobs=True)
 
@@ -101,14 +101,14 @@ class ScanUnitSummary:
         return [
             ScanTrials,
             ScanUnits,
-            utility.RateLink,
-            utility.OffsetLink,
-            utility.ResampleLink,
-            utility.SummaryLink,
+            utility.Rate,
+            utility.Offset,
+            utility.Resample,
+            utility.Summary,
         ]
 
     def fill(self):
-        key = TraceSet.Link * TrialSet.proj() * ScanTrials * ScanUnits * self.key
+        key = TraceSet.Member * TrialSet.proj() * ScanTrials * ScanUnits * self.key
         TraceSummary.populate(key, display_progress=True, reserve_jobs=True)
 
 
@@ -122,16 +122,16 @@ class ScanBehaviorSummary:
             ScanTrials,
             ScanPerspectives,
             ScanModulations,
-            utility.RateLink,
-            utility.OffsetLink,
-            utility.ResampleLink,
-            utility.SummaryLink,
+            utility.Rate,
+            utility.Offset,
+            utility.Resample,
+            utility.Summary,
         ]
 
     def fill(self):
         key = [
-            TraceSet.Link * TrialSet.proj() * ScanTrials * ScanPerspectives * self.key,
-            TraceSet.Link * TrialSet.proj() * ScanTrials * ScanModulations * self.key,
+            TraceSet.Member * TrialSet.proj() * ScanTrials * ScanPerspectives * self.key,
+            TraceSet.Member * TrialSet.proj() * ScanTrials * ScanModulations * self.key,
         ]
         TraceSummary.populate(key, display_progress=True, reserve_jobs=True)
 
@@ -144,60 +144,60 @@ class ScanVideoCache:
     def key_list(self):
         return [
             ScanTrials,
-            utility.RateLink,
+            utility.Rate,
         ]
 
     def fill(self):
-        trials = TrialSet.Link & (ScanTrials & self.key)
+        trials = TrialSet.Member & (ScanTrials & self.key)
         ResampledVideo.populate(trials, self.key, display_progress=True, reserve_jobs=True)
 
 
-@keys
-class ScanUnitCache:
-    """Cache resampled scan unit traces"""
+# @keys
+# class ScanUnitCache:
+#     """Cache resampled scan unit traces"""
 
-    @property
-    def key_list(self):
-        return [
-            ScanTrials,
-            ScanUnits,
-            utility.RateLink,
-            utility.OffsetLink,
-            utility.ResampleLink,
-        ]
+#     @property
+#     def key_list(self):
+#         return [
+#             ScanTrials,
+#             ScanUnits,
+#             utility.Rate,
+#             utility.Offset,
+#             utility.Resample,
+#         ]
 
-    def fill(self, processes=1):
-        trials = TrialSet.Link & (ScanTrials & self.key)
-        trials = trials.proj()
+#     def fill(self, processes=1):
+#         trials = TrialSet.Member & (ScanTrials & self.key)
+#         trials = trials.proj()
 
-        traces = TraceSet & (ScanUnits & self.key)
-        traces = traces.proj()
+#         traces = TraceSet & (ScanUnits & self.key)
+#         traces = traces.proj()
 
-        with multiprocess(processes):
-            ResampledTraces.populate(trials, traces, self.key, display_progress=True, reserve_jobs=True)
+#         with multiprocess(processes):
+#             ResampledTraces.populate(trials, traces, self.key, display_progress=True, reserve_jobs=True)
 
 
-@keys
-class ScanBehaviorCache:
-    """Cache resampled scan unit traces"""
+# @keys
+# class ScanBehaviorCache:
+#     """Cache resampled scan unit traces"""
 
-    @property
-    def key_list(self):
-        return [
-            ScanTrials,
-            ScanPerspectives,
-            ScanModulations,
-            utility.RateLink,
-            utility.OffsetLink,
-            utility.ResampleLink,
-        ]
+#     @property
+#     def key_list(self):
+#         return [
+#             ScanTrials,
+#             ScanPerspectives,
+#             ScanModulations,
+#             utility.Rate,
+#             utility.Offset,
+#             utility.Resample,
+#         ]
 
-    def fill(self, processes=1):
-        trials = TrialSet.Link & (ScanTrials & self.key)
-        trials = trials.proj()
+#     def fill(self, processes=1):
+#         trials = TrialSet.Member & (ScanTrials & self.key)
+#         trials = trials.proj()
 
-        traces = TraceSet & [(ScanPerspectives & self.key), (ScanModulations & self.key)]
-        traces = traces.proj()
+#         traces = TraceSet & [(ScanPerspectives & self.key), (ScanModulations & self.key)]
+#         traces = traces.proj()
 
-        with multiprocess(processes):
-            ResampledTraces.populate(trials, traces, self.key, display_progress=True, reserve_jobs=True)
+#         with multiprocess(processes):
+#             ResampledTraces.populate(trials, traces, self.key, display_progress=True, reserve_jobs=True)
