@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name: foundation-recording
 spec:
-  parallelism: 16
+  parallelism: 40
   backoffLimit: 50
   template:
     spec:
@@ -23,8 +23,8 @@ spec:
           image: at-docker.ad.bcm.edu:5000/foundation:v0
           resources:
             requests:
-              cpu: 10
-              memory: "16Gi"
+              cpu: 4
+              memory: "24Gi"
           volumeMounts:
             - name: scratch09
               mountPath: /mnt/scratch09
