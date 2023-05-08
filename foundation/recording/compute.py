@@ -4,14 +4,14 @@ from scipy.interpolate import interp1d
 from tqdm import tqdm
 from djutils import keys, merge, rowproperty, keyproperty, RestrictionError
 from foundation.utils.resample import frame_index
-from foundation.utility.stat import SummaryLink
-from foundation.utility.standardize import StandardizeLink
+from foundation.utility.stat import Summary
+from foundation.utility.standardize import Standardize
 from foundation.stimulus.video import VideoInfo
 from foundation.scan.unit import UnitSet, FilteredUnits
 from foundation.scan.cache import UnitsActivity
 from foundation.recording.trial import TrialLink, TrialSet, TrialBounds, TrialVideo
 from foundation.recording.trace import TraceLink, TraceSet, TraceTrials
-from foundation.utility.resample import RateLink, OffsetLink, ResampleLink
+from foundation.utility.resample import Rate, Offset, Resample
 
 
 @keys
@@ -22,7 +22,7 @@ class ResampleVideo:
     def key_list(self):
         return [
             TrialLink,
-            RateLink,
+            Rate,
         ]
 
     @rowproperty
@@ -35,7 +35,7 @@ class ResampleVideo:
         """
         # resampling flip times and period
         flips = (TrialLink & self.key).link.flips
-        period = (RateLink & self.key).link.period
+        period = (Rate & self.key).link.period
 
         # trial and video info
         info = merge(self.key, TrialBounds, TrialVideo, VideoInfo)
@@ -69,12 +69,12 @@ class ResampleTrace:
         return [
             TraceLink,
             TrialLink,
-            RateLink,
-            OffsetLink,
-            ResampleLink,
+            Rate,
+            Offset,
+            Resample,
         ]
 
-    @keyproperty(TraceLink, RateLink, OffsetLink, ResampleLink)
+    @keyproperty(TraceLink, Rate, Offset, Resample)
     def trials(self):
         """
         Returns
@@ -91,9 +91,9 @@ class ResampleTrace:
             raise RestrictionError("Requested trials do not belong to the trace.")
 
         # resampling period, offset, method
-        period = (RateLink & self.key).link.period
-        offset = (OffsetLink & self.key).link.offset
-        resample = (ResampleLink & self.key).link.resample
+        period = (Rate & self.key).link.period
+        offset = (Offset & self.key).link.offset
+        resample = (Resample & self.key).link.resample
 
         # trace resampling function
         trace = (TraceLink & self.key).link
@@ -131,9 +131,9 @@ class ResampleTraces:
         return [
             TraceSet & "members > 0",
             TrialLink,
-            RateLink,
-            OffsetLink,
-            ResampleLink,
+            Rate,
+            Offset,
+            Resample,
         ]
 
     @rowproperty
@@ -170,10 +170,10 @@ class SummarizeTrace:
         return [
             TraceLink,
             TrialSet & "members > 0",
-            RateLink,
-            OffsetLink,
-            ResampleLink,
-            SummaryLink,
+            Rate,
+            Offset,
+            Resample,
+            Summary,
         ]
 
     @rowproperty
@@ -192,7 +192,7 @@ class SummarizeTrace:
         samples = np.concatenate(samples)
 
         # summary statistic
-        return (SummaryLink & self.key).link.summary(samples)
+        return (Summary & self.key).link.summary(samples)
 
 
 @keys
@@ -204,10 +204,10 @@ class StandardizeTraces:
         return [
             TraceSet & "members > 0",
             TrialSet & "members > 0",
-            RateLink,
-            OffsetLink,
-            ResampleLink,
-            StandardizeLink,
+            Rate,
+            Offset,
+            Resample,
+            Standardize,
         ]
 
     @rowproperty
@@ -220,7 +220,7 @@ class StandardizeTraces:
         """
         # trace and stat keys
         trace_keys = (TraceSet & self.key).members
-        stat_keys = (StandardizeLink & self.key).link.summary_keys
+        stat_keys = (Standardize & self.key).link.summary_keys
 
         # homogeneous mask
         hom = merge(trace_keys, TraceHomogeneous)
@@ -238,4 +238,4 @@ class StandardizeTraces:
             stats[summary_id] = df.summary.values
 
         # standarization transform
-        return (StandardizeLink & self.key).link.standardize(homogeneous=hom, **stats)
+        return (Standardize & self.key).link.standardize(homogeneous=hom, **stats)

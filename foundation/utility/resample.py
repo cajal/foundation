@@ -1,4 +1,5 @@
 from djutils import rowproperty, rowmethod
+from foundation.utils import resample
 from foundation.schemas import utility as schema
 
 
@@ -35,11 +36,11 @@ class Hz(_Rate):
         return 1 / float(self.fetch1("hz"))
 
 
-# -- Rate Link --
+# -- Rate --
 
 
 @schema.link
-class RateLink:
+class Rate:
     links = [Hz]
     name = "rate"
     comment = "resampling rate"
@@ -78,11 +79,11 @@ class MsOffset(_Offset):
         return self.fetch1("ms_offset") / 1000
 
 
-# -- Offset Link --
+# -- Offset --
 
 
 @schema.link
-class OffsetLink:
+class Offset:
     links = [MsOffset]
     name = "offset"
     comment = "resampling offset"
@@ -126,10 +127,7 @@ class Hamming(_Resample):
 
     @rowmethod
     def resample(self, times, values, target_period):
-
-        from foundation.utils.resample import Hamming
-
-        return Hamming(
+        return resample.Hamming(
             times=times,
             values=values,
             target_period=target_period,
@@ -144,10 +142,7 @@ class LowpassHamming(_Resample):
 
     @rowmethod
     def resample(self, times, values, target_period):
-
-        from foundation.utils.resample import LowpassHamming
-
-        return LowpassHamming(
+        return resample.LowpassHamming(
             times=times,
             values=values,
             target_period=target_period,
@@ -155,11 +150,11 @@ class LowpassHamming(_Resample):
         )
 
 
-# -- Resample Link --
+# -- Resample --
 
 
 @schema.link
-class ResampleLink:
+class Resample:
     links = [Hamming, LowpassHamming]
     name = "resample"
     comment = "resampling method"

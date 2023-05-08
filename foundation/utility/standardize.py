@@ -1,6 +1,7 @@
 import numpy as np
 from djutils import rowproperty, rowmethod
-from foundation.utility.stat import SummaryLink
+from foundation.utils import standardize
+from foundation.utility.stat import Summary
 from foundation.schemas import utility as schema
 
 
@@ -17,7 +18,7 @@ class _Standardize:
         """
         Returns
         -------
-        foundation.utility.stat.SummaryLink
+        foundation.utility.stat.Summary
             tuples
         """
         raise NotImplementedError()
@@ -47,50 +48,44 @@ class _Standardize:
 @schema.lookup
 class Affine(_Standardize):
     definition = """
-    -> SummaryLink.proj(summary_id_shift="summary_id")
-    -> SummaryLink.proj(summary_id_scale="summary_id")
+    -> Summary.proj(summary_id_shift="summary_id")
+    -> Summary.proj(summary_id_scale="summary_id")
     """
 
     @rowproperty
     def summary_keys(self):
-        return SummaryLink & [dict(summary_id=v) for v in self.fetch1().values()]
+        return Summary & [dict(summary_id=v) for v in self.fetch1().values()]
 
     @rowmethod
     def standardize(self, homogeneous, **kwargs):
-        from foundation.utils.standardize import Affine
-
         shift_key, scale_key = self.fetch1("summary_id_shift", "summary_id_scale")
         shift = kwargs[shift_key]
         scale = kwargs[scale_key]
-
-        return Affine(shift=shift, scale=scale, homogeneous=homogeneous)
+        return standardize.Affine(shift=shift, scale=scale, homogeneous=homogeneous)
 
 
 @schema.lookup
 class Scale(_Standardize):
     definition = """
-    -> SummaryLink
+    -> Summary
     """
 
     @rowproperty
     def summary_keys(self):
-        return SummaryLink & self
+        return Summary & self
 
     @rowmethod
     def standardize(self, homogeneous, **kwargs):
-        from foundation.utils.standardize import Scale
-
         key = self.fetch1("summary_id")
         scale = kwargs[key]
+        return standardize.Scale(scale=scale, homogeneous=homogeneous)
 
-        return Scale(scale=scale, homogeneous=homogeneous)
 
-
-# -- Standardize Link --
+# -- Standardize --
 
 
 @schema.link
-class StandardizeLink:
+class Standardize:
     links = [Affine, Scale]
     name = "standardize"
     comment = "standardization method"

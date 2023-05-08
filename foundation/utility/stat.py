@@ -47,11 +47,11 @@ class Std(_Summary):
         return lambda x: np.std(x, ddof=ddof)
 
 
-# -- Summary Link --
+# -- Summary --
 
 
 @schema.link
-class SummaryLink:
+class Summary:
     links = [Mean, Std]
     name = "summary"
     comment = "summary statistic"
