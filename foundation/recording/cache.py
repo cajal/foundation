@@ -39,9 +39,9 @@ class ResampledTraces(Filepath):
     definition = """
     -> TraceSet
     -> Trial
-    -> utility.Rate
-    -> utility.Offset
     -> utility.Resample
+    -> utility.Offset
+    -> utility.Rate
     ---
     traces      : filepath@scratch09    # npy file, [samples, traces]
     finite      : bool                  # all values finite

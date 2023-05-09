@@ -79,9 +79,9 @@ class TraceResampling:
     def key_list(self):
         return [
             Trace,
-            Rate,
-            Offset,
             Resample,
+            Offset,
+            Rate,
         ]
 
     @rowproperty
@@ -111,9 +111,9 @@ class ResampleTrace:
         return [
             Trace,
             Trial,
-            Rate,
-            Offset,
             Resample,
+            Offset,
+            Rate,
         ]
 
     @keyproperty(Trace, Rate, Offset, Resample)
@@ -156,9 +156,9 @@ class ResampleTraces:
         return [
             TraceSet & "members > 0",
             Trial,
-            Rate,
-            Offset,
             Resample,
+            Offset,
+            Rate,
         ]
 
     @rowproperty
@@ -202,10 +202,10 @@ class SummarizeTrace:
         return [
             Trace,
             TrialSet & "members > 0",
-            Rate,
-            Offset,
-            Resample,
             Summary,
+            Resample,
+            Offset,
+            Rate,
         ]
 
     @rowproperty
@@ -236,10 +236,10 @@ class StandardizeTraces:
         return [
             TraceSet & "members > 0",
             TrialSet & "members > 0",
-            Rate,
-            Offset,
-            Resample,
             Standardize,
+            Resample,
+            Offset,
+            Rate,
         ]
 
     @rowproperty

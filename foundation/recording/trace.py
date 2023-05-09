@@ -184,10 +184,10 @@ class TraceSummary:
     definition = """
     -> Trace
     -> TrialSet
-    -> utility.Rate
-    -> utility.Offset
-    -> utility.Resample
     -> utility.Summary
+    -> utility.Resample
+    -> utility.Offset
+    -> utility.Rate
     ---
     summary = NULL      : float     # summary statistic
     """
