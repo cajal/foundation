@@ -18,21 +18,20 @@ class ResampledVideo(Filepath):
     -> utility.Rate
     ---
     index       : filepath@scratch09    # npy file, [samples]
-    samples     : int unsigned          # number of samples
     """
 
     def make(self, key):
-        from foundation.recording.compute import ResampleVideo
+        from foundation.recording.compute import ResampleTrial
 
         # resampled video frame indices
-        index = (ResampleVideo & key).index
+        index = (ResampleTrial & key).video_index
 
         # save file
         filepath = self.createpath(key, "index", "npy")
         np.save(filepath, index)
 
         # insert key
-        self.insert1(dict(key, index=filepath, samples=len(index)))
+        self.insert1(dict(key, index=filepath))
 
 
 @schema.computed

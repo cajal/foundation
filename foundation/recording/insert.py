@@ -7,6 +7,7 @@ from foundation.recording.trial import (
     TrialSet,
     TrialFilterSet,
     TrialBounds,
+    TrialSamples,
     TrialVideo,
 )
 from foundation.recording.trace import (
@@ -56,6 +57,7 @@ class Scan:
         # computed trial
         key = Trial.ScanTrial & self.key
         TrialBounds.populate(key, display_progress=True, reserve_jobs=True)
+        TrialSamples.populate(key, display_progress=True, reserve_jobs=True)
         TrialVideo.populate(key, display_progress=True, reserve_jobs=True)
 
         # trace keys

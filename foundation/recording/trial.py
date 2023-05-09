@@ -1,7 +1,7 @@
 import numpy as np
 from djutils import merge, rowproperty, rowmethod
 from foundation.utils.resample import monotonic
-from foundation.virtual import stimulus
+from foundation.virtual import utility, stimulus
 from foundation.virtual.bridge import pipe_stim
 from foundation.schemas import recording as schema
 
@@ -101,6 +101,22 @@ class TrialBounds:
         # trial bounds
         key["start"] = flips[0]
         key["end"] = flips[-1]
+        self.insert1(key)
+
+
+@schema.computed
+class TrialSamples:
+    definition = """
+    -> Trial
+    -> utility.Rate
+    ---
+    samples     : int unsigned      # number of samples
+    """
+
+    def make(self, key):
+        from foundation.recording.compute import ResampleTrial
+
+        key["samples"] = (ResampleTrial & key).samples
         self.insert1(key)
 
 

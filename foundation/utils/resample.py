@@ -197,10 +197,11 @@ class Resample:
         1D array | None
         """
         x = sample_times(
-            start=self.transform_times(start) + self.target_offset,
-            end=self.transform_times(end) + self.target_offset,
+            start=self.transform_times(start),
+            end=self.transform_times(end),
             period=self.target_period,
         )
+        x = x + self.target_offset
         y = self.transform_values(
             values=self.interp(x),
             inverse=True,

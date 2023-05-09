@@ -3,18 +3,18 @@ import pandas as pd
 from scipy.interpolate import interp1d
 from tqdm import tqdm
 from djutils import keys, merge, rowproperty, keyproperty, RestrictionError
-from foundation.utils.resample import frame_index
+from foundation.utils.resample import samples, frame_index
 from foundation.utility.stat import Summary
 from foundation.utility.standardize import Standardize
+from foundation.utility.resample import Rate, Offset, Resample
 from foundation.stimulus.video import VideoInfo
 from foundation.recording.trial import Trial, TrialSet, TrialBounds, TrialVideo
 from foundation.recording.trace import Trace, TraceSet, TraceHomogeneous, TraceTrials, TraceSummary
-from foundation.utility.resample import Rate, Offset, Resample
 
 
 @keys
-class ResampleVideo:
-    """Resample trial video"""
+class ResampleTrial:
+    """Resample trial"""
 
     @property
     def key_list(self):
@@ -24,15 +24,28 @@ class ResampleVideo:
         ]
 
     @rowproperty
-    def index(self):
+    def samples(self):
+        # trial timing
+        start, end = merge(Trial & self.key, TrialBounds).fetch1("start", "end")
+
+        # resampling period
+        period = (Rate & self.key).link.period
+
+        # trial samples
+        return samples(start, end, period)
+
+    @rowproperty
+    def video_index(self):
         """
         Returns
         -------
         1D array
             video frame index for each of the resampled time points
         """
-        # resampling flip times and period
+        # trial flip times=
         flips = (Trial & self.key).link.flips
+
+        # resampling period
         period = (Rate & self.key).link.period
 
         # trial and video info
