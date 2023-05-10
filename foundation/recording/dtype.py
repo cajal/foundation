@@ -38,9 +38,10 @@ class VideoStimulus(_Dtype):
 class ScanPerspectiveTraces(_Dtype):
     definition = """
     -> pipe_shared.TrackingMethod
+    -> TraceFilterSet
+    -> utility.Standardize
     -> utility.Resample
     -> utility.Offset
-    -> TraceFilterSet
     """
 
 
@@ -48,9 +49,10 @@ class ScanPerspectiveTraces(_Dtype):
 class ScanModulationTraces(_Dtype):
     definition = """
     -> pipe_shared.TrackingMethod
+    -> TraceFilterSet
+    -> utility.Standardize
     -> utility.Resample
     -> utility.Offset
-    -> TraceFilterSet
     """
 
 
@@ -58,9 +60,10 @@ class ScanModulationTraces(_Dtype):
 class ScanUnitTraces(_Dtype):
     definition = """
     -> pipe_shared.SpikeMethod
+    -> TraceFilterSet
+    -> utility.Standardize
     -> utility.Resample
     -> utility.Offset
-    -> TraceFilterSet
     """
 
 
