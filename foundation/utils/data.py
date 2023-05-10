@@ -37,30 +37,3 @@ class NpyFile(Item):
         i = index if self.indexmap is None else self.indexmap[index]
         t = np.array if self.transform is None else self.transform
         return t(x[i])
-
-
-# ------- Dataset -------
-
-
-class Dataset:
-    """Datset Base"""
-
-    def get(self, key, index=None):
-        raise NotImplementedError()
-
-
-# class NpyFileset(Dataset):
-#     """Numpy file dataset"""
-
-#     def __init__(self, filepaths, data_transform=None):
-#         """
-#         Parameters
-#         ----------
-#         filepaths : pandas.Series
-#             index -- key
-#             data -- file-like object | str | pathlib.Path
-#         index_transform : pandas.Series
-#             index -- key
-#             data -- positions
-#         """
-#         pass
