@@ -266,9 +266,6 @@ class VideoFilter:
     comment = "video filter"
 
 
-# -- Filter Set --
-
-
 @schema.filterlinkset
 class VideoFilterSet:
     link = VideoFilter

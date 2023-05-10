@@ -1,7 +1,7 @@
 import numpy as np
 from djutils import merge
 from foundation.virtual import scan
-from foundation.virtual.bridge import pipe_shared, pipe_stim
+from foundation.virtual.bridge import pipe_exp, pipe_shared
 from foundation.recording.trial import Trial, TrialSet, TrialFilterSet
 from foundation.recording.trace import Trace, TraceSet, TraceFilterSet
 from foundation.schemas import recording as schema
@@ -10,6 +10,7 @@ from foundation.schemas import recording as schema
 @schema.computed
 class ScanTrials:
     definition = """
+    -> pipe_exp.Scan
     -> scan.FilteredTrials.proj(scan_filterset_id="trial_filterset_id")
     -> TrialFilterSet
     ---
@@ -36,8 +37,9 @@ class ScanTrials:
 @schema.computed
 class ScanPerspectives:
     definition = """
-    -> scan.Scan
+    -> pipe_exp.Scan
     -> pipe_shared.TrackingMethod
+    -> scan.Scan
     -> TraceFilterSet
     ---
     -> TraceSet
@@ -64,8 +66,9 @@ class ScanPerspectives:
 @schema.computed
 class ScanModulations:
     definition = """
-    -> scan.Scan
+    -> pipe_exp.Scan
     -> pipe_shared.TrackingMethod
+    -> scan.Scan
     -> TraceFilterSet
     ---
     -> TraceSet
@@ -98,8 +101,9 @@ class ScanModulations:
 @schema.computed
 class ScanUnits:
     definition = """
-    -> scan.FilteredUnits
+    -> pipe_exp.Scan
     -> pipe_shared.SpikeMethod
+    -> scan.FilteredUnits
     -> TraceFilterSet
     ---
     -> TraceSet

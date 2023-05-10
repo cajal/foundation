@@ -68,9 +68,6 @@ class Trial:
     comment = "trial"
 
 
-# -- Trial Set --
-
-
 @schema.linkset
 class TrialSet:
     link = Trial
@@ -168,9 +165,6 @@ class TrialFilter:
     links = [TrialVideoFilter]
     name = "trial_filter"
     comment = "trial filter"
-
-
-# -- Filter Set --
 
 
 @schema.filterlinkset

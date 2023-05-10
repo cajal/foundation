@@ -140,9 +140,6 @@ class Trace:
     comment = "trace"
 
 
-# -- Trace Set --
-
-
 @schema.linkset
 class TraceSet:
     link = Trace
@@ -211,9 +208,6 @@ class TraceFilter:
     links = []
     name = "trace_filter"
     comment = "trace filter"
-
-
-# -- Filter Set --
 
 
 @schema.filterlinkset
