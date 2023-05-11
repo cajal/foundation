@@ -132,7 +132,7 @@ class MonitorRetina(_Perspective):
 
     @rowproperty
     def nn(self):
-        from fnn.model.perspectives import MonitorRetina
+        from fnn.model.perspectives import Perspective
 
         monitor = (Monitor & self).link.nn
         retina = (Retina & self).link.nn
@@ -140,7 +140,7 @@ class MonitorRetina(_Perspective):
         features, nonlinear = self.fetch1("features", "nonlinear")
         features = list(map(int, features.split(",")))
 
-        return MonitorRetina(monitor=monitor, retina=retina, features=features, nonlinear=nonlinear)
+        return Perspective(monitor=monitor, retina=retina, features=features, nonlinear=nonlinear)
 
 
 # -- Perspective --
