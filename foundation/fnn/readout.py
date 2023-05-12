@@ -181,3 +181,89 @@ class PositionFeature(_Readout):
 class Readout:
     links = [PositionFeature]
     name = "readout"
+
+
+# -------------- Unit --------------
+
+# -- Unit Base --
+
+
+class _Unit:
+    """Unit"""
+
+    @rowproperty
+    def nn(self):
+        """
+        Returns
+        -------
+        fnn.model.units.Unit
+            unit model
+        """
+        raise NotImplementedError()
+
+
+# -- Unit Types --
+
+
+@schema.method
+class Poisson(_Unit):
+    name = "poisson"
+    comment = "poisson unit"
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.units import Poisson
+
+        return Poisson()
+
+
+# -- Unit --
+
+
+@schema.link
+class Unit:
+    links = [Poisson]
+    name = "unit"
+
+
+# -------------- Reduce --------------
+
+# -- Reduce Base --
+
+
+class _Reduce:
+    """Reduce"""
+
+    @rowproperty
+    def nn(self):
+        """
+        Returns
+        -------
+        fnn.model.reductions.Reduce
+            reduction method
+        """
+        raise NotImplementedError()
+
+
+# -- Unit Types --
+
+
+@schema.method
+class Mean(_Reduce):
+    name = "mean"
+    comment = "mean reduction"
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.reductions import Mean
+
+        return Mean()
+
+
+# -- Unit --
+
+
+@schema.link
+class Reduce:
+    links = [Mean]
+    name = "reduce"
