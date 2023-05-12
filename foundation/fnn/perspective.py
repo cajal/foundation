@@ -16,7 +16,7 @@ class _Monitor:
         Returns
         -------
         fnn.model.monitors.Monitor
-            fnn monitor
+            monitor component
         """
         raise NotImplementedError()
 
@@ -54,6 +54,55 @@ class Monitor:
     comment = "monitor"
 
 
+# -------------- Luminance --------------
+
+# -- Luminance Base --
+
+
+class _Luminance:
+    """Luminance"""
+
+    @rowproperty
+    def nn(self):
+        """
+        Returns
+        -------
+        fnn.model.luminances.Luminance
+            luminance component
+        """
+        raise NotImplementedError()
+
+
+# -- Luminance Types --
+
+
+@schema.lookup
+class Power(_Luminance):
+    definition = """
+    power           : decimal(6, 4)     # luminance power
+    scale           : decimal(6, 4)     # luminance scale
+    offset          : decimal(6, 4)     # luminance offset
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.luminances import Power
+
+        p, s, o = map(float, self.fetch1("power", "scale", "offset"))
+
+        return Power(power=p, scale=s, offset=o)
+
+
+# -- Luminance --
+
+
+@schema.link
+class Luminance:
+    links = [Power]
+    name = "luminance"
+    comment = "luminance"
+
+
 # -------------- Retina --------------
 
 # -- Retina Base --
@@ -68,7 +117,7 @@ class _Retina:
         Returns
         -------
         fnn.model.retinas.Retina
-            fnn retina
+            retina component
         """
         raise NotImplementedError()
 
@@ -113,7 +162,7 @@ class _Perspective:
         Returns
         -------
         fnn.model.perspectives.Perspective
-            fnn perspective
+            perspective component
         """
         raise NotImplementedError()
 
@@ -125,22 +174,25 @@ class _Perspective:
 class MonitorRetina(_Perspective):
     definition = """
     -> Monitor
+    -> Luminance
     -> Retina
-    features        : varchar(128)  # MLP features (csv)
+    height          : int unsigned  # retina height
+    width           : int unsigned  # retina width
+    features        : varchar(128)  # mlp features (csv)
     nonlinear       : varchar(128)  # nonlinearity
     """
 
     @rowproperty
     def nn(self):
-        from fnn.model.perspectives import Perspective
+        from fnn.model.perspectives import MonitorRetina
 
-        monitor = (Monitor & self).link.nn
-        retina = (Retina & self).link.nn
+        m = (Monitor & self).link.nn
+        l = (Luminance & self).link.nn
+        r = (Retina & self).link.nn
+        h, w, f, n = self.fetch1("height", "width", "features", "nonlinear")
+        f = list(map(int, f.split(",")))
 
-        features, nonlinear = self.fetch1("features", "nonlinear")
-        features = list(map(int, features.split(",")))
-
-        return Perspective(monitor=monitor, retina=retina, features=features, nonlinear=nonlinear)
+        return MonitorRetina(monitor=m, luminance=l, retina=r, height=h, width=w, features=f, nonlinear=n)
 
 
 # -- Perspective --
