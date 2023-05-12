@@ -45,7 +45,6 @@ class Gaussian(_Position):
 class Position:
     links = [Gaussian]
     name = "position"
-    comment = "position"
 
 
 # -------------- Bound --------------
@@ -89,7 +88,6 @@ class Tanh(_Bound):
 class Bound:
     links = [Tanh]
     name = "bound"
-    comment = "bound"
 
 
 # -------------- Feature --------------
@@ -133,7 +131,6 @@ class Norm(_Feature):
 class Feature:
     links = [Norm]
     name = "feature"
-    comment = "feature"
 
 
 # -------------- Readout --------------
@@ -184,4 +181,3 @@ class PositionFeature(_Readout):
 class Readout:
     links = [PositionFeature]
     name = "readout"
-    comment = "readout"

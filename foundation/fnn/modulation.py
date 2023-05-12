@@ -44,4 +44,3 @@ class Lstm(_Modulation):
 class Modulation:
     links = [Lstm]
     name = "modulation"
-    comment = "modulation"

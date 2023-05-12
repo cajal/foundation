@@ -51,7 +51,6 @@ class Plane(_Monitor):
 class Monitor:
     links = [Plane]
     name = "monitor"
-    comment = "monitor"
 
 
 # -------------- Luminance --------------
@@ -100,7 +99,6 @@ class Power(_Luminance):
 class Luminance:
     links = [Power]
     name = "luminance"
-    comment = "luminance"
 
 
 # -------------- Retina --------------
@@ -145,7 +143,6 @@ class Angular(_Retina):
 class Retina:
     links = [Angular]
     name = "retina"
-    comment = "retina"
 
 
 # -------------- Perspective --------------
@@ -202,4 +199,3 @@ class MonitorRetina(_Perspective):
 class Perspective:
     links = [MonitorRetina]
     name = "perspective"
-    comment = "perspective"

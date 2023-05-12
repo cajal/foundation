@@ -93,14 +93,12 @@ class Scan(_DataSet):
 class DataSet:
     links = [Scan]
     name = "dataset"
-    comment = "dataset"
 
 
 @schema.linkset
 class DataSets:
     link = DataSet
     name = "datasets"
-    comment = "datasets"
 
 
 # -- Computed Data Set --
@@ -181,4 +179,3 @@ class Preprocess(_DataSpec):
 class DataSpec:
     links = [Preprocess]
     name = "dataspec"
-    comment = "dataspec"

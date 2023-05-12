@@ -50,7 +50,6 @@ class Res3d(_Feedforward):
 class Feedforward:
     links = [Res3d]
     name = "feedforward"
-    comment = "feedforward"
 
 
 # -------------- Recurrent --------------
@@ -97,7 +96,6 @@ class Rvt(_Recurrent):
 class Recurrent:
     links = [Rvt]
     name = "recurrent"
-    comment = "recurrent"
 
 
 # -------------- Core --------------
@@ -148,4 +146,3 @@ class FeedforwardRecurrent(_Core):
 class Core:
     links = [FeedforwardRecurrent]
     name = "core"
-    comment = "core"
