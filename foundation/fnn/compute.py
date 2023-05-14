@@ -1,23 +1,11 @@
 import numpy as np
 import pandas as pd
-from djutils import keys, merge, rowproperty
-from fnn.data import NpyFile, Data
+from djutils import keys, merge, rowproperty, rowmethod
 from foundation.fnn.data import DataSet, DataSetComponents, DataSpec
 
 
-# -------------- Load Data --------------
-
-
-class LoadData:
-    """Load Data"""
-
-    @rowproperty
-    def load(self):
-        raise NotImplementedError()
-
-
 @keys
-class PreprocessedData(LoadData):
+class PreprocessedData:
     """Load Preprocessed Data"""
 
     @property
@@ -28,51 +16,70 @@ class PreprocessedData(LoadData):
         ]
 
     @rowproperty
-    def load(self):
-        from foundation.recording.trial import TrialSet, TrialSamples, TrialVideo
-        from foundation.recording.compute import StandardizeTraces
-        from foundation.recording.cache import ResampledVideo, ResampledTraces
+    def trials(self):
+        from foundation.recording.trial import Trial, TrialSet
+
+        key = merge(self.key, DataSetComponents)
+        return Trial & (TrialSet & key).members
+
+    @rowproperty
+    def trial_samples(self):
+        from foundation.recording.trial import TrialSamples
+
+        key = merge(self.key, DataSpec.Preprocess)
+
+        trials = merge(self.trials, TrialSamples & key)
+        trial_id, samples = trials.fetch("trial_id", "samples", order_by="trial_id", limit=5)  # TODO
+
+        return pd.Series(data=samples, index=pd.Index(trial_id, name="trial_id"))
+
+    @rowproperty
+    def trial_video(self):
+        from foundation.recording.trial import TrialVideo
+        from foundation.recording.cache import ResampledVideo
         from foundation.stimulus.cache import ResizedVideo
+        from fnn.data import NpyFile
 
-        # dataset key
-        key = merge(self.key, DataSetComponents, DataSpec.Preprocess)
+        key = merge(self.key, DataSpec.Preprocess)
 
-        # dataset trials
-        trials = (TrialSet & key).members
+        trials = merge(self.trials, TrialVideo, ResizedVideo & key, ResampledVideo & key)
+        trial_id, video, index = trials.fetch("trial_id", "video", "index", order_by="trial_id", limit=5)  # TODO
 
-        # fetch samples and video
-        data = merge(trials * key, TrialSamples, TrialVideo, ResampledVideo, ResizedVideo)
-        trial_id, samples, video, index = data.fetch(
-            "trial_id", "samples", "video", "index", order_by="trial_id", limit=5
-        )  # TODO
-        video = [NpyFile(v, indexmap=np.load(i), transform=transform) for v, i in zip(video, index)]
+        data = [NpyFile(v, indexmap=np.load(i)) for v, i in zip(video, index)]
+        return pd.Series(data=data, index=pd.Index(trial_id, name="trial_id"))
 
-        tracecols = dict()
-        for suffix, name in [["p", "perspective"], ["m", "modulation"], ["u", "unit"]]:
+    @rowmethod
+    def trial_traces(self, suffix="p"):
+        from foundation.recording.compute import StandardizeTraces
+        from foundation.recording.cache import ResampledTraces
+        from fnn.data import NpyFile
 
-            # traceset key
-            proj = {
-                "traceset_id": f"traceset_id_{suffix}",
-                "offset_id": f"offset_id_{suffix}",
-                "resample_id": f"resample_id_{suffix}",
-                "standardize_id": f"standardize_id_{suffix}",
-            }
-            _key = key.proj(..., **proj)
+        if suffix not in ["p", "m", "u"]:
+            raise ValueError("Suffix must be one of {'p', 'm', 'u'}")
 
-            # fetch traceset
-            data = merge(trials * _key, ResampledTraces & "finite")
-            _trial_id, traces = data.fetch("trial_id", "traces", order_by="trial_id", limit=5)  # TODO
-            transform = (StandardizeTraces & _key).transform
-            traces = [NpyFile(t, transform=transform) for t in traces]
+        proj = {f"{k}_id": f"{k}_id_{suffix}" for k in ["traceset", "offset", "resample", "standardize"]}
+        key = merge(self.key, DataSetComponents, DataSpec.Preprocess).proj(..., **proj)
 
-            assert np.array_equal(trial_id, _trial_id)
-            tracecols[name] = traces
+        transform = (StandardizeTraces & key).transform
 
-        # data frame
-        df = Data(
-            data={"samples": samples, "video": video, **tracecols},
-            index=pd.Index(trial_id, name="trial_id"),
-        )
-        # assert len(df) == (TrialSet & key).fetch1("members")
+        trials = merge(self.trials, ResampledTraces & key & "finite")
+        trial_id, traces = trials.fetch("trial_id", "traces", order_by="trial_id", limit=5)  # TODO
 
-        return df
+        data = [NpyFile(t, transform=transform) for t in traces]
+        return pd.Series(data=data, index=pd.Index(trial_id, name="trial_id"))
+
+    @rowproperty
+    def visual_dataset(self):
+        from fnn.data import Dataset
+
+        data = [
+            self.trial_samples.rename("samples"),
+            self.trial_video.rename("stimuli"),
+            self.trial_traces("p").rename("perspectives"),
+            self.trial_traces("m").rename("modulations"),
+            self.trial_traces("u").rename("units"),
+        ]
+        df = pd.concat(data, axis=1, join="outer")
+        assert not df.isnull().values.any()
+
+        return Dataset(df)

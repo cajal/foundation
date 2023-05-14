@@ -31,7 +31,6 @@ class _Architecture:
 @schema.lookup
 class VisualCortex(_Architecture):
     definition = """
-    streams     : int unsigned  # number of streams
     -> Core
     -> Perspective
     -> Modulation
@@ -45,7 +44,6 @@ class VisualCortex(_Architecture):
         from fnn.model.architectures import VisualCortex
 
         return VisualCortex(
-            streams=self.fetch1("streams"),
             core=(Core & self).link.nn,
             perspective=(Perspective & self).link.nn,
             modulation=(Modulation & self).link.nn,
