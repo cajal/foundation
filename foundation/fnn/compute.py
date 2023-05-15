@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from datajoint import U
 from djutils import keys, merge, rowproperty, rowmethod
 from foundation.fnn.data import DataSet, DataSetComponents, DataSpec
 
@@ -49,16 +50,25 @@ class PreprocessedData:
         return pd.Series(data=data, index=pd.Index(trial_id, name="trial_id"))
 
     @rowmethod
-    def trial_traces(self, suffix="p"):
-        from foundation.recording.compute import StandardizeTraces
-        from foundation.recording.cache import ResampledTraces
-        from fnn.data import NpyFile
-
+    def traceset_key(self, suffix="p"):
         if suffix not in ["p", "m", "u"]:
             raise ValueError("Suffix must be one of {'p', 'm', 'u'}")
 
         proj = {f"{k}_id": f"{k}_id_{suffix}" for k in ["traceset", "offset", "resample", "standardize"]}
         key = merge(self.key, DataSetComponents, DataSpec.Preprocess).proj(..., **proj)
+
+        attrs = ["traceset_id", "trialset_id", "standardize_id", "rate_id", "offset_id", "resample_id"]
+        key = U(*attrs) & key
+
+        return key.fetch1("KEY")
+
+    @rowmethod
+    def trial_traces(self, suffix="p"):
+        from foundation.recording.compute import StandardizeTraces
+        from foundation.recording.cache import ResampledTraces
+        from fnn.data import NpyFile
+
+        key = self.traceset_key(suffix)
 
         transform = (StandardizeTraces & key).transform
 
