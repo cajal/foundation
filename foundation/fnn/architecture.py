@@ -29,7 +29,7 @@ class _Architecture:
 
 
 @schema.lookup
-class VisualCortex(_Architecture):
+class Visual(_Architecture):
     definition = """
     -> Core
     -> Perspective
@@ -41,9 +41,9 @@ class VisualCortex(_Architecture):
 
     @rowproperty
     def nn(self):
-        from fnn.model.architectures import VisualCortex
+        from fnn.model.architectures import Visual
 
-        return VisualCortex(
+        return Visual(
             core=(Core & self).link.nn,
             perspective=(Perspective & self).link.nn,
             modulation=(Modulation & self).link.nn,
@@ -58,5 +58,5 @@ class VisualCortex(_Architecture):
 
 @schema.link
 class Architecture:
-    links = [VisualCortex]
+    links = [Visual]
     name = "architecture"
