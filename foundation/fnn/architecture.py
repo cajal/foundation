@@ -53,10 +53,17 @@ class Visual(_Architecture):
         )
 
 
-# -- Cortex --
+# -- Architecture --
 
 
 @schema.link
 class Architecture:
     links = [Visual]
     name = "architecture"
+
+
+@schema.lookup
+class Streams:
+    definition = """
+    streams     : int unsigned  # architecture streams
+    """

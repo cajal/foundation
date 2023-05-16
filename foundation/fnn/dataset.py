@@ -5,13 +5,13 @@ from foundation.virtual import utility, scan, recording
 from foundation.schemas import fnn as schema
 
 
-# -------------- Data Set --------------
+# -------------- Visual Set --------------
 
-# -- Data Set Base --
+# -- Visual Set Base --
 
 
-class _DataSet:
-    """Data Set"""
+class _VisualSet:
+    """Visual Set"""
 
     @rowproperty
     def trial_set(self):
@@ -53,12 +53,22 @@ class _DataSet:
         """
         raise NotImplementedError()
 
+    @rowproperty
+    def data_keys(self):
+        """
+        Returns
+        -------
+        set[foundation.fnn.compute.LoadData]
+            keys with `load` rowproperty
+        """
+        raise NotImplementedError()
 
-# -- Data Set Types --
+
+# -- Visual Set Types --
 
 
 @schema.lookup
-class Scan(_DataSet):
+class VisualScan(_VisualSet):
     definition = """
     -> pipe_exp.Scan
     -> pipe_shared.TrackingMethod
@@ -85,29 +95,30 @@ class Scan(_DataSet):
     def unit_set(self):
         return recording.TraceSet & (recording.ScanUnits & self)
 
+    @rowproperty
+    def data_keys(self):
+        from foundation.fnn.compute import ResampledVisualRecording
+
+        return {ResampledVisualRecording}
+
 
 # -- Data Set --
 
 
 @schema.link
-class DataSet:
-    links = [Scan]
-    name = "dataset"
-
-
-@schema.linkset
-class DataSets:
-    link = DataSet
-    name = "datasets"
+class VisualSet:
+    links = [VisualScan]
+    name = "visualset"
+    comment = "visual data set"
 
 
 # -- Computed Data Set --
 
 
 @schema.computed
-class DataSetComponents:
+class VisualRecording:
     definition = """
-    -> DataSet
+    -> VisualSet
     ---
     -> recording.TrialSet
     -> recording.TraceSet.proj(traceset_id_p="traceset_id")
@@ -116,7 +127,7 @@ class DataSetComponents:
     """
 
     def make(self, key):
-        dataset = (DataSet & key).link
+        dataset = (VisualSet & key).link
 
         key["trialset_id"] = dataset.trial_set.fetch1("trialset_id")
         key["traceset_id_p"] = dataset.perpsective_set.fetch1("traceset_id")
@@ -124,58 +135,3 @@ class DataSetComponents:
         key["traceset_id_u"] = dataset.unit_set.fetch1("traceset_id")
 
         self.insert1(key)
-
-
-# -------------- Data Spec --------------
-
-# -- Data Spec Base --
-
-
-class _DataSpec:
-    """Data Specification"""
-
-    @rowproperty
-    def loader(self):
-        """
-        Returns
-        -------
-        foundation.fnn.compute.LoadData
-            keys with `load` rowproperty
-        """
-        raise NotImplementedError()
-
-
-# -- Data Spec Types --
-
-
-@schema.lookup
-class Preprocess(_DataSpec):
-    definition = """
-    -> utility.Resolution
-    -> utility.Resize
-    -> utility.Rate
-    -> utility.Offset.proj(offset_id_p="offset_id")
-    -> utility.Offset.proj(offset_id_m="offset_id")
-    -> utility.Offset.proj(offset_id_u="offset_id")
-    -> utility.Resample.proj(resample_id_p="resample_id")
-    -> utility.Resample.proj(resample_id_m="resample_id")
-    -> utility.Resample.proj(resample_id_u="resample_id")
-    -> utility.Standardize.proj(standardize_id_p="standardize_id")
-    -> utility.Standardize.proj(standardize_id_m="standardize_id")
-    -> utility.Standardize.proj(standardize_id_u="standardize_id")
-    """
-
-    @rowproperty
-    def loader(self):
-        from foundation.fnn.compute import PreprocessedData
-
-        return PreprocessedData
-
-
-# -- Data Spec --
-
-
-@schema.link
-class DataSpec:
-    links = [Preprocess]
-    name = "dataspec"
