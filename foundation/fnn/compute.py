@@ -2,8 +2,9 @@ import numpy as np
 import pandas as pd
 from datajoint import U
 from djutils import keys, merge, rowproperty, rowmethod
-from foundation.fnn.dataset import VisualRecording
+from foundation.fnn.dataset import VisualSet, VisualRecording
 from foundation.fnn.dataspec import VisualSpec, ResampleVisual
+from foundation.fnn.architecture import Architecture, Streams
 
 
 @keys
@@ -80,7 +81,7 @@ class ResampledVisualRecording:
         return pd.Series(data=data, index=pd.Index(trial_id, name="trial_id"))
 
     @rowproperty
-    def visual_dataset(self):
+    def dataset(self):
         from fnn.data import Dataset
 
         data = [
@@ -94,3 +95,50 @@ class ResampledVisualRecording:
         assert not df.isnull().values.any()
 
         return Dataset(df)
+
+    @rowproperty
+    def sizes(self):
+        from foundation.stimulus.video import VideoInfo
+        from foundation.recording.trial import TrialVideo
+        from foundation.recording.trace import TraceSet
+
+        s = dict()
+        s["stimuli"] = (U("channels") & merge(self.trials, TrialVideo, VideoInfo)).fetch1("channels")
+        s["perspectives"] = (TraceSet & self.traceset_key("p")).fetch1("members")
+        s["modulations"] = (TraceSet & self.traceset_key("m")).fetch1("members")
+        s["units"] = (TraceSet & self.traceset_key("u")).fetch1("members")
+
+        return s
+
+
+@keys
+class VisualNeuralNetwork:
+    """Load Visual Architecture Module"""
+
+    @property
+    def key_list(self):
+        return [
+            VisualSet,
+            VisualSpec,
+            Architecture,
+            Streams,
+        ]
+
+    @rowproperty
+    def data_key(self):
+        (keys,) = (VisualSet & self.key).link.data_keys & (VisualSpec & self.key).link.data_keys
+        return keys & self.key
+
+    @rowproperty
+    def dataset(self):
+        return self.data_key.dataset
+
+    @rowproperty
+    def module(self):
+        sizes = self.data_key.sizes
+        streams = self.key.fetch1("streams")
+
+        nn = (Architecture & self.key).link.nn
+        nn._init(**sizes, streams=streams)
+
+        return nn

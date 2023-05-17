@@ -29,7 +29,7 @@ class _Architecture:
 
 
 @schema.lookup
-class Visual(_Architecture):
+class VisualArchitecture(_Architecture):
     definition = """
     -> Core
     -> Perspective
@@ -58,7 +58,7 @@ class Visual(_Architecture):
 
 @schema.link
 class Architecture:
-    links = [Visual]
+    links = [VisualArchitecture]
     name = "architecture"
 
 
