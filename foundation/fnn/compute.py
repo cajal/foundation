@@ -33,7 +33,7 @@ class ResampledVisualRecording:
         key = merge(self.key, fnn.VisualSpec.ResampleVisual)
 
         trials = merge(self.trials, TrialSamples & key)
-        trial_id, samples = trials.fetch("trial_id", "samples", order_by="trial_id", limit=5)  # TODO
+        trial_id, samples = trials.fetch("trial_id", "samples", order_by="trial_id")
 
         return pd.Series(data=samples, index=pd.Index(trial_id, name="trial_id"))
 
@@ -47,7 +47,7 @@ class ResampledVisualRecording:
         key = merge(self.key, fnn.VisualSpec.ResampleVisual)
 
         trials = merge(self.trials, TrialVideo, ResizedVideo & key, ResampledVideo & key)
-        trial_id, video, index = trials.fetch("trial_id", "video", "index", order_by="trial_id", limit=5)  # TODO
+        trial_id, video, index = trials.fetch("trial_id", "video", "index", order_by="trial_id")
 
         data = [NpyFile(v, indexmap=np.load(i), dtype=np.uint8) for v, i in zip(video, tqdm(index, desc="Video"))]
         return pd.Series(data=data, index=pd.Index(trial_id, name="trial_id"))
@@ -76,7 +76,7 @@ class ResampledVisualRecording:
         transform = (StandardizeTraces & key).transform
 
         trials = merge(self.trials, ResampledTraces & key & "finite")
-        trial_id, traces = trials.fetch("trial_id", "traces", order_by="trial_id", limit=5)  # TODO
+        trial_id, traces = trials.fetch("trial_id", "traces", order_by="trial_id")
 
         data = [NpyFile(t, transform=transform, dtype=np.float32) for t in tqdm(traces, desc="Traces")]
         return pd.Series(data=data, index=pd.Index(trial_id, name="trial_id"))
