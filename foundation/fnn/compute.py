@@ -261,12 +261,16 @@ class TrainVisualModel:
         size = len(keys)
         assert device_count() >= size
 
-        mp.spawn(TrainVisualModel._fn, args=(size, keys), nprocs=size)
+        mp.spawn(
+            TrainVisualModel._fn,
+            args=(size, keys),
+            nprocs=size,
+            join=True,
+            daemon=True,
+        )
 
         key = merge(self.key, fnn.Model.VisualModel)
-        scheduler = Scheduler & key
-        epochs = scheduler.link.epochs
-
+        epochs = (Scheduler & key).link.epochs
         checkpoints = Checkpoint & nets & "rank >= 0" & f"rank < {size}" & {"epoch": epochs - 1}
         assert len(checkpoints) == len(nets)
 
