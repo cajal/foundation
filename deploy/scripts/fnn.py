@@ -1,3 +1,4 @@
 from foundation.fnn.model import NetworkModel
 
-NetworkModel.populate(reserve_jobs=True)
+if __name__ == "__main__":
+    VisualModel.populate(reserve_jobs=True)
