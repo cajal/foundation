@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name: foundation-fnn
 spec:
-  parallelism: 40
+  parallelism: 2
   backoffLimit: 50
   template:
     spec:
