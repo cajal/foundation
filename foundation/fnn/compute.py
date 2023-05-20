@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 from datajoint import U
 from djutils import keys, merge, rowproperty, rowmethod
 from foundation.utils import logger
@@ -47,7 +48,7 @@ class ResampledVisualRecording:
         trials = merge(self.trials, TrialVideo, ResizedVideo & key, ResampledVideo & key)
         trial_id, video, index = trials.fetch("trial_id", "video", "index", order_by="trial_id")
 
-        data = [NpyFile(v, indexmap=np.load(i)) for v, i in zip(video, index)]
+        data = [NpyFile(v, indexmap=np.load(i), dtype=np.uint8) for v, i in zip(video, tqdm(index, desc="Video"))]
         return pd.Series(data=data, index=pd.Index(trial_id, name="trial_id"))
 
     @rowmethod
@@ -76,7 +77,7 @@ class ResampledVisualRecording:
         trials = merge(self.trials, ResampledTraces & key & "finite")
         trial_id, traces = trials.fetch("trial_id", "traces", order_by="trial_id")
 
-        data = [NpyFile(t, transform=transform) for t in traces]
+        data = [NpyFile(t, transform=transform, dtype=np.float32) for t in tqdm(traces, decs="Traces")]
         return pd.Series(data=data, index=pd.Index(trial_id, name="trial_id"))
 
     @rowproperty
