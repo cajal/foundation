@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: foundation-fnn
+  name: foundation-model
 spec:
   parallelism: 2
   backoffLimit: 50
@@ -25,7 +25,7 @@ spec:
             limits:
               nvidia.com/gpu: 2
             requests:
-              cpu: 4
+              cpu: 10
               memory: "16Gi"
           volumeMounts:
             - name: scratch09
