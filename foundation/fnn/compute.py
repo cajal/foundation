@@ -297,7 +297,7 @@ class TrainVisualModel:
 
         mp.spawn(
             TrainVisualModel._fn,
-            args=(size, keys, port),
+            args=(size, port, keys),
             nprocs=size,
             join=True,
         )
