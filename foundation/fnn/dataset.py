@@ -54,12 +54,12 @@ class _VisualSet:
         raise NotImplementedError()
 
     @rowproperty
-    def data_keys(self):
+    def datakeys(self):
         """
         Returns
         -------
-        set[foundation.fnn.compute.LoadData]
-            keys with `load` rowproperty
+        set[djutils.derived.Keys]
+            keys with `dataset` rowproperty
         """
         raise NotImplementedError()
 
@@ -96,7 +96,7 @@ class VisualScan(_VisualSet):
         return recording.TraceSet & (recording.ScanUnits & self)
 
     @rowproperty
-    def data_keys(self):
+    def datakeys(self):
         from foundation.fnn.compute import ResampledVisualRecording
 
         return {ResampledVisualRecording}

@@ -13,7 +13,25 @@ from foundation.schemas import fnn as schema
 class _Network:
     """Neural Network"""
 
-    pass
+    @rowproperty
+    def dataset(self):
+        """
+        Returns
+        -------
+        fnn.data.datset.Dataset
+            network training dataset
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def module(self):
+        """
+        Returns
+        -------
+        fnn.modules.Module
+            network module
+        """
+        raise NotImplementedError()
 
 
 # -- Neural Network Types --
@@ -28,6 +46,29 @@ class VisualNetwork(_Network):
     -> Streams
     """
 
+    @rowproperty
+    def datakey(self):
+        keys = (VisualSet & self).link.datakeys
+        keys &= (VisualSpec & self).link.datakeys
+        keys &= (Architecture & self).link.datakeys
+
+        (keys,) = keys
+        return keys & self
+
+    @rowproperty
+    def dataset(self):
+        return self.datakey.dataset
+
+    @rowproperty
+    def module(self):
+        sizes = self.datakey.sizes
+        streams = self.fetch1("streams")
+
+        nn = (Architecture & self).link.nn
+        nn._init(**sizes, streams=streams)
+
+        return nn
+
 
 # -- Neural Network Types --
 
@@ -35,12 +76,12 @@ class VisualNetwork(_Network):
 @schema.link
 class Network:
     links = [VisualNetwork]
-    name = "nn"
+    name = "network"
     comment = "neural network"
 
 
 @schema.linkset
 class NetworkSet:
     link = Network
-    name = "nnset"
+    name = "networkset"
     comment = "neural network set"

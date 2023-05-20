@@ -24,6 +24,16 @@ class _Architecture:
         """
         raise NotImplementedError()
 
+    @rowproperty
+    def datakeys(self):
+        """
+        Returns
+        -------
+        set[djutils.derived.Keys]
+            keys with `dataset` rowproperty
+        """
+        raise NotImplementedError()
+
 
 # -- Architecture Types --
 
@@ -51,6 +61,12 @@ class VisualArchitecture(_Architecture):
             reduce=(Reduce & self).link.nn,
             unit=(Unit & self).link.nn,
         )
+
+    @rowproperty
+    def datakeys(self):
+        from foundation.fnn.compute import ResampledVisualRecording
+
+        return {ResampledVisualRecording}
 
 
 # -- Architecture --

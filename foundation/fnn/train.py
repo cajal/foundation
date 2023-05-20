@@ -2,6 +2,51 @@ from djutils import rowproperty
 from foundation.schemas import fnn as schema
 
 
+# -------------- State --------------
+
+# -- State Base --
+
+
+class _State:
+    """State"""
+
+    @rowproperty
+    def network_keys(self):
+        """
+        Returns
+        -------
+        djutils.derived.Keys
+            keys with `network` rowproperty
+        """
+        raise NotImplementedError()
+
+
+# -- State Types --
+
+
+@schema.lookup
+class RandomState(_State):
+    definition = """
+    seed            : int unsigned      # seed for initialization
+    """
+
+    @rowproperty
+    def network_keys(self):
+        from foundation.fnn.compute import RandomNetworkState
+
+        return RandomNetworkState
+
+
+# -- State --
+
+
+@schema.link
+class State:
+    links = [RandomState]
+    name = "state"
+    comment = "network state"
+
+
 # -------------- Loader --------------
 
 # -- Loader Base --
@@ -31,7 +76,7 @@ class RandomBatches(_Loader):
     batch_size      : int unsigned  # datapoints in a batch
     epoch_size      : int unsigned  # batches in an epoch
     train_fraction  : decimal(6, 6) # training fraction
-    split_seed      : int unsigned  # random seed for train/val splitting
+    seed            : int unsigned  # seed for train/val splitting
     """
 
     @rowproperty
@@ -48,6 +93,7 @@ class RandomBatches(_Loader):
 class Loader:
     links = [RandomBatches]
     name = "loader"
+    comment = "data loader"
 
 
 # -------------- Objective --------------
@@ -93,6 +139,7 @@ class ArchitectureLoss(_Objective):
 class Objective:
     links = [ArchitectureLoss]
     name = "objective"
+    comment = "training objective"
 
 
 # -------------- Optimizer --------------
@@ -142,6 +189,7 @@ class SgdClip(_Optimizer):
 class Optimizer:
     links = [SgdClip]
     name = "optimizer"
+    comment = "module optimizer"
 
 
 # -------------- Scheduler --------------
@@ -159,6 +207,16 @@ class _Scheduler:
         -------
         fnn.train.schedulers.Scheduler
             hyperparameter scheduler
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def epochs(self):
+        """
+        Returns
+        -------
+        int
+            number of epochs in a cycle
         """
         raise NotImplementedError()
 
@@ -180,6 +238,10 @@ class CosineLr(_Scheduler):
 
         return CosineLr(**self.fetch1())
 
+    @rowproperty
+    def epochs(self):
+        return self.fetch1("cycle_size")
+
 
 # -- Scheduler --
 
@@ -188,51 +250,4 @@ class CosineLr(_Scheduler):
 class Scheduler:
     links = [CosineLr]
     name = "scheduler"
-
-
-# -------------- Trainer --------------
-
-# -- Trainer Base --
-
-
-class _Trainer:
-    """Trainer"""
-
-    # @rowproperty
-    # def objective(self):
-    #     """
-    #     Returns
-    #     -------
-    #     fnn.train.objectives.Objective
-    #         training objective
-    #     """
-    #     raise NotImplementedError()
-
-
-# -- Trainer Types --
-
-
-@schema.lookup
-class Parallel(_Trainer):
-    definition = """
-    -> Loader
-    -> Objective
-    -> Optimizer
-    -> Scheduler
-    duplicates      : int unsigned  # training duplicates
-    """
-
-    # @rowproperty
-    # def objective(self):
-    #     from fnn.train.objectives import ArchitectureLoss
-
-    #     return ArchitectureLoss(**self.fetch1())
-
-
-# -- Trainer --
-
-
-@schema.link
-class Trainer:
-    links = [Parallel]
-    name = "trainer"
+    comment = "hyperparameter scheduler"
