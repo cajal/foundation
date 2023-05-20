@@ -59,11 +59,11 @@ spec:
           args: [
               "-c",
               "git clone https://$(GITHUB_TOKEN)@github.com/cajal/djutils.git -b main /src/djutils \
-              && pip install -e /src/djutils \
+              && pip install /src/djutils \
               && git clone https://$(GITHUB_TOKEN)@github.com/cajal/fnn.git -b main /src/fnn \
-              && pip install -e /src/fnn \
+              && pip install /src/fnn \
               && git clone https://$(GITHUB_TOKEN)@github.com/cajal/foundation.git -b main /src/foundation \
-              && pip install -e /src/foundation \
+              && pip install /src/foundation \
               && python3 /src/foundation/deploy/scripts/fnn.py",
             ]
       tolerations:
