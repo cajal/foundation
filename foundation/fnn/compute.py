@@ -273,12 +273,13 @@ class TrainVisualModel:
             key.train()
 
     @staticmethod
-    def _fn(rank, size, keys):
+    def _fn(rank, size, port, keys):
         kwargs = keys[rank]
-        TrainVisualModel._train(rank=rank, size=size, **kwargs)
+        TrainVisualModel._train(rank=rank, size=size, port=port, **kwargs)
 
     @rowmethod
     def train(self):
+        from random import randint
         from torch.cuda import device_count
         from torch import multiprocessing as mp
         from foundation.fnn.train import Scheduler
@@ -292,9 +293,11 @@ class TrainVisualModel:
         size = len(keys)
         assert device_count() >= size
 
+        port = randint(10000, 60000)
+
         mp.spawn(
             TrainVisualModel._fn,
-            args=(size, keys),
+            args=(size, keys, port),
             nprocs=size,
             join=True,
         )
