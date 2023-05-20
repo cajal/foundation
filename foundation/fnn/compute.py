@@ -270,58 +270,8 @@ class TrainVisualModel:
         checkpoints = Checkpoint & nets & "rank >= 0" & f"rank < {size}" & {"epoch": epochs - 1}
         assert len(checkpoints) == len(nets)
 
-        for c in U("network_id", "model_id").aggr(checkpoints, rank="min(rank)").fetch(as_dict=True):
-            optimizer = (Checkpoint & c).load()
+        keys = U("network_id", "model_id").aggr(checkpoints, rank="min(rank)").fetch(as_dict=True)
+        for key in keys:
+            optimizer = (Checkpoint & key).load()
             module = optimizer.module.to(device="cpu")
-
             yield key["network_id"], module
-
-    # @rowmethod
-    # def train(self):
-    #     from time import sleep
-    #     from torch.cuda import device_count
-    #     from torch import multiprocessing as mp
-    #     from foundation.fnn.train import Scheduler
-    #     from foundation.fnn.network import NetworkSet
-    #     from foundation.fnn.cache import NetworkModelCheckpoint as Checkpoint
-
-    #     nets = merge((NetworkSet & self.key).members * self.key, fnn.Model.VisualModel)
-    #     nets = nets.fetch("network_id", "model_id", as_dict=True, order_by="network_id")
-
-    #     keys = nets * self.key.fetch1("instances")
-    #     size = len(keys)
-    #     assert device_count() >= size
-
-    #     procs = []
-    #     ctx = mp.get_context("spawn")
-
-    #     for rank, kwargs in enumerate(keys):
-
-    #         kwargs["rank"] = rank
-    #         kwargs["size"] = size
-
-    #         p = ctx.Process(target=self._train, kwargs=kwargs)
-    #         p.start()
-    #         procs.append(p)
-
-    #     try:
-    #         while any(p.is_alive() for p in procs):
-    #             self.key.connection.ping()
-    #             sleep(1)
-    #     except Exception as e:
-    #         for p in procs:
-    #             p.terminate()
-    #             p.join()
-    #         raise e
-
-    #     scheduler = Scheduler & merge(self.key, fnn.Model.VisualModel)
-    #     epochs = scheduler.link.epochs
-
-    #     checkpoints = Checkpoint & nets & "rank >= 0" & f"rank < {size}" & {"epoch": epochs - 1}
-    #     assert len(checkpoints) == len(nets)
-
-    #     for key in U("network_id", "model_id").aggr(checkpoints, rank="min(rank)").fetch(as_dict=True):
-    #         optimizer = (Checkpoint & key).load()
-    #         module = optimizer.module.to(device="cpu")
-
-    #         yield key["network_id"], module
