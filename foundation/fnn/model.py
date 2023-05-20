@@ -78,7 +78,7 @@ class NetworkModel(Filepath):
     def make(self, key):
         import torch
 
-        for network_id, module in (Model & key).link.networks:
+        for network_id, state_dict in (Model & key).link.networks:
 
             _key = dict(
                 key,
@@ -90,7 +90,7 @@ class NetworkModel(Filepath):
                 suffix="pt",
             )
             torch.save(
-                module.state_dict(),
+                state_dict,
                 filepath,
                 pickle_protocol=5,
             )

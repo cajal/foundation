@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from itertools import chain
 from datajoint import U
 from djutils import keys, merge, rowproperty, rowmethod
 from foundation.utils import logger
@@ -147,6 +148,7 @@ class TrainVisualNetwork:
     @rowmethod
     def train(self):
         import torch.distributed as dist
+        from fnn.train.parallel import ParameterGroup
         from foundation.fnn.network import Network, NetworkSet
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
         from foundation.fnn.cache import NetworkModelInfo as Info, NetworkModelCheckpoint as Checkpoint
@@ -155,13 +157,16 @@ class TrainVisualNetwork:
             size = dist.get_world_size()
             rank = dist.get_rank()
         else:
-            size = 1
             assert instances == 1
+            size = 1
+            rank = 0
 
         key = merge(self.key, fnn.Model.VisualModel)
 
-        nid, mid, seed, cycle, instances = key.fetch1("network_id", "model_id", "seed", "cycle", "instances")
+        states = (State & key).link.network_keys
+        module = (states & key).module.to(device="cuda")
 
+        nid, mid, seed, cycle, instances = key.fetch1("network_id", "model_id", "seed", "cycle", "instances")
         checkpoints = Checkpoint & {"model_id": mid} & "rank >= 0" & f"rank < {size}"
 
         if checkpoints:
@@ -169,12 +174,12 @@ class TrainVisualNetwork:
             assert len(U("epoch") & checkpoints) == 1
 
             logger.info("Restarting from checkpoint")
-            optimizer = (checkpoints & key & {"rank": rank}).load()
+            c = (checkpoints & key & {"rank": rank}).load()
+
+            optimizer = c["optimizer"]
+            module.load_state_dict(c["state_dict"])
 
         else:
-            keys = (State & key).link.network_keys
-            module = (keys & key).module.to(device="cuda")
-
             if cycle > 0:
                 logger.info("Continuing training")
                 # TODO
@@ -186,7 +191,7 @@ class TrainVisualNetwork:
             scheduler._init(epoch=0, cycle=cycle)
 
             optimizer = (Optimizer & key).link.optimizer
-            optimizer._init(module=module, scheduler=scheduler)
+            optimizer._init(scheduler=scheduler)
 
         dataset = (Network & key).link.dataset
 
@@ -194,27 +199,52 @@ class TrainVisualNetwork:
         loader._init(dataset=dataset)
 
         objective = (Objective & key).link.objective
+        objective._init(module=module)
 
-        parallel = []
+        _groups = []
+        groups = []
 
         if size > 1:
             cgroup = np.arange(size)
             cgroup = dist.new_group(cgroup.tolist())
-            parallel.append((["core"], cgroup))
+            _groups.append([["core"], cgroup])
 
         if instances > 1:
             igroup = np.arange(instances) + rank // instances * instances
             igroup = dist.new_group(igroup.tolist())
-            parallel.append((["perspective", "modulation", "readout", "reduce", "unit"], igroup))
+            _groups.append([["perspective", "modulation", "readout", "reduce", "unit"], igroup])
+
+        for mods, group in _groups:
+            p = dict()
+            for mod in mods:
+                m = getattr(module, mod)
+                if not m.frozen:
+                    p = dict(**p, **{f"{mod}.{k}": v for k, v in m.named_parameters()})
+            if p:
+                groups.append(ParameterGroup(parameters=p, group=group))
 
         for epoch, info in optimizer.optimize(
             loader=loader,
             objective=objective,
+            parameters=module.parameters(),
+            groups=groups,
             seed=seed,
-            parallel=parallel,
         ):
-            Info.fill(network_id=nid, model_id=mid, rank=rank, epoch=epoch, info=info)
-            Checkpoint.fill(network_id=nid, model_id=mid, rank=rank, epoch=epoch, optimizer=optimizer)
+            Info.fill(
+                network_id=nid,
+                model_id=mid,
+                rank=rank,
+                epoch=epoch,
+                info=info,
+            )
+            Checkpoint.fill(
+                network_id=nid,
+                model_id=mid,
+                rank=rank,
+                epoch=epoch,
+                optimizer=optimizer,
+                state_dict=module.state_dict(),
+            )
 
 
 @keys
@@ -276,6 +306,4 @@ class TrainVisualModel:
 
         keys = U("network_id", "model_id").aggr(checkpoints, rank="min(rank)").fetch(as_dict=True)
         for key in keys:
-            optimizer = (Checkpoint & key).load()
-            module = optimizer.module.to(device="cpu")
-            yield key["network_id"], module
+            yield key["network_id"], (Checkpoint & key).load()["state_dict"]
