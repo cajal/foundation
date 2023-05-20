@@ -226,7 +226,7 @@ class TrainVisualNetwork:
         for epoch, info in optimizer.optimize(
             loader=loader,
             objective=objective,
-            parameters=module.parameters(),
+            parameters=module.named_parameters(),
             groups=groups,
             seed=seed,
         ):
