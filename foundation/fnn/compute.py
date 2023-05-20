@@ -266,7 +266,6 @@ class TrainVisualModel:
             args=(size, keys),
             nprocs=size,
             join=True,
-            daemon=True,
         )
 
         key = merge(self.key, fnn.Model.VisualModel)
