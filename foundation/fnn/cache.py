@@ -67,5 +67,5 @@ class NetworkModelCheckpoint(Filepath):
     def load(self, device="cpu"):
         from torch import load
 
-        filepath = self.fetch1("info")
+        filepath = self.fetch1("checkpoint")
         return load(filepath, map_location=device)
