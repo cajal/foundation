@@ -33,7 +33,7 @@ class ResampledVisualRecording:
         key = merge(self.key, fnn.VisualSpec.ResampleVisual)
 
         trials = merge(self.trials, TrialSamples & key)
-        trial_id, samples = trials.fetch("trial_id", "samples", order_by="trial_id")
+        trial_id, samples = trials.fetch("trial_id", "samples", order_by="trial_id", limit=5)  # TODO
 
         return pd.Series(data=samples, index=pd.Index(trial_id, name="trial_id"))
 
@@ -47,7 +47,7 @@ class ResampledVisualRecording:
         key = merge(self.key, fnn.VisualSpec.ResampleVisual)
 
         trials = merge(self.trials, TrialVideo, ResizedVideo & key, ResampledVideo & key)
-        trial_id, video, index = trials.fetch("trial_id", "video", "index", order_by="trial_id")
+        trial_id, video, index = trials.fetch("trial_id", "video", "index", order_by="trial_id", limit=5)  # TODO
 
         data = [NpyFile(v, indexmap=np.load(i), dtype=np.uint8) for v, i in zip(video, tqdm(index, desc="Video"))]
         return pd.Series(data=data, index=pd.Index(trial_id, name="trial_id"))
@@ -76,7 +76,7 @@ class ResampledVisualRecording:
         transform = (StandardizeTraces & key).transform
 
         trials = merge(self.trials, ResampledTraces & key & "finite")
-        trial_id, traces = trials.fetch("trial_id", "traces", order_by="trial_id")
+        trial_id, traces = trials.fetch("trial_id", "traces", order_by="trial_id", limit=5)  # TODO
 
         data = [NpyFile(t, transform=transform, dtype=np.float32) for t in tqdm(traces, desc="Traces")]
         return pd.Series(data=data, index=pd.Index(trial_id, name="trial_id"))
@@ -147,11 +147,15 @@ class TrainVisualNetwork:
 
     @rowmethod
     def train(self):
+        import torch
         import torch.distributed as dist
         from fnn.train.parallel import ParameterGroup
         from foundation.fnn.network import Network, NetworkSet
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
         from foundation.fnn.cache import NetworkModelInfo as Info, NetworkModelCheckpoint as Checkpoint
+
+        device = torch.cuda.current_device()
+        device = torch.device("cuda", device)
 
         if dist.is_initialized():
             size = dist.get_world_size()
@@ -164,7 +168,7 @@ class TrainVisualNetwork:
         key = merge(self.key, fnn.Model.VisualModel)
 
         states = (State & key).link.network_keys
-        module = (states & key).module.to(device="cuda")
+        module = (states & key).module.to(device=device)
 
         nid, mid, seed, cycle, instances = key.fetch1("network_id", "model_id", "seed", "cycle", "instances")
         checkpoints = Checkpoint & {"model_id": mid} & "rank >= 0" & f"rank < {size}"
@@ -174,7 +178,7 @@ class TrainVisualNetwork:
             assert len(U("epoch") & checkpoints) == 1
 
             logger.info("Restarting from checkpoint")
-            c = (checkpoints & key & {"rank": rank}).load()
+            c = (checkpoints & key & {"rank": rank}).load(device=device)
 
             optimizer = c["optimizer"]
             module.load_state_dict(c["state_dict"])
