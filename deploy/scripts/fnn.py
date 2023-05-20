@@ -1,3 +1,3 @@
-from foundation.fnn.model import VisualModel
+from foundation.fnn.model import NetworkModel
 
-VisualModel.populate(reserve_jobs=True)
+NetworkModel.populate(reserve_jobs=True)
