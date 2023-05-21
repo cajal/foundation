@@ -76,7 +76,7 @@ class NetworkModel(Filepath):
         return Model
 
     def make(self, key):
-        import torch
+        from torch import save
 
         for network_id, state_dict in (Model & key).link.networks:
 
@@ -89,7 +89,7 @@ class NetworkModel(Filepath):
                 "parameters",
                 suffix="pt",
             )
-            torch.save(
+            save(
                 state_dict,
                 filepath,
                 pickle_protocol=5,

@@ -285,7 +285,7 @@ class TrainVisualModel:
     def train(self):
         from random import randint
         from torch.cuda import device_count
-        from torch import multiprocessing as mp
+        from torch.multiprocessing import spawn
         from foundation.fnn.train import Scheduler
         from foundation.fnn.network import NetworkSet
         from foundation.fnn.cache import NetworkModelCheckpoint as Checkpoint
@@ -299,7 +299,7 @@ class TrainVisualModel:
 
         port = randint(10000, 60000)
 
-        mp.spawn(
+        spawn(
             TrainVisualModel._fn,
             args=(size, port, keys),
             nprocs=size,
@@ -309,7 +309,7 @@ class TrainVisualModel:
         key = merge(self.key, fnn.Model.VisualModel)
         epochs = (Scheduler & key).link.epochs
         checkpoints = Checkpoint & nets & "rank >= 0" & f"rank < {size}" & {"epoch": epochs - 1}
-        assert len(checkpoints) == len(nets)
+        assert len(checkpoints) == len(keys)
 
         keys = U("network_id", "model_id").aggr(checkpoints, rank="min(rank)").fetch(as_dict=True)
         for key in keys:
