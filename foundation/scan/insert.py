@@ -1,9 +1,9 @@
 from djutils import keys
-from foundation.virtual.bridge import pipe_exp, pipe_eye, pipe_shared
+from foundation.virtual.bridge import pipe_exp, pipe_eye
 from foundation.scan.experiment import Scan as ScanExperiment
 from foundation.scan.pupil import PupilTrace, PupilNans
 from foundation.scan.trial import TrialFilterSet, FilteredTrials
-from foundation.scan.unit import UnitFilterSet, UnitSet, FilteredUnits
+from foundation.scan.unit import UnitFilterSet, FilteredUnits
 
 
 @keys
