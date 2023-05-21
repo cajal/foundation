@@ -33,12 +33,12 @@ class NetworkSetModel(_Model):
     definition = """
     -> NetworkSet
     -> State
-    -> Scheduler
     -> Loader
     -> Objective
     -> Optimizer
-    seed            : int unsigned  # seed for optimization
+    -> Scheduler
     cycle           : int unsigned  # training cycle
+    seed            : int unsigned  # seed for optimization
     instances       : int unsigned  # parallel training instances
     """
 
