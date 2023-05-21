@@ -173,7 +173,7 @@ class _TrainNetworkSet:
         init = not checkpoint and cycle == 0
         cuda = device("cuda", current_device())
         nets = (State & key).link.network_keys
-        module = (nets & key).build(initalize=init).to(device=cuda)
+        module = (nets & key).build(initialize=init).to(device=cuda)
 
         if checkpoint:
             logger.info("Reloading from previous checkpoint")
