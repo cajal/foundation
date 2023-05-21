@@ -168,7 +168,7 @@ class _TrainNetworkSet:
 
         key = merge(self.key, fnn.Model.NetworkSetModel)
         mid, nid, seed, cycle, instances = key.fetch1("model_id", "network_id", "seed", "cycle", "instances")
-        checkpoint = Checkpoint & {"model_id": mid} & "rank >= 0" & f"rank < {size}"
+        checkpoint = ModelNetworkCheckpoint & {"model_id": mid} & "rank >= 0" & f"rank < {size}"
 
         init = not checkpoint and cycle == 0
         cuda = device("cuda", current_device())
