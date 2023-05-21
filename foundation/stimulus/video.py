@@ -79,7 +79,7 @@ class Trippy(_Video):
 
     @rowproperty
     def video(self):
-        movie = (stimulus.Trippy & self).fetch1("movie")
+        movie = (pipe_stim.Trippy & self).fetch1("movie")
         return video.Video([video.Frame.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
 
 

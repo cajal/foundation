@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name: foundation-recording
 spec:
-  parallelism: 40
+  parallelism: 10
   backoffLimit: 50
   template:
     spec:
@@ -60,7 +60,7 @@ spec:
               && pip install -e /src/djutils \
               && git clone https://$(GITHUB_TOKEN)@github.com/cajal/foundation.git -b main /src/foundation \
               && pip install -e /src/foundation \
-              && python3 /src/foundation/deploy/scripts/recording.py",
+              && python3 /src/foundation/deploy/scripts/scan_recording.py",
             ]
       affinity:
         nodeAffinity:
