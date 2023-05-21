@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: foundation-recording
+  name: foundation-scan-insert
 spec:
   parallelism: 10
   backoffLimit: 50
