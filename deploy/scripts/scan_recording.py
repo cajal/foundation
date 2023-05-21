@@ -1,11 +1,12 @@
 from foundation.recording.insert import (
     Scan,
-    ScanUnitSummary,
     ScanBehaviorSummary,
+    ScanUnitSummary,
     ScanVideoCache,
-    ScanUnitCache,
     ScanBehaviorCache,
+    ScanUnitCache,
 )
+from foundation.virtual import utility
 
 # foundation cohort
 cohort = [
@@ -20,3 +21,13 @@ cohort = [
 ]
 
 (Scan & cohort & {"spike_method": 6}).fill()
+
+(ScanBehaviorSummary & cohort & utility.Resample.LowpassHamming).fill()
+
+(ScanUnitSummary & cohort & utility.Resample.Hamming & utility.Summary.Mean).fill()
+
+(ScanVideoCache & cohort).fill()
+
+(ScanBehaviorCache & cohort & utility.Resample.LowpassHamming).fill()
+
+(ScanUnitCache & cohort & utility.Resample.Hamming).fill()
