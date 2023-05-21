@@ -29,7 +29,7 @@ class _Model:
 
 
 @schema.lookup
-class VisualModel(_Model):
+class NetworkSetModel(_Model):
     definition = """
     -> NetworkSet
     -> State
@@ -44,9 +44,9 @@ class VisualModel(_Model):
 
     @rowproperty
     def networks(self):
-        from foundation.fnn.compute import TrainVisualModel
+        from foundation.fnn.compute import TrainNetworkSet
 
-        yield from (TrainVisualModel & self).train()
+        yield from (TrainNetworkSet & self).train()
 
 
 # -- Model --
@@ -54,7 +54,7 @@ class VisualModel(_Model):
 
 @schema.link
 class Model:
-    links = [VisualModel]
+    links = [NetworkSetModel]
     name = "model"
     comment = "neural network model"
 
@@ -63,10 +63,10 @@ class Model:
 
 
 @schema.computed
-class NetworkModel(Filepath):
+class ModelNetwork(Filepath):
     definition = """
-    -> Network
     -> Model
+    -> Network
     ---
     parameters      : filepath@scratch09    # parameter state dict
     """

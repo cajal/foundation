@@ -122,74 +122,76 @@ class RandomNetworkState:
             fnn.RandomState,
         ]
 
-    @rowproperty
-    def module(self):
+    @rowmethod
+    def build(self, initialize=True):
         import torch
         from foundation.fnn.network import Network
 
-        devices = torch.cuda.device_count()
-        devices = list(range(devices))
+        devices = list(range(torch.cuda.device_count()))
         with torch.random.fork_rng(devices):
 
-            torch.manual_seed(self.key.fetch("seed"))
+            if initialize:
+                seed = self.key.fetch1("seed")
+                torch.manual_seed(seed)
+                logger.info(f"Initializing network with random seed {seed}")
+
             return (Network & self.key).link.module
 
 
 @keys
-class TrainVisualNetwork:
-    """Train Visual Network"""
+class _TrainNetworkSet:
+    """Train Network Set -- Process"""
 
     @property
     def key_list(self):
         return [
-            fnn.Network * fnn.Model.VisualModel & fnn.NetworkSet.Member,
+            fnn.Model.NetworkSetModel * fnn.Network & fnn.NetworkSet.Member,
         ]
 
     @rowmethod
     def train(self):
-        import torch
-        import torch.distributed as dist
+        from torch import device
+        from torch.cuda import current_device
+        from torch.distributed import is_initialized, get_world_size, get_rank
         from fnn.train.parallel import ParameterGroup
         from foundation.fnn.network import Network, NetworkSet
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
-        from foundation.fnn.cache import NetworkModelInfo as Info, NetworkModelCheckpoint as Checkpoint
+        from foundation.fnn.cache import ModelNetworkInfo, ModelNetworkCheckpoint
 
-        device = torch.cuda.current_device()
-        device = torch.device("cuda", device)
-
-        if dist.is_initialized():
-            size = dist.get_world_size()
-            rank = dist.get_rank()
+        if is_initialized():
+            size = get_world_size()
+            rank = get_rank()
         else:
             assert instances == 1
             size = 1
             rank = 0
 
-        key = merge(self.key, fnn.Model.VisualModel)
+        key = merge(self.key, fnn.Model.NetworkSetModel)
+        mid, nid, seed, cycle, instances = key.fetch1("model_id", "network_id", "seed", "cycle", "instances")
+        checkpoint = Checkpoint & {"model_id": mid} & "rank >= 0" & f"rank < {size}"
 
-        states = (State & key).link.network_keys
-        module = (states & key).module.to(device=device)
+        init = not checkpoint and cycle == 0
+        cuda = device("cuda", current_device())
+        nets = (State & key).link.network_keys
+        module = (nets & key).build(initalize=init).to(device=cuda)
 
-        nid, mid, seed, cycle, instances = key.fetch1("network_id", "model_id", "seed", "cycle", "instances")
-        checkpoints = Checkpoint & {"model_id": mid} & "rank >= 0" & f"rank < {size}"
+        if checkpoint:
+            logger.info("Reloading from previous checkpoint")
 
-        if checkpoints:
-            assert len(checkpoints) == size
-            assert len(U("epoch") & checkpoints) == 1
+            assert len(checkpoint) == size
+            assert len(U("epoch") & checkpoint) == 1
 
-            logger.info("Restarting from checkpoint")
-            c = (checkpoints & key & {"rank": rank}).load(device=device)
-
-            optimizer = c["optimizer"]
-            module.load_state_dict(c["state_dict"])
+            prev = (checkpoint & key & {"rank": rank}).load(device=cuda)
+            module.load_state_dict(prev["state_dict"])
+            optimizer = prev["optimizer"]
 
         else:
-            if cycle > 0:
-                logger.info("Continuing training")
+            if cycle == 0:
+                logger.info("Initializing training")
+            else:
+                logger.info("Reloading from previous cycle")
                 # TODO
                 raise NotImplementedError()
-            else:
-                logger.info("Initializing training")
 
             scheduler = (Scheduler & key).link.scheduler
             scheduler._init(epoch=0, cycle=cycle)
@@ -205,45 +207,22 @@ class TrainVisualNetwork:
         objective = (Objective & key).link.objective
         objective._init(module=module)
 
-        _groups = []
-        groups = []
-
-        if size > 1:
-            cgroup = np.arange(size)
-            cgroup = dist.new_group(cgroup.tolist())
-            _groups.append([["core"], cgroup])
-
-        if instances > 1:
-            igroup = np.arange(instances) + rank // instances * instances
-            igroup = dist.new_group(igroup.tolist())
-            _groups.append([["perspective", "modulation", "readout", "reduce", "unit"], igroup])
-
-        for mods, group in _groups:
-            p = dict()
-            for mod in mods:
-                m = getattr(module, mod)
-                if not m.frozen:
-                    p = dict(**p, **{f"{mod}.{k}": v for k, v in m.named_parameters()})
-            if p:
-                groups.append(ParameterGroup(parameters=p, group=group))
+        params = module.named_parameters()
+        groups = module.parallel_groups(instances=instances)
 
         for epoch, info in optimizer.optimize(
-            loader=loader,
-            objective=objective,
-            parameters=module.named_parameters(),
-            groups=groups,
-            seed=seed,
+            loader=loader, objective=objective, parameters=params, groups=groups, seed=seed
         ):
-            Info.fill(
-                network_id=nid,
+            ModelNetworkInfo.fill(
                 model_id=mid,
+                network_id=nid,
                 rank=rank,
                 epoch=epoch,
                 info=info,
             )
-            Checkpoint.fill(
-                network_id=nid,
+            ModelNetworkCheckpoint.fill(
                 model_id=mid,
+                network_id=nid,
                 rank=rank,
                 epoch=epoch,
                 optimizer=optimizer,
@@ -252,13 +231,13 @@ class TrainVisualNetwork:
 
 
 @keys
-class TrainVisualModel:
-    """Train Visual Model"""
+class TrainNetworkSet:
+    """Train Network Set"""
 
     @property
     def key_list(self):
         return [
-            fnn.VisualModel,
+            fnn.NetworkSetModel,
         ]
 
     @staticmethod
@@ -273,13 +252,13 @@ class TrainVisualModel:
                 rank=rank,
                 world_size=size,
             )
-            key = TrainVisualNetwork & {"network_id": network_id, "model_id": model_id}
+            key = _TrainNetworkSet & {"model_id": model_id, "network_id": network_id}
             key.train()
 
     @staticmethod
     def _fn(rank, size, port, keys):
         kwargs = keys[rank]
-        TrainVisualModel._train(rank=rank, size=size, port=port, **kwargs)
+        TrainNetworkSet._train(rank=rank, size=size, port=port, **kwargs)
 
     @rowmethod
     def train(self):
@@ -288,9 +267,9 @@ class TrainVisualModel:
         from torch.multiprocessing import spawn
         from foundation.fnn.train import Scheduler
         from foundation.fnn.network import NetworkSet
-        from foundation.fnn.cache import NetworkModelCheckpoint as Checkpoint
+        from foundation.fnn.cache import ModelNetworkCheckpoint as Checkpoint
 
-        nets = merge((NetworkSet & self.key).members * self.key, fnn.Model.VisualModel)
+        nets = merge((NetworkSet & self.key).members * self.key, fnn.Model.NetworkSetModel)
         nets = nets.fetch("network_id", "model_id", as_dict=True, order_by="network_id")
 
         keys = nets * self.key.fetch1("instances")
@@ -300,13 +279,13 @@ class TrainVisualModel:
         port = randint(10000, 60000)
 
         spawn(
-            TrainVisualModel._fn,
+            TrainNetworkSet._fn,
             args=(size, port, keys),
             nprocs=size,
             join=True,
         )
 
-        key = merge(self.key, fnn.Model.VisualModel)
+        key = merge(self.key, fnn.Model.NetworkSetModel)
         epochs = (Scheduler & key).link.epochs
         checkpoints = Checkpoint & nets & "rank >= 0" & f"rank < {size}" & {"epoch": epochs - 1}
         assert len(checkpoints) == len(keys)

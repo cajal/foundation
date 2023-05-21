@@ -5,10 +5,10 @@ from foundation.schemas import fnn as schema
 
 
 @schema.lookup
-class NetworkModelInfo(Filepath):
+class ModelNetworkInfo(Filepath):
     definition = """
-    -> Network
     -> Model
+    -> Network
     rank        : int unsigned          # training rank
     epoch       : int unsigned          # training epoch
     ---
@@ -35,10 +35,10 @@ class NetworkModelInfo(Filepath):
 
 
 @schema.lookup
-class NetworkModelCheckpoint(Filepath):
+class ModelNetworkCheckpoint(Filepath):
     definition = """
-    -> Network
     -> Model
+    -> Network
     rank        : int unsigned          # training rank
     ---
     epoch       : int unsigned          # training epoch
