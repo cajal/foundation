@@ -5,3 +5,4 @@ stimulus = create_virtual_module("stimulus", "foundation_stimulus", create_schem
 scan = create_virtual_module("scan", "foundation_scan", create_schema=True)
 recording = create_virtual_module("recording", "foundation_recording", create_schema=True)
 fnn = create_virtual_module("fnn", "foundation_fnn", create_schema=True)
+function = create_virtual_module("function", "foundation_function", create_schema=True)

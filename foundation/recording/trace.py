@@ -1,4 +1,4 @@
-from djutils import merge, rowproperty, MissingError
+from djutils import merge, rowproperty
 from foundation.virtual import scan, utility
 from foundation.virtual.bridge import pipe_fuse, pipe_shared, pipe_stim, pipe_tread, resolve_pipe
 from foundation.recording.trial import Trial, TrialSet, TrialBounds
