@@ -2,9 +2,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from djutils import keys, merge, rowproperty, keyproperty, RestrictionError
-from foundation.virtual import utility
-from foundation.recording.trial import Trial, TrialSet, TrialBounds, TrialVideo
-from foundation.recording.trace import Trace, TraceSet, TraceHomogeneous, TraceTrials, TraceSummary
+from foundation.virtual import utility, stimulus, recording
 
 
 @keys
@@ -14,16 +12,17 @@ class ResampleTrial:
     @property
     def key_list(self):
         return [
-            Trial,
+            recording.Trial,
             utility.Rate,
         ]
 
     @rowproperty
     def samples(self):
         from foundation.utils.resample import samples
+        from foundation.utility.resample import Rate
 
         # trial timing
-        start, end = merge(Trial & self.key, TrialBounds).fetch1("start", "end")
+        start, end = merge(recording.Trial & self.key, recording.TrialBounds).fetch1("start", "end")
 
         # resampling period
         period = (Rate & self.key).link.period
@@ -42,7 +41,7 @@ class ResampleTrial:
         from scipy.interpolate import interp1d
         from foundation.utils.resample import frame_index
         from foundation.utility.resample import Rate
-        from foundation.stimulus.video import VideoInfo
+        from foundation.recording.trial import Trial
 
         # trial flip times
         flips = (Trial & self.key).link.flips
@@ -51,11 +50,11 @@ class ResampleTrial:
         period = (Rate & self.key).link.period
 
         # trial and video info
-        info = merge(self.key, TrialBounds, TrialVideo, VideoInfo)
+        info = merge(self.key, recording.TrialBounds, recording.TrialVideo, stimulus.VideoInfo)
         start, frames = info.fetch1("start", "frames")
 
         if not 0 <= frames - len(flips) <= 1:
-            raise ValueError("Flips differ video by more than 1 frame.")
+            raise ValueError("Flips differ from video frames by more than 1.")
 
         # sample index for each flip
         index = frame_index(flips - start, period)
@@ -80,7 +79,7 @@ class TraceResampling:
     @property
     def key_list(self):
         return [
-            Trace,
+            recording.Trace,
             utility.Resample,
             utility.Offset,
             utility.Rate,
@@ -95,6 +94,7 @@ class TraceResampling:
             callable, resamples traces
         """
         from foundation.utility.resample import Rate, Offset, Resample
+        from foundation.recording.trace import Trace
 
         # resampling period, offset, method
         period = (Rate & self.key).link.period
@@ -113,14 +113,14 @@ class ResampleTrace:
     @property
     def key_list(self):
         return [
-            Trace,
-            Trial,
+            recording.Trace,
+            recording.Trial,
             utility.Resample,
             utility.Offset,
             utility.Rate,
         ]
 
-    @keyproperty(Trace, utility.Rate, utility.Offset, utility.Resample)
+    @keyproperty(recording.Trace, utility.Rate, utility.Offset, utility.Resample)
     def trials(self):
         """
         Returns
@@ -129,11 +129,13 @@ class ResampleTrace:
             index -- str : trial_id (foundation.recording.trial.Trial)
             data -- 1D array : resampled trace values
         """
+        from foundation.recording.trial import TrialSet
+
         # requested trials
-        trials = merge(self.key, TrialBounds)
+        trials = merge(self.key, recording.TrialBounds)
 
         # ensure requested trials are valid
-        valid_trials = merge(Trace & self.key, TraceTrials)
+        valid_trials = merge(recording.Trace & self.key, recording.TraceTrials)
         if trials - (TrialSet & valid_trials).members:
             raise RestrictionError("Requested trials do not belong to the trace.")
 
@@ -158,8 +160,8 @@ class ResampleTraces:
     @property
     def key_list(self):
         return [
-            TraceSet & "members > 0",
-            Trial,
+            recording.TraceSet & "members > 0",
+            recording.Trial,
             utility.Resample,
             utility.Offset,
             utility.Rate,
@@ -173,19 +175,21 @@ class ResampleTraces:
         2D array -- [samples, traces]
             resampled traces, ordered by traceset_index
         """
+        from foundation.recording.trace import TraceSet
+
         # trace set
         traces = (TraceSet & self.key).members
 
         # ensure requested trial is valid
-        valid_trials = Trial
-        for trial_set in TrialSet & merge(traces, TraceTrials):
-            valid_trials &= TrialSet.Member & trial_set
+        valid_trials = recording.Trial
+        for trial_set in recording.TrialSet & merge(traces, recording.TraceTrials):
+            valid_trials &= recording.TrialSet.Member & trial_set
 
         if self.key - valid_trials:
             raise RestrictionError("Requested trial does not belong to the trace set.")
 
         # trial start and end times
-        start, end = merge(self.key, TrialBounds).fetch1("start", "end")
+        start, end = merge(self.key, recording.TrialBounds).fetch1("start", "end")
 
         # sample traces
         traces = traces.fetch("trace_id", order_by="traceset_index", as_dict=True)
@@ -204,8 +208,8 @@ class SummarizeTrace:
     @property
     def key_list(self):
         return [
-            Trace,
-            TrialSet & "members > 0",
+            recording.Trace,
+            recording.TrialSet & "members > 0",
             utility.Summary,
             utility.Resample,
             utility.Offset,
@@ -221,6 +225,7 @@ class SummarizeTrace:
             trace summary statistic
         """
         from foundation.utility.stat import Summary
+        from foundation.recording.trial import TrialSet
 
         # trial set
         trial_keys = (TrialSet & self.key).members
@@ -240,8 +245,8 @@ class StandardizeTraces:
     @property
     def key_list(self):
         return [
-            TraceSet & "members > 0",
-            TrialSet & "members > 0",
+            recording.TraceSet & "members > 0",
+            recording.TrialSet & "members > 0",
             utility.Standardize,
             utility.Resample,
             utility.Offset,
@@ -257,6 +262,7 @@ class StandardizeTraces:
             trace set standardization
         """
         from foundation.utility.standardize import Standardize
+        from foundation.recording.trace import TraceSet
 
         # standardization link
         stand = (Standardize & self.key).link
@@ -266,13 +272,13 @@ class StandardizeTraces:
         stat_keys = stand.summary_keys
 
         # homogeneous mask
-        hom = merge(trace_keys, TraceHomogeneous)
+        hom = merge(trace_keys, recording.TraceHomogeneous)
         hom = hom.fetch("homogeneous", order_by="traceset_index")
         hom = hom.astype(bool)
 
         # summary stats
         stats = trace_keys * self.key * stat_keys
-        stats = merge(stats, TraceSummary)
+        stats = merge(stats, recording.TraceSummary)
 
         # collect stats in dict
         kwargs = dict()
