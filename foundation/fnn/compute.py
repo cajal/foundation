@@ -262,6 +262,7 @@ class TrainNetworkSet:
 
     @rowmethod
     def train(self):
+        from time import sleep
         from random import randint
         from torch.cuda import device_count
         from torch.multiprocessing import spawn
@@ -285,6 +286,7 @@ class TrainNetworkSet:
             join=True,
         )
 
+        sleep(4)
         key = merge(self.key, fnn.Model.NetworkSetModel)
         epochs = (Scheduler & key).link.epochs
         checkpoints = Checkpoint & nets & "rank >= 0" & f"rank < {size}" & {"epoch": epochs - 1}
