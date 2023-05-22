@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name: foundation-scan-insert
 spec:
-  parallelism: 10
+  parallelism: 40
   backoffLimit: 50
   template:
     spec:

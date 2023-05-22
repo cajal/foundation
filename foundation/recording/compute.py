@@ -1,13 +1,8 @@
 import numpy as np
 import pandas as pd
-from scipy.interpolate import interp1d
 from tqdm import tqdm
 from djutils import keys, merge, rowproperty, keyproperty, RestrictionError
-from foundation.utils.resample import samples, frame_index
-from foundation.utility.stat import Summary
-from foundation.utility.standardize import Standardize
-from foundation.utility.resample import Rate, Offset, Resample
-from foundation.stimulus.video import VideoInfo
+from foundation.virtual import utility
 from foundation.recording.trial import Trial, TrialSet, TrialBounds, TrialVideo
 from foundation.recording.trace import Trace, TraceSet, TraceHomogeneous, TraceTrials, TraceSummary
 
@@ -20,11 +15,13 @@ class ResampleTrial:
     def key_list(self):
         return [
             Trial,
-            Rate,
+            utility.Rate,
         ]
 
     @rowproperty
     def samples(self):
+        from foundation.utils.resample import samples
+
         # trial timing
         start, end = merge(Trial & self.key, TrialBounds).fetch1("start", "end")
 
@@ -42,7 +39,12 @@ class ResampleTrial:
         1D array
             video frame index for each of the resampled time points
         """
-        # trial flip times=
+        from scipy.interpolate import interp1d
+        from foundation.utils.resample import frame_index
+        from foundation.utility.resample import Rate
+        from foundation.stimulus.video import VideoInfo
+
+        # trial flip times
         flips = (Trial & self.key).link.flips
 
         # resampling period
@@ -52,8 +54,8 @@ class ResampleTrial:
         info = merge(self.key, TrialBounds, TrialVideo, VideoInfo)
         start, frames = info.fetch1("start", "frames")
 
-        if len(flips) != frames:
-            raise ValueError("Flips do not match video frames.")
+        if not 0 <= frames - len(flips) <= 1:
+            raise ValueError("Flips differ video by more than 1 frame.")
 
         # sample index for each flip
         index = frame_index(flips - start, period)
@@ -79,9 +81,9 @@ class TraceResampling:
     def key_list(self):
         return [
             Trace,
-            Resample,
-            Offset,
-            Rate,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
         ]
 
     @rowproperty
@@ -92,6 +94,8 @@ class TraceResampling:
         foundation.utils.resample.Resample
             callable, resamples traces
         """
+        from foundation.utility.resample import Rate, Offset, Resample
+
         # resampling period, offset, method
         period = (Rate & self.key).link.period
         offset = (Offset & self.key).link.offset
@@ -111,12 +115,12 @@ class ResampleTrace:
         return [
             Trace,
             Trial,
-            Resample,
-            Offset,
-            Rate,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
         ]
 
-    @keyproperty(Trace, Rate, Offset, Resample)
+    @keyproperty(Trace, utility.Rate, utility.Offset, utility.Resample)
     def trials(self):
         """
         Returns
@@ -136,7 +140,7 @@ class ResampleTrace:
         # fetch trials, ordered by start time
         trial_ids, starts, ends = trials.fetch("trial_id", "start", "end", order_by="start")
 
-        # trace resampler
+        # resample traces
         resample = (TraceResampling & self.key).resample
         samples = [resample(a, b) for a, b in zip(starts, ends)]
 
@@ -156,9 +160,9 @@ class ResampleTraces:
         return [
             TraceSet & "members > 0",
             Trial,
-            Resample,
-            Offset,
-            Rate,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
         ]
 
     @rowproperty
@@ -202,10 +206,10 @@ class SummarizeTrace:
         return [
             Trace,
             TrialSet & "members > 0",
-            Summary,
-            Resample,
-            Offset,
-            Rate,
+            utility.Summary,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
         ]
 
     @rowproperty
@@ -216,6 +220,8 @@ class SummarizeTrace:
         float
             trace summary statistic
         """
+        from foundation.utility.stat import Summary
+
         # trial set
         trial_keys = (TrialSet & self.key).members
 
@@ -236,10 +242,10 @@ class StandardizeTraces:
         return [
             TraceSet & "members > 0",
             TrialSet & "members > 0",
-            Standardize,
-            Resample,
-            Offset,
-            Rate,
+            utility.Standardize,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
         ]
 
     @rowproperty
@@ -250,9 +256,14 @@ class StandardizeTraces:
         foundation.utility.standardize.Standardize
             trace set standardization
         """
+        from foundation.utility.standardize import Standardize
+
+        # standardization link
+        stand = (Standardize & self.key).link
+
         # trace and stat keys
         trace_keys = (TraceSet & self.key).members
-        stat_keys = (Standardize & self.key).link.summary_keys
+        stat_keys = stand.summary_keys
 
         # homogeneous mask
         hom = merge(trace_keys, TraceHomogeneous)
@@ -270,4 +281,4 @@ class StandardizeTraces:
             kwargs[sid] = (stats & skey).fetch("summary", order_by="traceset_index")
 
         # standarization transform
-        return (Standardize & self.key).link.standardize(homogeneous=hom, **kwargs)
+        return stand.standardize(homogeneous=hom, **kwargs)
