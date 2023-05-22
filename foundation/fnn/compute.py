@@ -290,7 +290,7 @@ class TrainNetworkSet:
         key = merge(self.key, fnn.Model.NetworkSetModel)
         epochs = (Scheduler & key).link.epochs
         checkpoints = Checkpoint & nets & "rank >= 0" & f"rank < {size}" & {"epoch": epochs - 1}
-        assert len(checkpoints) == len(keys)
+        assert len(checkpoints) == size
 
         keys = U("network_id", "model_id").aggr(checkpoints, rank="min(rank)").fetch(as_dict=True)
         for key in keys:
