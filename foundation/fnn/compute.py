@@ -138,42 +138,127 @@ class RandomNetworkState:
             return (Network & self.key).link.module
 
 
+# @keys
+# class _TrainNetworkSet:
+#     """Train Network Set -- Process"""
+
+#     @property
+#     def key_list(self):
+#         return [
+#             fnn.Model.NetworkSetModel * fnn.Network & fnn.NetworkSet.Member,
+#         ]
+
+#     @rowmethod
+#     def train(self):
+#         from torch import device
+#         from torch.cuda import current_device
+#         from torch.distributed import is_initialized, get_world_size, get_rank
+#         from fnn.train.parallel import ParameterGroup
+#         from foundation.fnn.network import Network, NetworkSet
+#         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
+#         from foundation.fnn.cache import ModelNetworkInfo, ModelNetworkCheckpoint
+
+#         if is_initialized():
+#             size = get_world_size()
+#             rank = get_rank()
+#         else:
+#             assert instances == 1
+#             size = 1
+#             rank = 0
+
+#         key = merge(self.key, fnn.Model.NetworkSetModel)
+#         mid, nid, seed, cycle, instances = key.fetch1("model_id", "network_id", "seed", "cycle", "instances")
+#         checkpoint = ModelNetworkCheckpoint & {"model_id": mid} & "rank >= 0" & f"rank < {size}"
+
+#         init = not checkpoint and cycle == 0
+#         cuda = device("cuda", current_device())
+#         nets = (State & key).link.network_keys
+#         module = (nets & key).build(initialize=init).to(device=cuda)
+
+#         if checkpoint:
+#             logger.info("Reloading from previous checkpoint")
+
+#             assert len(checkpoint) == size
+#             assert len(U("epoch") & checkpoint) == 1
+
+#             prev = (checkpoint & key & {"rank": rank}).load(device=cuda)
+#             module.load_state_dict(prev["state_dict"])
+#             optimizer = prev["optimizer"]
+
+#         else:
+#             if cycle == 0:
+#                 logger.info("Initializing training")
+#             else:
+#                 logger.info("Reloading from previous cycle")
+#                 # TODO
+#                 raise NotImplementedError()
+
+#             scheduler = (Scheduler & key).link.scheduler
+#             scheduler._init(epoch=0, cycle=cycle)
+
+#             optimizer = (Optimizer & key).link.optimizer
+#             optimizer._init(scheduler=scheduler)
+
+#         dataset = (Network & key).link.dataset
+
+#         loader = (Loader & key).link.loader
+#         loader._init(dataset=dataset)
+
+#         objective = (Objective & key).link.objective
+#         objective._init(module=module)
+
+#         params = module.named_parameters()
+#         groups = module.parallel_groups(instances=instances)
+
+#         for epoch, info in optimizer.optimize(
+#             loader=loader, objective=objective, parameters=params, groups=groups, seed=seed
+#         ):
+#             ModelNetworkInfo.fill(
+#                 model_id=mid,
+#                 network_id=nid,
+#                 rank=rank,
+#                 epoch=epoch,
+#                 info=info,
+#             )
+#             ModelNetworkCheckpoint.fill(
+#                 model_id=mid,
+#                 network_id=nid,
+#                 rank=rank,
+#                 epoch=epoch,
+#                 optimizer=optimizer,
+#                 state_dict=module.state_dict(),
+#             )
+
+
 @keys
-class _TrainNetworkSet:
-    """Train Network Set -- Process"""
+class _TrainNetwork:
+    """Train Network"""
 
     @property
     def key_list(self):
         return [
-            fnn.Model.NetworkSetModel * fnn.Network & fnn.NetworkSet.Member,
+            fnn.Network,
+            fnn.State,
+            fnn.Loader,
+            fnn.Objective,
+            fnn.Optimizer,
+            fnn.Scheduler,
         ]
 
     @rowmethod
-    def train(self):
+    def train(self, model_id, cycle=0, seed=0, instances=1, rank=0, size=1):
         from torch import device
         from torch.cuda import current_device
-        from torch.distributed import is_initialized, get_world_size, get_rank
-        from fnn.train.parallel import ParameterGroup
-        from foundation.fnn.network import Network, NetworkSet
+        from foundation.fnn.network import Network
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
         from foundation.fnn.cache import ModelNetworkInfo, ModelNetworkCheckpoint
 
-        if is_initialized():
-            size = get_world_size()
-            rank = get_rank()
-        else:
-            assert instances == 1
-            size = 1
-            rank = 0
-
-        key = merge(self.key, fnn.Model.NetworkSetModel)
-        mid, nid, seed, cycle, instances = key.fetch1("model_id", "network_id", "seed", "cycle", "instances")
-        checkpoint = ModelNetworkCheckpoint & {"model_id": mid} & "rank >= 0" & f"rank < {size}"
-
+        checkpoint = ModelNetworkCheckpoint & {"model_id": model_id} & "rank >= 0" & f"rank < {size}"
         init = not checkpoint and cycle == 0
         cuda = device("cuda", current_device())
-        nets = (State & key).link.network_keys
-        module = (nets & key).build(initialize=init).to(device=cuda)
+
+        nets = (State & self.key).link.network_keys
+        module = (nets & self.key).build(initialize=init).to(device=cuda)
 
         if checkpoint:
             logger.info("Reloading from previous checkpoint")
@@ -181,7 +266,7 @@ class _TrainNetworkSet:
             assert len(checkpoint) == size
             assert len(U("epoch") & checkpoint) == 1
 
-            prev = (checkpoint & key & {"rank": rank}).load(device=cuda)
+            prev = (checkpoint & self.key & {"rank": rank}).load(device=cuda)
             module.load_state_dict(prev["state_dict"])
             optimizer = prev["optimizer"]
 
@@ -193,36 +278,38 @@ class _TrainNetworkSet:
                 # TODO
                 raise NotImplementedError()
 
-            scheduler = (Scheduler & key).link.scheduler
+            scheduler = (Scheduler & self.key).link.scheduler
             scheduler._init(epoch=0, cycle=cycle)
 
-            optimizer = (Optimizer & key).link.optimizer
+            optimizer = (Optimizer & self.key).link.optimizer
             optimizer._init(scheduler=scheduler)
 
-        dataset = (Network & key).link.dataset
+        dataset = (Network & self.key).link.dataset
 
-        loader = (Loader & key).link.loader
+        loader = (Loader & self.key).link.loader
         loader._init(dataset=dataset)
 
-        objective = (Objective & key).link.objective
+        objective = (Objective & self.key).link.objective
         objective._init(module=module)
 
         params = module.named_parameters()
         groups = module.parallel_groups(instances=instances)
 
+        network_id = self.fetch1("network_id")
+
         for epoch, info in optimizer.optimize(
             loader=loader, objective=objective, parameters=params, groups=groups, seed=seed
         ):
             ModelNetworkInfo.fill(
-                model_id=mid,
-                network_id=nid,
+                model_id=model_id,
+                network_id=network_id,
                 rank=rank,
                 epoch=epoch,
                 info=info,
             )
             ModelNetworkCheckpoint.fill(
-                model_id=mid,
-                network_id=nid,
+                model_id=model_id,
+                network_id=network_id,
                 rank=rank,
                 epoch=epoch,
                 optimizer=optimizer,
@@ -252,8 +339,16 @@ class TrainNetworkSet:
                 rank=rank,
                 world_size=size,
             )
-            key = _TrainNetworkSet & {"model_id": model_id, "network_id": network_id}
-            key.train()
+            key = fnn.Network * fnn.Model.NetworkSetModel & {"model_id": model_id, "network_id": network_id}
+            cycle, seed, instances = key.fetch1("cycle", "seed", "instances")
+            trainer = _TrainNetwork & key
+            trainer.train(
+                model_id=model_id,
+                cycle=cycle,
+                instances=instances,
+                rank=rank,
+                size=size,
+            )
 
     @staticmethod
     def _fn(rank, size, port, keys):
