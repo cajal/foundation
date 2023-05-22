@@ -23,11 +23,11 @@ spec:
           image: at-docker.ad.bcm.edu:5000/foundation:v0
           resources:
             limits:
-              nvidia.com/gpu: 2
+              nvidia.com/gpu: 8
             requests:
-              cpu: 10
-              memory: "16Gi"
-              ephemeral-storage: "32Gi"
+              cpu: 20
+              memory: "64Gi"
+              ephemeral-storage: "128Gi"
           volumeMounts:
             - name: scratch09
               mountPath: /mnt/scratch09
