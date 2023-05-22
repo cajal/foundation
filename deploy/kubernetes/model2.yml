@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: foundation-model
+  name: foundation-model-2
 spec:
   parallelism: 1
   backoffLimit: 50
