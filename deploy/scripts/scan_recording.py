@@ -38,6 +38,6 @@ def run():
 
     (ScanUnitCache & cohort & utility.Resample.Hamming).fill()
 
-if __name__ == "__main__"
 
-
+if __name__ == "__main__":
+    run()
