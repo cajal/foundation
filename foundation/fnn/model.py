@@ -49,12 +49,33 @@ class NetworkSetModel(_Model):
         yield from (TrainNetworkSet & self).train()
 
 
+@schema.lookup
+class NetworkModel(_Model):
+    definition = """
+    -> Network
+    -> State
+    -> Loader
+    -> Objective
+    -> Optimizer
+    -> Scheduler
+    cycle           : int unsigned  # training cycle
+    seed            : int unsigned  # seed for optimization
+    instances       : int unsigned  # parallel training instances
+    """
+
+    @rowproperty
+    def networks(self):
+        from foundation.fnn.compute import TrainNetwork
+
+        yield (TrainNetwork & self).train()
+
+
 # -- Model --
 
 
 @schema.link
 class Model:
-    links = [NetworkSetModel]
+    links = [NetworkSetModel, NetworkModel]
     name = "model"
     comment = "neural network model"
 
