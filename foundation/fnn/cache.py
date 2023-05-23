@@ -55,7 +55,7 @@ class ModelNetworkCheckpoint:
             network_id=network_id,
             rank=rank,
             epoch=epoch,
-            info=save_to_array({"optimizer": optimizer, "state_dict": state_dict}),
+            checkpoint=save_to_array({"optimizer": optimizer, "state_dict": state_dict}),
         )
         cls.insert1(key, replace=True)
 
