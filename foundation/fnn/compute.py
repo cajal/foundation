@@ -359,5 +359,5 @@ class TrainNetwork:
         checkpoints = Checkpoint & key & "rank >= 0" & f"rank < {size}" & {"epoch": epochs - 1}
         assert len(checkpoints) == size
 
-        checkpoint = U("network_id", "model_id").aggr(checkpoints, rank="min(rank)").fetch1()
-        return (Checkpoint & checkpoint).load()["state_dict"]
+        key = U("network_id", "model_id").aggr(checkpoints, rank="min(rank)").fetch1()
+        return key["network_id"], (Checkpoint & key).load()["state_dict"]
