@@ -1,9 +1,6 @@
 from djutils import keys
 from foundation.virtual.bridge import pipe_exp, pipe_eye
-from foundation.scan.experiment import Scan as ScanExperiment
-from foundation.scan.pupil import PupilTrace, PupilNans
-from foundation.scan.trial import TrialFilterSet, FilteredTrials
-from foundation.scan.unit import UnitFilterSet, FilteredUnits
+from foundation.virtual import scan
 
 
 @keys
@@ -15,11 +12,16 @@ class Scan:
         return [
             pipe_exp.Scan,
             pipe_eye.FittedPupil,
-            TrialFilterSet,
-            UnitFilterSet,
+            scan.TrialFilterSet,
+            scan.UnitFilterSet,
         ]
 
     def fill(self):
+        from foundation.scan.experiment import Scan as ScanExperiment
+        from foundation.scan.pupil import PupilTrace, PupilNans
+        from foundation.scan.trial import FilteredTrials
+        from foundation.scan.unit import FilteredUnits
+
         # scan timing
         ScanExperiment.populate(self.key, reserve_jobs=True, display_progress=True)
 

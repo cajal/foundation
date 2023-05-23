@@ -2,8 +2,6 @@ from datajoint import U
 from djutils import keys
 from foundation.virtual.bridge import pipe_exp, pipe_stim
 from foundation.virtual import utility
-from foundation.stimulus.video import Video, VideoInfo
-from foundation.stimulus.cache import ResizedVideo
 
 
 @keys
@@ -17,6 +15,8 @@ class Scan:
         ]
 
     def fill(self):
+        from foundation.stimulus.video import Video, VideoInfo
+
         # scan trials
         trials = pipe_stim.Trial * pipe_stim.Condition & self.key
 
@@ -54,6 +54,9 @@ class ScanCache:
         ]
 
     def fill(self):
+        from foundation.stimulus.video import Video
+        from foundation.stimulus.cache import ResizedVideo
+
         # trials
         trials = pipe_stim.Trial * pipe_stim.Condition & self.key
 

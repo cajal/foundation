@@ -99,5 +99,5 @@ spec:
                     values:
                       # - at-gpu7
                       - at-gpu10
-                      - at-gpu11
-                      - at-gpu12
+                      # - at-gpu11
+                      # - at-gpu12

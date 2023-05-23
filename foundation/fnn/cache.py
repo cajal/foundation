@@ -1,71 +1,66 @@
-from djutils import rowmethod, Filepath
+from djutils import rowmethod
 from foundation.fnn.network import Network
 from foundation.fnn.model import Model
 from foundation.schemas import fnn as schema
 
 
 @schema.lookup
-class ModelNetworkInfo(Filepath):
+class ModelNetworkInfo:
     definition = """
     -> Model
     -> Network
-    rank        : int unsigned          # training rank
-    epoch       : int unsigned          # training epoch
+    rank        : int unsigned      # training rank
+    epoch       : int unsigned      # training epoch
     ---
-    info        : filepath@scratch09    # training info
+    info        : longblob          # training info
     """
 
     @classmethod
-    def fill(cls, network_id, model_id, rank, epoch, info):
-        from torch import save
+    def fill(cls, model_id, network_id, rank, epoch, info):
+        from foundation.utils.torch import save_to_array
 
-        key = dict(network_id=network_id, model_id=model_id, rank=rank, epoch=epoch)
-
-        filepath = cls.createpath(key, "info", "pkl")
-        save(info, filepath, pickle_protocol=5)
-
-        cls.insert1(dict(key, info=filepath))
+        key = dict(
+            model_id=model_id,
+            network_id=network_id,
+            rank=rank,
+            epoch=epoch,
+            info=save_to_array(info),
+        )
+        cls.insert1(key)
 
     @rowmethod
     def load(self, device="cpu"):
-        from torch import load
+        from foundation.utils.torch import load_from_array
 
-        filepath = self.fetch1("info")
-        return load(filepath, map_location=device)
+        return load_from_array(self.fetch1("info"), map_location=device)
 
 
 @schema.lookup
-class ModelNetworkCheckpoint(Filepath):
+class ModelNetworkCheckpoint:
     definition = """
     -> Model
     -> Network
-    rank        : int unsigned          # training rank
+    rank        : int unsigned      # training rank
     ---
-    epoch       : int unsigned          # training epoch
-    checkpoint  : filepath@scratch09    # training checkpoint
+    epoch       : int unsigned      # training epoch
+    checkpoint  : longblob          # training checkpoint
     """
 
     @classmethod
-    def fill(cls, network_id, model_id, rank, epoch, optimizer, state_dict):
-        from torch import save
+    def fill(cls, model_id, network_id, rank, epoch, optimizer, state_dict):
+        from foundation.utils.torch import save_to_array
 
-        key = dict(network_id=network_id, model_id=model_id, rank=rank)
-
-        if epoch > 0:
-            assert (cls & key).fetch1("epoch") == epoch - 1
-
-        filepath = cls.createpath(key, "checkpoint", "pkl")
-        save({"optimizer": optimizer, "state_dict": state_dict}, filepath, pickle_protocol=5)
-
-        row = dict(key, epoch=epoch, checkpoint=filepath)
-        if epoch > 0:
-            (cls & key).replace(row, prompt=False)
-        else:
-            cls.insert1(row)
+        key = dict(
+            model_id=model_id,
+            network_id=network_id,
+            rank=rank,
+            epoch=epoch,
+            info=save_to_array({"optimizer": optimizer, "state_dict": state_dict}),
+        )
+        cls.insert1(key, replace=True)
 
     @rowmethod
     def load(self, device="cpu"):
-        from torch import load
+        from foundation.utils.torch import load_from_array
 
-        filepath = self.fetch1("checkpoint")
-        return load(filepath, map_location=device)
+        return load_from_array(self.fetch1("checkpoint"), map_location=device)

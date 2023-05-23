@@ -1,4 +1,4 @@
-from djutils import rowproperty, Filepath
+from djutils import rowproperty
 from foundation.fnn.network import Network, NetworkSet
 from foundation.fnn.train import State, Loader, Objective, Optimizer, Scheduler
 from foundation.schemas import fnn as schema
@@ -84,12 +84,12 @@ class Model:
 
 
 @schema.computed
-class ModelNetwork(Filepath):
+class ModelNetwork:
     definition = """
     -> Model
     -> Network
     ---
-    parameters      : filepath@scratch09    # parameter state dict
+    parameters      : longblob      # parameter state dict
     """
 
     @property
@@ -97,22 +97,13 @@ class ModelNetwork(Filepath):
         return Model
 
     def make(self, key):
-        from torch import save
+        from foundation.utils.torch import save_to_array
 
         for network_id, state_dict in (Model & key).link.networks:
 
             _key = dict(
                 key,
                 network_id=network_id,
+                parameters=save_to_array(state_dict),
             )
-            filepath = self.createpath(
-                _key,
-                "parameters",
-                suffix="pt",
-            )
-            save(
-                state_dict,
-                filepath,
-                pickle_protocol=5,
-            )
-            self.insert1(dict(_key, parameters=filepath))
+            self.insert1(_key)
