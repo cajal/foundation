@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name: foundation-model-2
 spec:
-  parallelism: 1
+  parallelism: 2
   backoffLimit: 50
   template:
     spec:
