@@ -31,7 +31,7 @@ class Scan:
             link_types.append(stype)
 
             table = getattr(Video, stype)._link
-            table.insert(keys.proj(), skip_duplicates=True, ignore_extra_fields=True)
+            table.insert(keys.proj() - table, skip_duplicates=True, ignore_extra_fields=True)
 
         # video links
         Video.fill()
