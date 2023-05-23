@@ -279,8 +279,8 @@ class TrainNetworkSet:
         size = len(keys)
         assert device_count() >= size
 
-        connection = self.key.connection
-        connection.close()
+        conn = self.key.connection
+        conn.close()
         port = randint(10000, 60000)
         spawn(
             TrainNetworkSet._fn,
@@ -288,7 +288,7 @@ class TrainNetworkSet:
             nprocs=size,
             join=True,
         )
-        connection.connect()
+        conn.connect()
 
         key = merge(self.key, fnn.Model.NetworkSetModel)
         epochs = (Scheduler & key).link.epochs
@@ -346,8 +346,8 @@ class TrainNetwork:
         size, model_id = key.fetch1("instances", "model_id")
         assert device_count() >= size
 
-        connection = self.key.connection
-        connection.close()
+        conn = self.key.connection
+        conn.close()
         port = randint(10000, 60000)
         spawn(
             TrainNetwork._train,
@@ -355,7 +355,7 @@ class TrainNetwork:
             nprocs=size,
             join=True,
         )
-        connection.connect()
+        conn.connect()
 
         epochs = (Scheduler & key).link.epochs
         checkpoints = Checkpoint & key & "rank >= 0" & f"rank < {size}" & {"epoch": epochs - 1}
