@@ -37,9 +37,9 @@ class NetworkSetModel(_Model):
     -> Objective
     -> Optimizer
     -> Scheduler
-    cycle           : int unsigned  # training cycle
-    seed            : int unsigned  # seed for optimization
-    instances       : int unsigned  # parallel training instances
+    cycle           : int unsigned      # training cycle
+    seed            : int unsigned      # seed for optimization
+    instances       : int unsigned      # parallel training instances
     """
 
     @rowproperty
@@ -58,9 +58,9 @@ class NetworkModel(_Model):
     -> Objective
     -> Optimizer
     -> Scheduler
-    cycle           : int unsigned  # training cycle
-    seed            : int unsigned  # seed for optimization
-    instances       : int unsigned  # parallel training instances
+    cycle           : int unsigned      # training cycle
+    seed            : int unsigned      # seed for optimization
+    instances       : int unsigned      # parallel training instances
     """
 
     @rowproperty
