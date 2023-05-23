@@ -264,8 +264,7 @@ class TrainNetworkSet:
         TrainNetworkSet._train(rank=rank, size=size, port=port, **kwargs)
 
     @rowmethod
-    def train(self, timeout=10):
-        from time import sleep
+    def train(self):
         from random import randint
         from torch.cuda import device_count
         from torch.multiprocessing import spawn
@@ -280,6 +279,8 @@ class TrainNetworkSet:
         size = len(keys)
         assert device_count() >= size
 
+        connection = self.key.connection
+        connection.close()
         port = randint(10000, 60000)
         spawn(
             TrainNetworkSet._fn,
@@ -287,8 +288,8 @@ class TrainNetworkSet:
             nprocs=size,
             join=True,
         )
+        connection.connect()
 
-        sleep(timeout)
         key = merge(self.key, fnn.Model.NetworkSetModel)
         epochs = (Scheduler & key).link.epochs
         checkpoints = Checkpoint & nets & "rank >= 0" & f"rank < {size}" & {"epoch": epochs - 1}
@@ -334,8 +335,7 @@ class TrainNetwork:
             )
 
     @rowmethod
-    def train(self, timeout=10):
-        from time import sleep
+    def train(self):
         from random import randint
         from torch.cuda import device_count
         from torch.multiprocessing import spawn
@@ -346,6 +346,8 @@ class TrainNetwork:
         size, model_id = key.fetch1("instances", "model_id")
         assert device_count() >= size
 
+        connection = self.key.connection
+        connection.close()
         port = randint(10000, 60000)
         spawn(
             TrainNetwork._train,
@@ -353,8 +355,8 @@ class TrainNetwork:
             nprocs=size,
             join=True,
         )
+        connection.connect()
 
-        sleep(timeout)
         epochs = (Scheduler & key).link.epochs
         checkpoints = Checkpoint & key & "rank >= 0" & f"rank < {size}" & {"epoch": epochs - 1}
         assert len(checkpoints) == size
