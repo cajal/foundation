@@ -1,8 +1,6 @@
 #!/usr/bin/env python
-from setuptools import setup, find_packages
-from os import path
 
-here = path.abspath(path.dirname(__file__))
+from setuptools import setup, find_packages
 
 setup(
     name="foundation",
