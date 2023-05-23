@@ -349,7 +349,7 @@ class TrainNetwork:
 
         port = randint(10000, 60000)
         spawn(
-            TrainNetworkSet._train,
+            TrainNetwork._train,
             args=(size, model_id, port),
             nprocs=size,
             join=True,
