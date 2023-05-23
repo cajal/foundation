@@ -19,8 +19,8 @@ class _Model:
         ------
         str
             network_id
-        fnn.modules.Module
-            network module
+        dict
+            parameter state dict
         """
         raise NotImplementedError()
 
