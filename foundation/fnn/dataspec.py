@@ -14,12 +14,12 @@ class _VisualSpec:
     """Visual Data Specification"""
 
     @rowproperty
-    def datakeys(self):
+    def data_keys(self):
         """
         Returns
         -------
         set[djutils.derived.Keys]
-            keys with `dataset` rowproperty
+            keys with `dataset` and `sizes` rowproperty
         """
         raise NotImplementedError()
 
@@ -45,7 +45,7 @@ class ResampleVisual(_VisualSpec):
     """
 
     @rowproperty
-    def datakeys(self):
+    def data_keys(self):
         from foundation.fnn.compute import ResampledVisualRecording
 
         return {ResampledVisualRecording}

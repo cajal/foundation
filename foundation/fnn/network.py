@@ -48,9 +48,9 @@ class VisualNetwork(_Network):
 
     @rowproperty
     def datakey(self):
-        keys = (VisualSet & self).link.datakeys
-        keys &= (VisualSpec & self).link.datakeys
-        keys &= (Architecture & self).link.datakeys
+        keys = (VisualSet & self).link.data_keys
+        keys &= (VisualSpec & self).link.data_keys
+        keys &= (Architecture & self).link.data_keys
 
         (keys,) = keys
         return keys & self
