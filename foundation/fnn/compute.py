@@ -161,6 +161,7 @@ class _TrainNetwork:
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
         from foundation.fnn.cache import ModelNetworkInfo, ModelNetworkCheckpoint
 
+        network_id = self.key.fetch1("network_id")
         checkpoint = ModelNetworkCheckpoint & {"model_id": model_id} & "rank >= 0" & f"rank < {size}"
         init = not checkpoint and cycle == 0
         cuda = device("cuda", current_device())
@@ -202,8 +203,6 @@ class _TrainNetwork:
 
         params = module.named_parameters()
         groups = module.parallel_groups(instances=instances)
-
-        network_id = self.fetch1("network_id")
 
         for epoch, info in optimizer.optimize(
             loader=loader, objective=objective, parameters=params, groups=groups, seed=seed
