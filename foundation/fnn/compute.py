@@ -158,6 +158,7 @@ class _TrainNetwork:
         from torch import device
         from torch.cuda import current_device
         from foundation.fnn.network import Network
+        from foundation.fnn.model import Model
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
         from foundation.fnn.cache import ModelNetworkInfo, ModelNetworkCheckpoint
 
@@ -170,11 +171,10 @@ class _TrainNetwork:
         module = (nets & self.key).build(initialize=init).to(device=cuda)
 
         if checkpoint:
-            logger.info("Reloading from previous checkpoint")
-
             assert len(checkpoint) == size
             assert len(U("epoch") & checkpoint) == 1
 
+            logger.info("Reloading from previous checkpoint")
             prev = (checkpoint & self.key & {"rank": rank}).load(device=cuda)
             module.load_state_dict(prev["state_dict"])
             optimizer = prev["optimizer"]
@@ -184,8 +184,9 @@ class _TrainNetwork:
                 logger.info("Initializing training")
             else:
                 logger.info("Reloading from previous cycle")
-                # TODO
-                raise NotImplementedError()
+                prev = (Model & {"model_id": model_id}).link.previous_networks
+                prev = (prev & self.key).parameters(device=cuda)
+                module.load_state_dict(prev)
 
             scheduler = (Scheduler & self.key).link.scheduler
             scheduler._init(epoch=0, cycle=cycle)

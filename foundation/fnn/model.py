@@ -1,4 +1,4 @@
-from djutils import rowproperty
+from djutils import rowproperty, rowmethod
 from foundation.fnn.network import Network, NetworkSet
 from foundation.fnn.train import State, Loader, Objective, Optimizer, Scheduler
 from foundation.schemas import fnn as schema
@@ -21,6 +21,16 @@ class _Model:
             network_id
         dict
             parameter state dict
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def previous_networks(self):
+        """
+        Returns
+        -------
+        foundation.fnn.ModelNetwork | None
+            tuple(s) | None
         """
         raise NotImplementedError()
 
@@ -48,6 +58,15 @@ class NetworkSetModel(_Model):
 
         yield from (TrainNetworkSet & self).train()
 
+    @rowproperty
+    def previous_networks(self):
+        key = self.fetch1("KEY")
+        if key["cycle"] == 0:
+            return
+        else:
+            key["cycle"] -= 1
+            return ModelNetwork & (Model.NetworkSetModel & key).fetch1("KEY")
+
 
 @schema.lookup
 class NetworkModel(_Model):
@@ -68,6 +87,15 @@ class NetworkModel(_Model):
         from foundation.fnn.compute import TrainNetwork
 
         yield (TrainNetwork & self).train()
+
+    @rowproperty
+    def previous_networks(self):
+        key = self.fetch1("KEY")
+        if key["cycle"] == 0:
+            return
+        else:
+            key["cycle"] -= 1
+            return ModelNetwork & (Model.NetworkModel & key).fetch1("KEY")
 
 
 # -- Model --
@@ -107,3 +135,9 @@ class ModelNetwork:
                 parameters=save_to_array(state_dict),
             )
             self.insert1(_key)
+
+    @rowmethod
+    def parameters(self, device="cpu"):
+        from foundation.utils.torch import load_from_array
+
+        return load_from_array(self.fetch1("parameters"), map_location=device)
