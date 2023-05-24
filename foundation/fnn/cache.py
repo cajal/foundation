@@ -34,6 +34,13 @@ class ModelNetworkInfo:
 
         return load_from_array(self.fetch1("info"), map_location=device)
 
+    def df(self, device="cpu"):
+        import pandas as pd
+        from tqdm import tqdm
+
+        keys = tqdm(self.fetch("KEY", order_by=self.primary_key))
+        return pd.DataFrame([dict(k, **(ModelNetworkInfo & k).load(device=device)) for k in keys])
+
 
 @schema.lookup
 class ModelNetworkCheckpoint:
