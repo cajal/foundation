@@ -6,6 +6,31 @@ from scipy.signal import windows
 # ------- Trace Functions -------
 
 
+def truncate(*traces, tolerance=1):
+    """Truncates traces to the same length
+
+    Parameters
+    ----------
+    *traces : 1D array
+        traces to truncate
+    tolerance : int
+        length mismatch tolerance
+
+    Returns
+    -------
+    tuple[1D array]
+        traces truncated to the same length
+    """
+    lengths = list(map(len, traces))
+    max_len = max(lengths)
+    min_len = min(lengths)
+
+    if max_len - min_len > tolerance:
+        raise ValueError(f"Traces differ in length by more than {tolerance}")
+
+    return tuple(trace[:min_len] for trace in traces)
+
+
 def fill_nans(trace):
     """Fills nans with linear interpolation
 
@@ -49,8 +74,8 @@ def monotonic(trace):
     return bool(np.nanmin(delt) > 0)
 
 
-def frame_index(time, period):
-    """Returns the frame index that the time belongs to
+def target_index(time, period):
+    """Target index for the provided time and sampling period
 
     Parameters
     ----------
@@ -66,6 +91,30 @@ def frame_index(time, period):
     """
     index = np.round(time / period, 1)
     return np.floor(index).astype(int)
+
+
+def flip_index(times, period):
+    """Interpolated flip index for the provided flip times and sampling period
+
+    Parameters
+    ----------
+    times : 1D array
+        flip times
+    period : float
+        sampling period
+
+    Returns
+    -------
+    1D array
+        dtype = int
+    """
+    index = target_index(times, period)
+    samples = np.arange(index[-1] + 1)
+
+    new = np.diff(index, prepend=-1) > 0
+    previous = interp1d(x=index[new], y=np.where(new)[0], kind="previous")
+
+    return previous(samples).astype(int)
 
 
 def samples(start, end, period):
@@ -85,7 +134,7 @@ def samples(start, end, period):
     int
         number of samples
     """
-    return frame_index(end - start, period) + 1
+    return target_index(end - start, period) + 1
 
 
 def sample_times(start, end, period):

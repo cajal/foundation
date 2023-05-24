@@ -22,7 +22,7 @@ class ResampleTrial:
         from foundation.utility.resample import Rate
 
         # trial timing
-        start, end = merge(recording.Trial & self.key, recording.TrialBounds).fetch1("start", "end")
+        start, end = merge(self.key, recording.TrialBounds).fetch1("start", "end")
 
         # resampling period
         period = (Rate & self.key).link.period
@@ -38,8 +38,7 @@ class ResampleTrial:
         1D array
             video frame index for each of the resampled time points
         """
-        from scipy.interpolate import interp1d
-        from foundation.utils.resample import frame_index
+        from foundation.utils.resample import flip_index
         from foundation.utility.resample import Rate
         from foundation.recording.trial import Trial
 
@@ -49,27 +48,11 @@ class ResampleTrial:
         # resampling period
         period = (Rate & self.key).link.period
 
-        # trial and video info
-        info = merge(self.key, recording.TrialBounds, recording.TrialVideo, stimulus.VideoInfo)
-        start, frames = info.fetch1("start", "frames")
+        # start time
+        start = merge(self.key, recording.TrialBounds).fetch1("start")
 
-        if not 0 <= frames - len(flips) <= 1:
-            raise ValueError("Flips differ from video frames by more than 1.")
-
-        # sample index for each flip
-        index = frame_index(flips - start, period)
-        samples = np.arange(index[-1] + 1)
-
-        # first flip of each sampling index
-        first = np.diff(index, prepend=-1) > 0
-
-        # for each of the samples, get the previous flip/video index
-        previous = interp1d(
-            x=index[first],
-            y=np.where(first)[0],
-            kind="previous",
-        )
-        return previous(samples).astype(int)
+        # interpolated flip index
+        return flip_index(flips - start, period)
 
 
 @keys
