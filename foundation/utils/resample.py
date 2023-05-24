@@ -108,6 +108,9 @@ def flip_index(times, period):
     1D array
         dtype = int
     """
+    assert monotonic(times)
+    assert times[0] == 0
+
     index = target_index(times, period)
     samples = np.arange(index[-1] + 1)
 
