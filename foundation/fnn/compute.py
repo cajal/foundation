@@ -260,7 +260,7 @@ class TrainNetworkSet:
         nets = fnn.NetworkSet.Member * fnn.Network.VisualNetwork
         nets = U("networkset_id").aggr(nets, c="count(distinct core_id)", s="count(distinct streams)")
         return [
-            fnn.NetworkSetModel & (nets & "c=1 and s=1"),
+            fnn.NetworkSetModel & (nets & "c=1 and s=1").fetch("KEY"),
         ]
 
     @staticmethod
