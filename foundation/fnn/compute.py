@@ -231,8 +231,10 @@ class TrainNetworkSet:
 
     @property
     def key_list(self):
+        nets = fnn.NetworkSet.Member * fnn.Network.VisualNetwork * fnn.Architecture.VisualArchitecture
+        nets = U("networkset_id").aggr(nets, n="count(distinct core_id)")
         return [
-            fnn.NetworkSetModel,
+            fnn.NetworkSetModel & nets,
         ]
 
     @staticmethod
