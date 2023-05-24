@@ -68,8 +68,6 @@ class VisualNetwork(_Network):
     def module(self):
         from fnn.model.networks import Visual
 
-        streams = self.fetch1("streams")
-        sizes = (Data & self).link.network_sizes
         module = Visual(
             core=(Core & self).link.nn,
             perspective=(Perspective & self).link.nn,
@@ -78,7 +76,10 @@ class VisualNetwork(_Network):
             reduce=(Reduce & self).link.nn,
             unit=(Unit & self).link.nn,
         )
-        module._init(**sizes, streams=streams)
+        module._init(
+            **(Data & self).link.network_sizes,
+            streams=self.fetch1("streams"),
+        )
         return module
 
     @rowproperty
