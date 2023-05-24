@@ -66,7 +66,7 @@ class VisualNetwork(_Network):
 
     @rowproperty
     def module(self):
-        from fnn.model.architectures import Visual
+        from fnn.model.networks import Visual
 
         streams = self.fetch1("streams")
         sizes = (Data & self).link.network_sizes
