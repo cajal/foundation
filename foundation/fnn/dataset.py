@@ -5,133 +5,145 @@ from foundation.virtual import utility, scan, recording
 from foundation.schemas import fnn as schema
 
 
-# -------------- Visual Set --------------
+# # -------------- Visual Set --------------
 
-# -- Visual Set Base --
-
-
-class _VisualSet:
-    """Visual Set"""
-
-    @rowproperty
-    def trial_set(self):
-        """
-        Returns
-        -------
-        foundation.virtual.recording.TrialSet
-            tuple
-        """
-        raise NotImplementedError()
-
-    @rowproperty
-    def perpsective_set(self):
-        """
-        Returns
-        -------
-        foundation.virtual.recording.TraceSet
-            tuple
-        """
-        raise NotImplementedError()
-
-    @rowproperty
-    def modulation_set(self):
-        """
-        Returns
-        -------
-        foundation.virtual.recording.TraceSet
-            tuple
-        """
-        raise NotImplementedError()
-
-    @rowproperty
-    def unit_set(self):
-        """
-        Returns
-        -------
-        foundation.virtual.recording.TraceSet
-            tuple
-        """
-        raise NotImplementedError()
-
-    @rowproperty
-    def data_keys(self):
-        """
-        Returns
-        -------
-        set[djutils.derived.Keys]
-            keys with `dataset` and `sizes` rowproperty
-        """
-        raise NotImplementedError()
+# # -- Visual Set Base --
 
 
-# -- Visual Set Types --
+# class _VisualSet:
+#     """Visual Set"""
+
+#     @rowproperty
+#     def trial_set(self):
+#         """
+#         Returns
+#         -------
+#         foundation.virtual.recording.TrialSet
+#             tuple
+#         """
+#         raise NotImplementedError()
+
+#     @rowproperty
+#     def perpsective_set(self):
+#         """
+#         Returns
+#         -------
+#         foundation.virtual.recording.TraceSet
+#             tuple
+#         """
+#         raise NotImplementedError()
+
+#     @rowproperty
+#     def modulation_set(self):
+#         """
+#         Returns
+#         -------
+#         foundation.virtual.recording.TraceSet
+#             tuple
+#         """
+#         raise NotImplementedError()
+
+#     @rowproperty
+#     def unit_set(self):
+#         """
+#         Returns
+#         -------
+#         foundation.virtual.recording.TraceSet
+#             tuple
+#         """
+#         raise NotImplementedError()
+
+#     @rowproperty
+#     def data_keys(self):
+#         """
+#         Returns
+#         -------
+#         set[djutils.derived.Keys]
+#             keys with `dataset` and `sizes` rowproperty
+#         """
+#         raise NotImplementedError()
+
+#     @rowproperty
+#     def response_timing(self):
+#         """
+#         Returns
+#         -------
+#         float
+#             sampling period (seconds)
+#         float
+#             sampling offset (seconds)
+#         """
+#         raise NotImplementedError()
 
 
-@schema.lookup
-class VisualScan(_VisualSet):
-    definition = """
-    -> pipe_exp.Scan
-    -> pipe_shared.TrackingMethod
-    -> pipe_shared.SpikeMethod
-    -> recording.ScanTrials
-    -> recording.ScanPerspectives
-    -> recording.ScanModulations
-    -> recording.ScanUnits
-    """
-
-    @rowproperty
-    def trial_set(self):
-        return recording.TrialSet & (recording.ScanTrials & self)
-
-    @rowproperty
-    def perpsective_set(self):
-        return recording.TraceSet & (recording.ScanPerspectives & self)
-
-    @rowproperty
-    def modulation_set(self):
-        return recording.TraceSet & (recording.ScanModulations & self)
-
-    @rowproperty
-    def unit_set(self):
-        return recording.TraceSet & (recording.ScanUnits & self)
-
-    @rowproperty
-    def data_keys(self):
-        from foundation.fnn.compute import ResampledVisualRecording
-
-        return {ResampledVisualRecording}
+# # -- Visual Set Types --
 
 
-# -- Data Set --
+# @schema.lookup
+# class VisualScan(_VisualSet):
+#     definition = """
+#     -> pipe_exp.Scan
+#     -> pipe_shared.TrackingMethod
+#     -> pipe_shared.SpikeMethod
+#     -> recording.ScanTrials
+#     -> recording.ScanPerspectives
+#     -> recording.ScanModulations
+#     -> recording.ScanUnits
+#     """
+
+#     @rowproperty
+#     def trial_set(self):
+#         return recording.TrialSet & (recording.ScanTrials & self)
+
+#     @rowproperty
+#     def perpsective_set(self):
+#         return recording.TraceSet & (recording.ScanPerspectives & self)
+
+#     @rowproperty
+#     def modulation_set(self):
+#         return recording.TraceSet & (recording.ScanModulations & self)
+
+#     @rowproperty
+#     def unit_set(self):
+#         return recording.TraceSet & (recording.ScanUnits & self)
+
+#     @rowproperty
+#     def data_keys(self):
+#         from foundation.fnn.compute import ResampledVisualRecording
+
+#         return {ResampledVisualRecording}
 
 
-@schema.link
-class VisualSet:
-    links = [VisualScan]
-    name = "visualset"
-    comment = "visual data set"
+# # -- Visual Set --
 
 
-# -- Computed Data Set --
+# @schema.link
+# class VisualSet:
+#     links = [VisualScan]
+#     name = "visualset"
+#     comment = "visual data set"
 
 
-@schema.computed
-class VisualRecording:
-    definition = """
-    -> VisualSet
-    ---
-    -> recording.TrialSet
-    -> recording.TraceSet.proj(traceset_id_p="traceset_id")
-    -> recording.TraceSet.proj(traceset_id_m="traceset_id")
-    -> recording.TraceSet.proj(traceset_id_u="traceset_id")
-    """
+# # -- Computed Visual Set --
 
-    def make(self, key):
-        dataset = (VisualSet & key).link
 
-        key["trialset_id"] = dataset.trial_set.fetch1("trialset_id")
-        key["traceset_id_p"] = dataset.perpsective_set.fetch1("traceset_id")
-        key["traceset_id_m"] = dataset.modulation_set.fetch1("traceset_id")
-        key["traceset_id_u"] = dataset.unit_set.fetch1("traceset_id")
+# @schema.computed
+# class VisualRecording:
+#     definition = """
+#     -> VisualSet
+#     ---
+#     -> recording.TrialSet
+#     -> recording.TraceSet.proj(traceset_id_p="traceset_id")
+#     -> recording.TraceSet.proj(traceset_id_m="traceset_id")
+#     -> recording.TraceSet.proj(traceset_id_u="traceset_id")
+#     """
 
-        self.insert1(key)
+#     def make(self, key):
+#         dataset = (VisualSet & key).link
+
+#         key["trialset_id"] = dataset.trial_set.fetch1("trialset_id")
+#         key["traceset_id_p"] = dataset.perpsective_set.fetch1("traceset_id")
+#         key["traceset_id_m"] = dataset.modulation_set.fetch1("traceset_id")
+#         key["traceset_id_u"] = dataset.unit_set.fetch1("traceset_id")
+
+#         self.insert1(key)

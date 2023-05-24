@@ -36,6 +36,12 @@ class Recording(_Response):
     -> utility.Rate
     """
 
+    @rowproperty
+    def timing(self):
+        from foundation.utility.resample import Rate, Offset
+
+        return (Rate & self).link.period, (Offset & self).link.offset
+
 
 @schema.lookup
 class Fnn(_Response):
@@ -43,6 +49,11 @@ class Fnn(_Response):
     -> fnn.ModelNetwork
     response_index      : int unsigned  # response index
     """
+
+    # @rowproperty
+    # def timing(self):
+    #     from foundation.fnn.dataspec import DataSp
+
 
 
 # -- Response --

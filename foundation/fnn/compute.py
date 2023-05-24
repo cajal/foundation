@@ -1,96 +1,120 @@
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from itertools import chain
 from datajoint import U
 from djutils import keys, merge, rowproperty, rowmethod
 from foundation.utils import logger
-from foundation.virtual import fnn
+from foundation.virtual import stimulus, recording, fnn
 
 
 @keys
-class ResampledVisualRecording:
-    """Load Preprocessed Data"""
+class VisualScanData:
+    """Visual Scan Data"""
 
     @property
     def key_list(self):
         return [
-            fnn.VisualRecording,
-            fnn.VisualSpec.ResampleVisual,
+            fnn.VisualScan,
         ]
+
+    @rowproperty
+    def stimuli_key(self):
+        return merge(
+            self.key.proj(spec_id="stimuli_id"),
+            fnn.Spec.VideoSpec,
+        ).fetch1()
+
+    @rowproperty
+    def perspectives_key(self):
+        return merge(
+            self.key.proj(spec_id="perspectives_id"),
+            fnn.Spec.TraceSpec,
+            recording.ScanPerspectives,
+            recording.ScanTrials,
+        ).fetch1()
+
+    @rowproperty
+    def modulations_key(self):
+        return merge(
+            self.key.proj(spec_id="modulations_id"),
+            fnn.Spec.TraceSpec,
+            recording.ScanModulations,
+            recording.ScanTrials,
+        ).fetch1()
+
+    @rowproperty
+    def units_key(self):
+        return merge(
+            self.key.proj(spec_id="units_id"),
+            fnn.Spec.TraceSpec,
+            recording.ScanUnits,
+            recording.ScanTrials,
+        ).fetch1()
 
     @rowproperty
     def trials(self):
         from foundation.recording.trial import Trial, TrialSet
 
-        key = merge(self.key, fnn.VisualRecording)
+        key = merge(self.key, recording.ScanTrials)
+
         return Trial & (TrialSet & key).members
 
     @rowproperty
-    def trial_samples(self):
+    def samples(self):
         from foundation.recording.trial import TrialSamples
 
-        key = merge(self.key, fnn.VisualSpec.ResampleVisual)
-
-        trials = merge(self.trials, TrialSamples & key)
+        trials = merge(
+            self.trials,
+            TrialSamples & self.key,
+        )
         trial_id, samples = trials.fetch("trial_id", "samples", order_by="trial_id")
+        index = pd.Index(trial_id, name="trial_id")
 
-        return pd.Series(data=samples, index=pd.Index(trial_id, name="trial_id"))
+        return pd.Series(data=samples, index=index)
 
     @rowproperty
-    def trial_video(self):
-        from foundation.recording.trial import TrialVideo
-        from foundation.recording.cache import ResampledVideo
-        from foundation.stimulus.cache import ResizedVideo
+    def stimuli(self):
         from fnn.data import NpyFile
 
-        key = merge(self.key, fnn.VisualSpec.ResampleVisual)
+        key = self.stimuli_key
+        trials = merge(
+            self.trials,
+            recording.TrialVideo,
+            stimulus.ResizedVideo & key,
+            recording.ResampledVideo & key,
+        )
+        trial_id, video, imap = trials.fetch("trial_id", "video", "index", order_by="trial_id")
+        index = pd.Index(trial_id, name="trial_id")
+        data = [NpyFile(v, indexmap=np.load(i), dtype=np.uint8) for v, i in zip(video, tqdm(imap, desc="Video"))]
 
-        trials = merge(self.trials, TrialVideo, ResizedVideo & key, ResampledVideo & key)
-        trial_id, video, index = trials.fetch("trial_id", "video", "index", order_by="trial_id")
-
-        data = [NpyFile(v, indexmap=np.load(i), dtype=np.uint8) for v, i in zip(video, tqdm(index, desc="Video"))]
-        return pd.Series(data=data, index=pd.Index(trial_id, name="trial_id"))
-
-    @rowmethod
-    def traceset_key(self, suffix="p"):
-        if suffix not in ["p", "m", "u"]:
-            raise ValueError("Suffix must be one of {'p', 'm', 'u'}")
-
-        proj = {f"{k}_id": f"{k}_id_{suffix}" for k in ["traceset", "offset", "resample", "standardize"]}
-        key = merge(self.key, fnn.VisualRecording, fnn.VisualSpec.ResampleVisual).proj(..., **proj)
-
-        attrs = ["traceset_id", "trialset_id", "standardize_id", "rate_id", "offset_id", "resample_id"]
-        key = U(*attrs) & key
-
-        return key.fetch1("KEY")
+        return pd.Series(data=data, index=index)
 
     @rowmethod
-    def trial_traces(self, suffix="p"):
+    def _traces(self, key):
         from foundation.recording.compute import StandardizeTraces
-        from foundation.recording.cache import ResampledTraces
         from fnn.data import NpyFile
-
-        key = self.traceset_key(suffix)
 
         transform = (StandardizeTraces & key).transform
-
-        trials = merge(self.trials, ResampledTraces & key & "finite")
+        trials = merge(
+            self.trials,
+            recording.ResampledTraces & key,
+        )
         trial_id, traces = trials.fetch("trial_id", "traces", order_by="trial_id")
-
+        index = index = pd.Index(trial_id, name="trial_id")
         data = [NpyFile(t, transform=transform, dtype=np.float32) for t in tqdm(traces, desc="Traces")]
-        return pd.Series(data=data, index=pd.Index(trial_id, name="trial_id"))
+
+        return pd.Series(data=data, index=index)
 
     @rowproperty
     def dataset(self):
         from fnn.data import Dataset
 
         data = [
-            self.trial_samples.rename("samples"),
-            self.trial_video.rename("stimuli"),
-            self.trial_traces("p").rename("perspectives"),
-            self.trial_traces("m").rename("modulations"),
-            self.trial_traces("u").rename("units"),
+            self.samples.rename("samples"),
+            self.stimuli.rename("stimuli"),
+            self._traces(self.perspectives_key).rename("perspectives"),
+            self._traces(self.modulations_key).rename("modulations"),
+            self._traces(self.units_key).rename("units"),
         ]
         df = pd.concat(data, axis=1, join="outer")
         assert not df.isnull().values.any()
@@ -98,16 +122,18 @@ class ResampledVisualRecording:
         return Dataset(df)
 
     @rowproperty
-    def sizes(self):
-        from foundation.stimulus.video import VideoInfo
-        from foundation.recording.trial import TrialVideo
-        from foundation.recording.trace import TraceSet
+    def network_sizes(self):
+
+        stimuli = merge(self.trials, recording.TrialVideo, stimulus.VideoInfo)
+        perspectives = recording.TraceSet & self.perspectives_key
+        modulations = recording.TraceSet & self.modulations_key
+        units = recording.TraceSet & self.units_key
 
         return {
-            "stimuli": (U("channels") & merge(self.trials, TrialVideo, VideoInfo)).fetch1("channels"),
-            "perspectives": (TraceSet & self.traceset_key("p")).fetch1("members"),
-            "modulations": (TraceSet & self.traceset_key("m")).fetch1("members"),
-            "units": (TraceSet & self.traceset_key("u")).fetch1("members"),
+            "stimuli": (U("channels") & stimuli).fetch1("channels"),
+            "perspectives": perspectives.fetch1("members"),
+            "modulations": modulations.fetch1("members"),
+            "units": units.fetch1("members"),
         }
 
 
@@ -231,10 +257,10 @@ class TrainNetworkSet:
 
     @property
     def key_list(self):
-        nets = fnn.NetworkSet.Member * fnn.Network.VisualNetwork * fnn.Architecture.VisualArchitecture
-        nets = U("networkset_id").aggr(nets, n="count(distinct core_id)")
+        nets = fnn.NetworkSet.Member * fnn.Network.VisualNetwork
+        nets = U("networkset_id").aggr(nets, c="count(distinct core_id)", s="count(distinct streams)")
         return [
-            fnn.NetworkSetModel & nets,
+            fnn.NetworkSetModel & (nets & "c=1 and s=1"),
         ]
 
     @staticmethod

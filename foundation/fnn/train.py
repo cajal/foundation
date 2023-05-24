@@ -119,7 +119,7 @@ class _Objective:
 
 
 @schema.lookup
-class ArchitectureLoss(_Objective):
+class NetworkLoss(_Objective):
     definition = """
     sample_stream   : bool          # sample stream during training
     burnin_frames   : int unsigned  # initial losses discarded
@@ -127,9 +127,9 @@ class ArchitectureLoss(_Objective):
 
     @rowproperty
     def objective(self):
-        from fnn.train.objectives import ArchitectureLoss
+        from fnn.train.objectives import NetworkLoss
 
-        return ArchitectureLoss(**self.fetch1())
+        return NetworkLoss(**self.fetch1())
 
 
 # -- Objective --
@@ -137,7 +137,7 @@ class ArchitectureLoss(_Objective):
 
 @schema.link
 class Objective:
-    links = [ArchitectureLoss]
+    links = [NetworkLoss]
     name = "objective"
     comment = "training objective"
 
