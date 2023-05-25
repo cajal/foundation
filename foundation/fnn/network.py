@@ -36,6 +36,17 @@ class _Network:
         raise NotImplementedError()
 
     @rowproperty
+    def visual_inputs(self):
+        """
+        Returns
+        -------
+        djutils.derived.Keys
+            key_list -- [foundation.stimulus.Video, ...]
+            rowmethod -- [trials, stimuli, perspectives, modulations, ...]
+        """
+        raise NotImplementedError()
+
+    @rowproperty
     def response_timing(self):
         """
         Returns
@@ -85,6 +96,14 @@ class VisualNetwork(_Network):
     @rowproperty
     def trainset(self):
         return (Data & self).link.trainset
+
+    @rowproperty
+    def visual_inputs(self):
+        return (Data & self).link.visual_inputs
+
+    @rowproperty
+    def response_timing(self):
+        return (Data & self).link.response_timing
 
 
 # -- Neural Network Types --

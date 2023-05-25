@@ -334,3 +334,16 @@ class VisualResponse:
 
         trials = truncate(*self.trials)
         return np.stack(trials, 0).mean(0)
+
+    @rowproperty
+    def timing(self):
+        """
+        Returns
+        -------
+        float
+            response period (seconds)
+        float
+            response offset (seconds)
+        """
+        # TODO
+        raise NotImplementedError()

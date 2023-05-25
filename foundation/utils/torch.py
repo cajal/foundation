@@ -1,6 +1,8 @@
 import io
+import os
 import torch
 import numpy as np
+from contextlib import contextmanager
 
 
 def save_to_array(obj):
@@ -44,3 +46,44 @@ def load_from_array(array, map_location=None):
 
     f.close()
     return obj
+
+
+@contextmanager
+def use_cuda(device=None):
+    """Context manager that explicitly enables cuda usage
+
+    Parameters
+    ----------
+    device : None | int
+        cuda device
+    """
+    assert torch.cuda.is_available()
+
+    if device is None:
+        device = torch.cuda.current_device()
+    else:
+        device = int(device)
+        assert 0 <= device < torch.cuda.device_count()
+
+    prev = os.getenv("FOUNDATION_CUDA", "-1")
+    os.environ["FOUNDATION_CUDA"] = str(device)
+    try:
+        with torch.cuda.device(device):
+            yield
+    finally:
+        os.environ["FOUNDATION_CUDA"] = prev
+
+
+def cuda_enabled():
+    """Check if cuda is explictly enabled
+
+    Returns
+    -------
+    bool
+        whether cuda usage is explicitly enabled
+    """
+    if not torch.cuda.is_available():
+        return False
+
+    cuda = os.getenv("FOUNDATION_CUDA", "-1")
+    return int(cuda) >= 0

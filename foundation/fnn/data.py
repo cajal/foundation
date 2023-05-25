@@ -69,7 +69,19 @@ class _DataSet:
         -------
         djutils.derived.Keys
             key_list -- [foundation.stimulus.Video, ...]
-            rowmethod -- [stimuli, perspectives, modulations, ...]
+            rowmethod -- [trials, stimuli, perspectives, modulations, ...]
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def response_timing(self):
+        """
+        Returns
+        -------
+        float
+            response period (seconds)
+        float
+            response offset (seconds)
         """
         raise NotImplementedError()
 
@@ -105,6 +117,22 @@ class VisualScan(_DataSet):
         from foundation.fnn.compute import VisualScan
 
         return (VisualScan & self).network_sizes
+
+    @rowproperty
+    def visual_inputs(self):
+        from foundation.fnn.compute import VisualScanInputs
+
+        return VisualScanInputs & self
+
+    @rowproperty
+    def response_timing(self):
+        from foundation.utility.resample import Rate, Offset
+
+        key = self.proj(spec_id="units_id") * Spec.TraceSpec
+        period = (Rate & key).link.period
+        offset = (Offset & key).link.offset
+
+        return period, offset
 
 
 # -- Data Set Types --

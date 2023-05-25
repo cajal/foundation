@@ -182,7 +182,8 @@ class VisualScanInputs:
     @rowproperty
     def trials(self):
         trials = (VisualScan & self.key).all_trials.proj()
-        return merge(trials, recording.TrialBounds, recording.TrialVideo) & self.key
+        trials = merge(trials, recording.TrialBounds, recording.TrialVideo) & self.key
+        return trials.fetch("KEY", order_by="start")
 
     @rowmethod
     def stimuli(self):
@@ -207,7 +208,6 @@ class VisualScanInputs:
 
             # video indexes based on trial timing
             with cache_rowproperty():
-                trials = trials.fetch("KEY", order_by="start")
                 indexes = [(ResampleTrial & trial & self.key).video_index for trial in trials]
 
             indexes = truncate(*indexes)
@@ -246,11 +246,8 @@ class VisualScanInputs:
             return
 
         with cache_rowproperty():
-            # traceset keys
-            trials = trials.fetch("KEY", order_by="start")
+            # traceset key and transform
             key = (VisualScan & self.key).perspectives_key
-
-            # traceset transformation
             transform = (VisualScan & self.key).perspectives_transform
 
             # load and transform traceset
@@ -281,11 +278,8 @@ class VisualScanInputs:
             return
 
         with cache_rowproperty():
-            # traceset keys
-            trials = trials.fetch("KEY", order_by="start")
+            # traceset key and transform
             key = (VisualScan & self.key).modulations_key
-
-            # traceset transformation
             transform = (VisualScan & self.key).modulations_transform
 
             # load and transform traceset
@@ -560,3 +554,62 @@ class TrainNetwork:
 
         key = U("network_id", "model_id").aggr(checkpoints, rank="min(rank)").fetch1()
         return key["network_id"], (Checkpoint & key).load()["state_dict"]
+
+
+# ----------------------------- Response -----------------------------
+
+
+@keys
+class VisualResponse:
+    """Visual Response"""
+
+    @property
+    def key_list(self):
+        return [
+            stimulus.Video,
+            fnn.ModelNetwork,
+        ]
+
+    @rowproperty
+    def trials(self):
+        """
+        Returns
+        -------
+        pandas.Series
+            index -- str : trial_id (foundation.recording.trial.Trial)
+            data -- 2D array -- [samples, units] : model response
+        """
+        from foundation.fnn.model import ModelNetwork
+        from foundation.fnn.network import Network
+
+        inputs = (Network & self.key).link.visual_inputs & self.key
+        trials = inputs.trials
+
+        if trials:
+            index = pd.Index([t["trial_id"] for t in trials], name="trial_id")
+        else:
+            index = pd.Index([None], name="trial_id")
+
+        model = (ModelNetwork & self.key).model
+        responses = model.generate_responses(
+            stimuli=inputs.stimuli(),
+            perspectives=inputs.perspectives(),
+            modulations=inputs.modulations(),
+        )
+        responses = np.stack(list(responses), axis=1)
+
+        return pd.Series([*responses], index=index)
+
+    @rowproperty
+    def timing(self):
+        """
+        Returns
+        -------
+        float
+            response period (seconds)
+        float
+            response offset (seconds)
+        """
+        from foundation.fnn.network import Network
+
+        return (Network & self.key).link.response_timing
