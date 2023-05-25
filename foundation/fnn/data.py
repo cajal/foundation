@@ -76,10 +76,10 @@ class VisualScan(_DataSet):
     -> recording.ScanPerspectives
     -> recording.ScanModulations
     -> recording.ScanUnits
-    -> Spec.VideoSpec.proj(stimuli_id="spec_id")
-    -> Spec.TraceSpec.proj(perspectives_id="spec_id")
-    -> Spec.TraceSpec.proj(modulations_id="spec_id")
-    -> Spec.TraceSpec.proj(units_id="spec_id")
+    -> DataSpec.VideoSpec.proj(stimuli_id="spec_id")
+    -> DataSpec.TraceSpec.proj(perspectives_id="spec_id")
+    -> DataSpec.TraceSpec.proj(modulations_id="spec_id")
+    -> DataSpec.TraceSpec.proj(units_id="spec_id")
     -> utility.Rate
     """
 
