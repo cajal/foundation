@@ -8,8 +8,8 @@ from foundation.virtual import stimulus, recording, fnn
 
 
 @keys
-class VisualScanData:
-    """Visual Scan Data"""
+class VisualScan:
+    """Visual Scan"""
 
     @property
     def key_list(self):
@@ -106,7 +106,7 @@ class VisualScanData:
         return pd.Series(data=data, index=index)
 
     @rowproperty
-    def dataset(self):
+    def trainset(self):
         from fnn.data import Dataset
 
         data = [
@@ -220,8 +220,7 @@ class _TrainNetwork:
             optimizer = (Optimizer & self.key).link.optimizer
             optimizer._init(scheduler=scheduler)
 
-        dataset = (Network & self.key).link.dataset
-
+        dataset = (Network & self.key).link.trainset
         loader = (Loader & self.key).link.loader
         loader._init(dataset=dataset)
 

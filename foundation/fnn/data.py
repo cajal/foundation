@@ -43,12 +43,23 @@ class _DataSet:
     """Data Set"""
 
     @rowproperty
-    def dataset(self):
+    def trainset(self):
         """
         Returns
         -------
         fnn.data.Dataset
             training dataset
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def visual_data(self):
+        """
+        Returns
+        -------
+        djutils.derived.Keys
+            key_list -- [foundation.stimulus.Video, ...]
+            rowproperty -- [stimuli, perspectives, modulations, units, ...]
         """
         raise NotImplementedError()
 
@@ -84,16 +95,16 @@ class VisualScan(_DataSet):
     """
 
     @rowproperty
-    def dataset(self):
-        from foundation.fnn.compute import VisualScanData
+    def trainset(self):
+        from foundation.fnn.compute import VisualScan
 
-        return (VisualScanData & self).dataset
+        return (VisualScan & self).trainset
 
     @rowproperty
     def network_sizes(self):
-        from foundation.fnn.compute import VisualScanData
+        from foundation.fnn.compute import VisualScan
 
-        return (VisualScanData & self).network_sizes
+        return (VisualScan & self).network_sizes
 
 
 # -- Data Set Types --

@@ -26,7 +26,7 @@ class _Network:
         raise NotImplementedError()
 
     @rowproperty
-    def dataset(self):
+    def trainset(self):
         """
         Returns
         -------
@@ -83,8 +83,8 @@ class VisualNetwork(_Network):
         return module
 
     @rowproperty
-    def dataset(self):
-        return (Data & self).link.dataset
+    def trainset(self):
+        return (Data & self).link.trainset
 
 
 # -- Neural Network Types --
