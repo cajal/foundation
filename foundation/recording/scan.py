@@ -1,8 +1,8 @@
 import numpy as np
 from djutils import merge
-from foundation.virtual import scan
-from foundation.virtual.bridge import pipe_exp, pipe_shared
-from foundation.recording.trial import Trial, TrialSet, TrialFilterSet
+from foundation.virtual import scan, stimulus
+from foundation.virtual.bridge import pipe_stim, pipe_exp, pipe_shared
+from foundation.recording.trial import Trial, TrialBounds, TrialVideo, TrialSet, TrialFilterSet
 from foundation.recording.trace import Trace, TraceSet, TraceFilterSet
 from foundation.schemas import recording as schema
 
@@ -124,3 +124,25 @@ class ScanUnits:
         # trace set
         traces = TraceSet.fill(traces, prompt=False)
         self.insert1(dict(key, **traces))
+
+
+@schema.computed
+class ScanVideoTiming:
+    definition = """
+    -> scan.Scan
+    ---
+    time_scale  : double    # video time scale
+    """
+
+    def make(self, key):
+        # trials merged with video info
+        trials = (pipe_stim.Trial & key).proj()
+        trials = merge(trials, Trial.ScanTrial, TrialBounds, TrialVideo, stimulus.VideoInfo)
+
+        # trial and video timing
+        start, end, frames, period = trials.fetch("start", "end", "frames", "period")
+        rperiod = (end - start) / (frames - 1)
+
+        # median time scale
+        key["time_scale"] = np.nanmedian(rperiod / period)
+        self.insert1(key)
