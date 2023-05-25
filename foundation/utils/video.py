@@ -3,21 +3,38 @@ from PIL import Image as Frame
 
 
 class Video:
-    def __init__(self, frames, period=None):
+    def __init__(self, frames, period=None, times=None):
         """
         Parameters
         ----------
         frames : Sequence[Frame]
             stimulus frames
         period : None | float
-            frame period (seconds)
+            flip period (seconds)
+        times : None | 1D array
+            flip times (seconds)
         """
         self.frames = tuple(frames)
-        self.period = None if period is None else float(period)
 
         assert np.unique([f.mode for f in self.frames]).size == 1
         assert np.unique([f.height for f in self.frames]).size == 1
         assert np.unique([f.width for f in self.frames]).size == 1
+
+        if period is None and times is None:
+            self.period = None
+            self.times = None
+
+        elif period is not None and times is None:
+            self.period = float(period)
+            self.times = self.period * np.arange(len(self))
+
+        elif period is None and times is not None:
+            self.period = None
+            self.times = np.array(times, dtype=float)
+            assert len(self.times) == len(self)
+
+        else:
+            ValueError("Either `period` or `times` can be provided, not both.")
 
     def __len__(self):
         return len(self.frames)
@@ -84,7 +101,7 @@ class Video:
             raise NotImplementedError(f"Mode {self.mode} has not yet been implemented.")
 
     @staticmethod
-    def fromarray(array, mode=None, period=None):
+    def fromarray(array, mode=None, period=None, times=None):
         """
         Returns
         -------
@@ -93,7 +110,9 @@ class Video:
         mode : bool
             frame mode
         period : None | float
-            frame period (seconds)
+            flip period (seconds)
+        times : None | 1D array
+            flip times (seconds)
 
         Returns
         -------
@@ -105,7 +124,7 @@ class Video:
         elif array.ndim != 3:
             raise ValueError("Array must be either 4D or 3D")
 
-        return Video([Frame.fromarray(frame, mode=mode) for frame in array], period=period)
+        return Video([Frame.fromarray(frame, mode=mode) for frame in array], period=period, times=times)
 
     def apply(self, transform):
         """
@@ -119,4 +138,4 @@ class Video:
         Video
             new video with tranformed frames
         """
-        return Video(map(transform, self.frames), period=self.period)
+        return Video(map(transform, self.frames), period=self.period, times=self.times)

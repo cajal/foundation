@@ -162,7 +162,7 @@ class Frame(_Video):
     @rowproperty
     def video(self):
         tup = pipe_stim.StaticImage.Image * pipe_stim.Frame & self
-        image, pre_blank = tup.fetch1("image", "pre_blank_period")
+        image, pre_blank, duration = tup.fetch1("image", "pre_blank_period", "presentation_time")
         image = video.Frame.fromarray(image)
 
         if image.mode == "L":
@@ -172,9 +172,9 @@ class Frame(_Video):
             raise NotImplementedError(f"Frame mode {mode} not implemented")
 
         if pre_blank > 0:
-            return video.Video([blank, image, blank])
+            return video.Video([blank, image, blank], times=[0, pre_blank, pre_blank + duration])
         else:
-            return video.Video([image, blank])
+            return video.Video([image, blank], [0, duration])
 
 
 # -- Video --
