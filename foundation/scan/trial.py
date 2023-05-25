@@ -72,7 +72,7 @@ class FilteredTrials:
         trials = pipe_stim.Trial & key
 
         # filter trials
-        trials = (TrialFilter & key).filter(trials)
+        trials = (TrialFilterSet & key).filter(trials)
 
         # insert trial set
         trial_set = TrialSet.fill(trials, prompt=False)
