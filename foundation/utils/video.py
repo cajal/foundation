@@ -3,17 +3,17 @@ from PIL import Image as Frame
 
 
 class Video:
-    def __init__(self, frames, fixed=True):
+    def __init__(self, frames, period=None):
         """
         Parameters
         ----------
         frames : Sequence[Frame]
             stimulus frames
-        fixed : bool
-            fixed frame rate
+        period : None | float
+            frame period (seconds)
         """
         self.frames = tuple(frames)
-        self.fixed = bool(fixed)
+        self.period = None if period is None else float(period)
 
         assert np.unique([f.mode for f in self.frames]).size == 1
         assert np.unique([f.height for f in self.frames]).size == 1
@@ -84,7 +84,7 @@ class Video:
             raise NotImplementedError(f"Mode {self.mode} has not yet been implemented.")
 
     @staticmethod
-    def fromarray(array, mode=None, fixed=True):
+    def fromarray(array, mode=None, period=None):
         """
         Returns
         -------
@@ -92,8 +92,8 @@ class Video:
             [frames, height, width] | [frames, height, width, channels]
         mode : bool
             frame mode
-        fixed : bool
-            fixed frame rate
+        period : None | float
+            frame period (seconds)
 
         Returns
         -------
@@ -105,7 +105,7 @@ class Video:
         elif array.ndim != 3:
             raise ValueError("Array must be either 4D or 3D")
 
-        return Video([Frame.fromarray(frame, mode=mode) for frame in array], fixed=fixed)
+        return Video([Frame.fromarray(frame, mode=mode) for frame in array], period=period)
 
     def apply(self, transform):
         """
@@ -119,4 +119,4 @@ class Video:
         Video
             new video with tranformed frames
         """
-        return Video(map(transform, self.frames), self.fixed)
+        return Video(map(transform, self.frames), period=self.period)

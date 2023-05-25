@@ -53,23 +53,23 @@ class _DataSet:
         raise NotImplementedError()
 
     @rowproperty
-    def visual_data(self):
-        """
-        Returns
-        -------
-        djutils.derived.Keys
-            key_list -- [foundation.stimulus.Video, ...]
-            rowproperty -- [stimuli, perspectives, modulations, units, ...]
-        """
-        raise NotImplementedError()
-
-    @rowproperty
     def network_sizes(self):
         """
         Returns
         -------
         dict
             network sizes
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def visual_inputs(self):
+        """
+        Returns
+        -------
+        djutils.derived.Keys
+            key_list -- [foundation.stimulus.Video, ...]
+            rowmethod -- [stimuli, perspectives, modulations, ...]
         """
         raise NotImplementedError()
 
@@ -114,4 +114,4 @@ class VisualScan(_DataSet):
 class Data:
     links = [VisualScan]
     name = "data"
-    comment = "training data"
+    comment = "network data"

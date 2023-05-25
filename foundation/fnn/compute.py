@@ -2,9 +2,12 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from datajoint import U
-from djutils import keys, merge, rowproperty, rowmethod
+from djutils import keys, merge, keyproperty, rowproperty, rowmethod, cache_rowproperty
 from foundation.utils import logger
 from foundation.virtual import stimulus, recording, fnn
+
+
+# ----------------------------- Data -----------------------------
 
 
 @keys
@@ -52,10 +55,38 @@ class VisualScan:
         ).fetch1()
 
     @rowproperty
+    def perspectives_transform(self):
+        from foundation.recording.compute import StandardizeTraces
+
+        return (StandardizeTraces & self.perspectives_key).transform
+
+    @rowproperty
+    def modulations_transform(self):
+        from foundation.recording.compute import StandardizeTraces
+
+        return (StandardizeTraces & self.modulations_key).transform
+
+    @rowproperty
+    def units_transform(self):
+        from foundation.recording.compute import StandardizeTraces
+
+        return (StandardizeTraces & self.units_key).transform
+
+    @rowproperty
     def trials(self):
         from foundation.recording.trial import Trial, TrialSet
 
-        key = merge(self.key, recording.ScanTrials)
+        key = merge(self.key, recording.ScanTrials).fetch1()
+
+        return Trial & (TrialSet & key).members
+
+    @rowproperty
+    def all_trials(self):
+        from foundation.recording.trial import Trial, TrialSet
+
+        key = [self.perspectives_key, self.modulations_key, self.units_key]
+        key = merge(recording.TraceSet.Member & key, recording.TraceTrials)
+        key = (U("trialset_id") & key).fetch1()
 
         return Trial & (TrialSet & key).members
 
@@ -138,6 +169,27 @@ class VisualScan:
 
 
 @keys
+class VisualScanInputs:
+    """Visual Scan Inputs"""
+
+    @property
+    def key_list(self):
+        return [
+            fnn.VisualScan,
+            stimulus.Video,
+        ]
+
+    @rowproperty
+    def trials(self):
+        trials = (VisualScan & self.key).all_trials.proj()
+        trials = merge(trials, recording.TrialBounds, recording.TrialVideo)
+        return merge(trials & self.key, recording.TrialSamples & self.key)
+
+
+# ----------------------------- State -----------------------------
+
+
+@keys
 class RandomNetworkState:
     """Random Network State"""
 
@@ -162,6 +214,9 @@ class RandomNetworkState:
                 logger.info(f"Initializing network with random seed {seed}")
 
             return (Network & self.key).link.module
+
+
+# ----------------------------- Training -----------------------------
 
 
 @keys

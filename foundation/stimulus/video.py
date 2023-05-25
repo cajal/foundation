@@ -21,6 +21,7 @@ class _Video:
         Returns
         -------
         foundation.utils.video.Video
+            video object
         """
         raise NotImplementedError()
 
@@ -56,7 +57,7 @@ class Clip(_Video):
             frame = frame.to_image().convert(mode="L")
             frames.append(frame)
 
-        return video.Video(frames)
+        return video.Video(frames, period=1 / fps)
 
 
 @schema.lookup
@@ -67,8 +68,9 @@ class Monet2(_Video):
 
     @rowproperty
     def video(self):
-        movie = (pipe_stim.Monet2 & self).fetch1("movie").squeeze(2)
-        return video.Video([video.Frame.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
+        frames, fps = (pipe_stim.Monet2 & self).fetch1("movie", "fps")
+        frames = np.einsum("H W C T -> T H W C", frames)
+        return video.Video.fromarray(frames, period=1 / float(fps))
 
 
 @schema.lookup
@@ -79,8 +81,9 @@ class Trippy(_Video):
 
     @rowproperty
     def video(self):
-        movie = (pipe_stim.Trippy & self).fetch1("movie")
-        return video.Video([video.Frame.fromarray(movie[..., i]) for i in range(movie.shape[-1])])
+        frames, fps = (pipe_stim.Trippy & self).fetch1("movie", "fps")
+        frames = np.einsum("H W T -> T H W", frames)
+        return video.Video.fromarray(frames, period=1 / float(fps))
 
 
 @schema.lookup
@@ -92,12 +95,13 @@ class GaborSequence(_Video):
     @rowproperty
     def video(self):
         sequence = (pipe_stim.GaborSequence & self).fetch1()
+        fps = (pipe_gabor.Display & sequence).fetch1("fps")
 
         movs = pipe_gabor.Sequence.Gabor * pipe_gabor.Gabor & sequence
         movs = movs.fetch("movie", order_by="sequence_id ASC")
         assert len(movs) == sequence["sequence_length"]
 
-        return video.Video([video.Frame.fromarray(frame, mode="L") for frame in np.concatenate(movs)])
+        return video.Video.fromarray(np.concatenate(movs), period=1 / fps)
 
 
 @schema.lookup
@@ -109,6 +113,7 @@ class DotSequence(_Video):
     @rowproperty
     def video(self):
         sequence = (pipe_stim.DotSequence & self).fetch1()
+        fps = (pipe_dot.Display & sequence).fetch1("fps")
 
         imgs = pipe_dot.Dot * pipe_dot.Sequence.Dot * pipe_dot.Display & sequence
         imgs = imgs.fetch("image", order_by="dot_id ASC")
@@ -118,7 +123,7 @@ class DotSequence(_Video):
         frames = np.stack(imgs[id_trace])
         assert len(frames) == n_frames
 
-        return video.Video([video.Frame.fromarray(frame, mode="L") for frame in frames])
+        return video.Video.fromarray(frames, period=1 / fps)
 
 
 @schema.lookup
@@ -130,6 +135,7 @@ class RdkSequence(_Video):
     @rowproperty
     def video(self):
         sequence = (pipe_stim.RdkSequence & self).fetch1()
+        fps = (pipe_rdk.Display & sequence).fetch1("fps")
 
         movs = []
         for i in range(sequence["sequence_length"]):
@@ -144,7 +150,7 @@ class RdkSequence(_Video):
                 raise Exception
             movs += [movie]
 
-        return video.Video([video.Frame.fromarray(frame, mode="L") for frame in np.concatenate(movs)])
+        return video.Video.fromarray(np.concatenate(movs), period=1 / fps)
 
 
 @schema.lookup
@@ -166,9 +172,9 @@ class Frame(_Video):
             raise NotImplementedError(f"Frame mode {mode} not implemented")
 
         if pre_blank > 0:
-            return video.Video([blank, image, blank], fixed=False)
+            return video.Video([blank, image, blank])
         else:
-            return video.Video([image, blank], fixed=False)
+            return video.Video([image, blank])
 
 
 # -- Video --
@@ -196,23 +202,23 @@ class VideoInfo:
     definition = """
     -> Video
     ---
-    frames      : int unsigned  # video frames
-    height      : int unsigned  # video height
-    width       : int unsigned  # video width
-    channels    : int unsigned  # video channels
-    mode        : varchar(16)   # video mode
-    fixed       : bool          # fixed frame rate
+    frames          : int unsigned  # video frames
+    height          : int unsigned  # video height
+    width           : int unsigned  # video width
+    channels        : int unsigned  # video channels
+    mode            : varchar(16)   # video mode
+    period=NULL     : double        # video period (seconds)
     """
 
     def make(self, key):
-        frames = (Video & key).link.video
+        vid = (Video & key).link.video
 
-        key["frames"] = len(frames)
-        key["height"] = frames.height
-        key["width"] = frames.width
-        key["channels"] = frames.channels
-        key["mode"] = frames.mode
-        key["fixed"] = frames.fixed
+        key["frames"] = len(vid)
+        key["height"] = vid.height
+        key["width"] = vid.width
+        key["channels"] = vid.channels
+        key["mode"] = vid.mode
+        key["period"] = vid.period
 
         self.insert1(key)
 
