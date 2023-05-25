@@ -5,9 +5,12 @@ from djutils import keys, merge, rowproperty, keyproperty, RestrictionError
 from foundation.virtual import utility, stimulus, recording
 
 
+# ----------------------------- Resampling -----------------------------
+
+
 @keys
 class ResampleTrial:
-    """Resample trial"""
+    """Resample Trial"""
 
     @property
     def key_list(self):
@@ -57,7 +60,7 @@ class ResampleTrial:
 
 @keys
 class TraceResampling:
-    """Trace resampling"""
+    """Trace Resampling"""
 
     @property
     def key_list(self):
@@ -91,7 +94,7 @@ class TraceResampling:
 
 @keys
 class ResampleTrace:
-    """Resample trace"""
+    """Resample Trace"""
 
     @property
     def key_list(self):
@@ -138,7 +141,7 @@ class ResampleTrace:
 
 @keys
 class ResampleTraces:
-    """Resample trace set"""
+    """Resample Trace Set"""
 
     @property
     def key_list(self):
@@ -184,9 +187,12 @@ class ResampleTraces:
         return np.stack(samples, 1)
 
 
+# ----------------------------- Statistics -----------------------------
+
+
 @keys
 class SummarizeTrace:
-    """Summarize trace"""
+    """Summarize Trace"""
 
     @property
     def key_list(self):
@@ -221,9 +227,12 @@ class SummarizeTrace:
         return (Summary & self.key).link.summary(samples)
 
 
+# ----------------------------- Standardization -----------------------------
+
+
 @keys
 class StandardizeTraces:
-    """Trace standardization"""
+    """Trace Standardization"""
 
     @property
     def key_list(self):
@@ -271,3 +280,45 @@ class StandardizeTraces:
 
         # standarization transform
         return stand.standardize(homogeneous=hom, **kwargs)
+
+
+# ----------------------------- Response -----------------------------
+
+
+@keys
+class VisualResponse:
+    """Visual Response"""
+
+    @property
+    def key_list(self):
+        return [
+            stimulus.Video,
+            recording.Trace,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
+        ]
+
+    @rowproperty
+    def trials(self):
+        """
+        Returns
+        -------
+        pandas.Series
+            index -- str : trial_id (foundation.recording.trial.Trial)
+            data -- 1D array : resampled trace values
+        """
+        from foundation.recording.trial import TrialSet
+
+        trials = merge(self.key, recording.TraceTrials)
+        trials = (TrialSet & trials).members
+
+        key = merge(trials, recording.TrialVideo) * self.key
+        return (ResampleTrace & key).trials
+
+    @rowproperty
+    def mean(self):
+        from foundation.utils.resample import truncate
+
+        trials = truncate(*self.trials)
+        return np.stack(trials, 0).mean(0)
