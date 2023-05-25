@@ -21,6 +21,12 @@ class ResampleTrial:
 
     @rowproperty
     def samples(self):
+        """
+        Returns
+        -------
+        int
+            number of resampling time points
+        """
         from foundation.utils.resample import samples
         from foundation.utility.resample import Rate
 
@@ -306,7 +312,7 @@ class VisualResponse:
         -------
         pandas.Series
             index -- str : trial_id (foundation.recording.trial.Trial)
-            data -- 1D array : resampled trace values
+            data -- 1D array : resampled trial response
         """
         from foundation.recording.trial import TrialSet
 
@@ -318,6 +324,12 @@ class VisualResponse:
 
     @rowproperty
     def mean(self):
+        """
+        Returns
+        -------
+        1D array
+            resampled mean response
+        """
         from foundation.utils.resample import truncate
 
         trials = truncate(*self.trials)
