@@ -182,8 +182,122 @@ class VisualScanInputs:
     @rowproperty
     def trials(self):
         trials = (VisualScan & self.key).all_trials.proj()
-        trials = merge(trials, recording.TrialBounds, recording.TrialVideo)
-        return merge(trials & self.key, recording.TrialSamples & self.key)
+        return merge(trials, recording.TrialBounds, recording.TrialVideo) & self.key
+
+    @rowmethod
+    def stimuli(self):
+        """
+        Yields
+        ------
+        4D array -- [batch_size, height, width, channels]
+            video frame
+        """
+        from foundation.utils.resample import truncate, flip_index
+        from foundation.utility.resample import Rate
+        from foundation.stimulus.compute import ResizeVideo
+        from foundation.recording.compute import ResampleTrial
+
+        # load video
+        key = (VisualScan & self.key).stimuli_key
+        video = (ResizeVideo & self.key & key).video
+
+        # load trials
+        trials = self.trials
+        if trials:
+
+            # video indexes based on trial timing
+            with cache_rowproperty():
+                trials = trials.fetch("KEY", order_by="start")
+                indexes = [(ResampleTrial & trial & self.key).video_index for trial in trials]
+
+            indexes = truncate(*indexes)
+            indexes = np.stack(indexes, axis=0)
+
+            if not np.diff(indexes, axis=0).any():
+                indexes = indexes[:1]
+
+        else:
+            # video indexes based on expected timing
+            times = video.times
+            time_scale = merge(self.key, recording.ScanVideoTiming).fetch1("time_scale")
+            period = (Rate & self.key).link.period
+
+            indexes = flip_index(times * time_scale, period)[None]
+
+        # yield video frames
+        varray = video.array
+        for i in indexes.T:
+            yield varray[i]
+
+    @rowmethod
+    def perspectives(self):
+        """
+        Yields
+        ------
+        2D array -- [batch_size, traces]
+            perspective frame
+        """
+        from foundation.utils.resample import truncate
+        from foundation.recording.compute import ResampleTraces
+
+        # load trials
+        trials = self.trials
+        if not trials:
+            return
+
+        with cache_rowproperty():
+            # traceset keys
+            trials = trials.fetch("KEY", order_by="start")
+            key = (VisualScan & self.key).perspectives_key
+
+            # traceset transformation
+            transform = (VisualScan & self.key).perspectives_transform
+
+            # load and transform traceset
+            inputs = ((ResampleTraces & trial & key).trial for trial in trials)
+            inputs = (transform(i) for i in truncate(*inputs))
+            inputs = np.stack(list(inputs), axis=1)
+
+        # yield traceset frames
+        def generate():
+            yield from inputs
+
+        return generate()
+
+    @rowmethod
+    def modulations(self):
+        """
+        Yields
+        ------
+        2D array -- [batch_size, traces]
+            modulation frame
+        """
+        from foundation.utils.resample import truncate
+        from foundation.recording.compute import ResampleTraces
+
+        # load trials
+        trials = self.trials
+        if not trials:
+            return
+
+        with cache_rowproperty():
+            # traceset keys
+            trials = trials.fetch("KEY", order_by="start")
+            key = (VisualScan & self.key).modulations_key
+
+            # traceset transformation
+            transform = (VisualScan & self.key).modulations_transform
+
+            # load and transform traceset
+            inputs = ((ResampleTraces & trial & key).trial for trial in trials)
+            inputs = (transform(i) for i in truncate(*inputs))
+            inputs = np.stack(list(inputs), axis=1)
+
+        # yield traceset frames
+        def generate():
+            yield from inputs
+
+        return generate()
 
 
 # ----------------------------- State -----------------------------
