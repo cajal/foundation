@@ -14,12 +14,12 @@ class _Trace:
     """Recording Trace"""
 
     @rowproperty
-    def trial_set(self):
+    def trialset_id(self):
         """
         Returns
         -------
-        foundation.recording.trial.TrialSet
-            tuple
+        str
+            trialset_id (foundation.recording.trial.TrialSet)
         """
         raise NotImplementedError()
 
@@ -61,11 +61,11 @@ class _Scan(_Trace):
     """Scan Trace"""
 
     @rowproperty
-    def trial_set(self):
+    def trialset_id(self):
         key = pipe_stim.Trial.proj() & self
         key = merge(key, Trial.ScanTrial)
         key = TrialSet.fill(key, prompt=False, silent=True)
-        return TrialSet & key
+        return key["trialset_id"]
 
 
 @schema.lookup
@@ -172,7 +172,7 @@ class TraceTrials:
     """
 
     def make(self, key):
-        key["trialset_id"] = (Trace & key).link.trial_set.fetch1("trialset_id")
+        key["trialset_id"] = (Trace & key).link.trialset_id
         self.insert1(key)
 
 
