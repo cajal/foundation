@@ -5,7 +5,7 @@ from foundation.recording.trial import Trial, TrialSet, TrialBounds
 from foundation.schemas import recording as schema
 
 
-# -------------- Trace --------------
+# ---------------------------- Trace ----------------------------
 
 # -- Trace Base --
 
@@ -196,7 +196,7 @@ class TraceSummary:
         self.insert1(key)
 
 
-# -------------- Trace Filter --------------
+# ---------------------------- Trace Filter ----------------------------
 
 # -- Filter Types --
 

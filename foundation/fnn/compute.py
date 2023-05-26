@@ -31,7 +31,7 @@ class VisualScan:
         return merge(
             self.key.proj(spec_id="perspectives_id"),
             fnn.Spec.TraceSpec,
-            recording.ScanPerspectives,
+            recording.ScanVisualPerspectives,
             recording.ScanTrials,
         ).fetch1()
 
@@ -40,7 +40,7 @@ class VisualScan:
         return merge(
             self.key.proj(spec_id="modulations_id"),
             fnn.Spec.TraceSpec,
-            recording.ScanModulations,
+            recording.ScanVisualModulations,
             recording.ScanTrials,
         ).fetch1()
 

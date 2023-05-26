@@ -4,7 +4,7 @@ from foundation.utils import resize
 from foundation.schemas import utility as schema
 
 
-# ---------- Resolution ----------
+# ---------------------------- Resolution ----------------------------
 
 
 @schema.lookup
@@ -15,7 +15,7 @@ class Resolution:
     """
 
 
-# ---------- Resize ----------
+# ---------------------------- Resize ----------------------------
 
 # -- Resize Base --
 

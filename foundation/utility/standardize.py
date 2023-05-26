@@ -5,7 +5,7 @@ from foundation.utility.stat import Summary
 from foundation.schemas import utility as schema
 
 
-# ---------- Standardize ----------
+# ---------------------------- Standardize ----------------------------
 
 # -- Standardize Base --
 

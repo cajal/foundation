@@ -3,7 +3,7 @@ from foundation.utils import resample
 from foundation.schemas import utility as schema
 
 
-# ---------- Rate ----------
+# ---------------------------- Rate ----------------------------
 
 # -- Rate Base --
 
@@ -46,7 +46,7 @@ class Rate:
     comment = "resampling rate"
 
 
-# ---------- Offset ----------
+# ---------------------------- Offset ----------------------------
 
 # -- Offset Base --
 
@@ -89,7 +89,7 @@ class Offset:
     comment = "resampling offset"
 
 
-# ---------- Resample ----------
+# ---------------------------- Resample ----------------------------
 
 # -- Resample Base --
 

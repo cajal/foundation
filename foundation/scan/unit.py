@@ -5,7 +5,7 @@ from foundation.virtual.bridge import pipe_fuse, pipe_shared, resolve_pipe
 from foundation.schemas import scan as schema
 
 
-# -------------- Unit Set --------------
+# ---------------------------- Unit Set ----------------------------
 
 
 @schema.set
@@ -15,7 +15,7 @@ class UnitSet:
     comment = "scan unit set"
 
 
-# -------------- Unit Filter --------------
+# ---------------------------- Unit Filter ----------------------------
 
 # -- Filter Types --
 

@@ -5,7 +5,7 @@ from foundation.virtual.bridge import pipe_stim, pipe_shared
 from foundation.schemas import scan as schema
 
 
-# -------------- Trial Set --------------
+# ---------------------------- Trial Set ----------------------------
 
 
 @schema.set
@@ -15,7 +15,7 @@ class TrialSet:
     comment = "scan trial set"
 
 
-# -------------- Trial Filter --------------
+# ---------------------------- Trial Filter ----------------------------
 
 # -- Filter Types --
 

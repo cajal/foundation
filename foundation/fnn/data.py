@@ -4,9 +4,9 @@ from foundation.virtual import utility, recording
 from foundation.schemas import fnn as schema
 
 
-# -------------- Data Spec --------------
+# ---------------------------- Spec ----------------------------
 
-# -- Data Spec Types --
+# -- Spec Types --
 
 
 @schema.lookup
@@ -26,7 +26,7 @@ class TraceSpec:
     """
 
 
-# -- Data Spec --
+# -- Spec --
 
 
 @schema.link
@@ -36,7 +36,7 @@ class Spec:
     comment = "data specification"
 
 
-# -------------- Data Set --------------
+# ---------------------------- Data Set ----------------------------
 
 
 class _DataSet:
@@ -96,13 +96,13 @@ class VisualScan(_DataSet):
     -> pipe_shared.TrackingMethod
     -> pipe_shared.SpikeMethod
     -> recording.ScanTrials
-    -> recording.ScanPerspectives
-    -> recording.ScanModulations
+    -> recording.ScanVisualPerspectives
+    -> recording.ScanVisualModulations
     -> recording.ScanUnits
-    -> DataSpec.VideoSpec.proj(stimuli_id="spec_id")
-    -> DataSpec.TraceSpec.proj(perspectives_id="spec_id")
-    -> DataSpec.TraceSpec.proj(modulations_id="spec_id")
-    -> DataSpec.TraceSpec.proj(units_id="spec_id")
+    -> Spec.VideoSpec.proj(stimuli_id="spec_id")
+    -> Spec.TraceSpec.proj(perspectives_id="spec_id")
+    -> Spec.TraceSpec.proj(modulations_id="spec_id")
+    -> Spec.TraceSpec.proj(units_id="spec_id")
     -> utility.Rate
     """
 

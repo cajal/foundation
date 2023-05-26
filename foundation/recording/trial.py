@@ -6,7 +6,7 @@ from foundation.virtual.bridge import pipe_stim
 from foundation.schemas import recording as schema
 
 
-# -------------- Trial --------------
+# ---------------------------- Trial ----------------------------
 
 # -- Trial Base --
 
@@ -130,7 +130,7 @@ class TrialVideo:
         self.insert1(key)
 
 
-# -------------- Trial Filter --------------
+# ---------------------------- Trial Filter ----------------------------
 
 # -- Filter Types --
 

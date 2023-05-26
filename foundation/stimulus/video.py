@@ -7,7 +7,7 @@ from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
 from foundation.schemas import stimulus as schema
 
 
-# -------------- Video --------------
+# ---------------------------- Video ----------------------------
 
 # -- Video Base --
 
@@ -223,7 +223,7 @@ class VideoInfo:
         self.insert1(key)
 
 
-# -------------- Video Filter --------------
+# ---------------------------- Filter ----------------------------
 
 # -- Filter Types --
 
@@ -232,8 +232,8 @@ class VideoInfo:
 class VideoTypeFilter:
     filtertype = Video
     definition = """
-    video_type      : varchar(128)      # video type
-    include         : bool              # include or exclude
+    video_type      : varchar(128)  # video type
+    include         : bool          # include or exclude
     """
 
     @rowmethod
@@ -250,7 +250,7 @@ class VideoSetFilter:
     filtertype = Video
     definition = """
     -> VideoSet
-    include         : bool              # include or exclude
+    include         : bool          # include or exclude
     """
 
     @rowmethod

@@ -22,7 +22,7 @@ class Scan:
     def fill(self):
         from foundation.recording.trial import ScanTrial, Trial, TrialBounds, TrialSamples, TrialVideo
         from foundation.recording.trace import ScanPupil, ScanTreadmill, ScanUnit, Trace, TraceHomogeneous, TraceTrials
-        from foundation.recording.scan import ScanTrials, ScanPerspectives, ScanModulations, ScanUnits
+        from foundation.recording.scan import ScanTrials, ScanVisualPerspectives, ScanVisualModulations, ScanUnits
 
         # scan trials
         key = pipe_stim.Trial & self.key - ScanTrial
@@ -65,8 +65,8 @@ class Scan:
 
         # filtered scan trials ansd traces
         ScanTrials.populate(self.key, display_progress=True, reserve_jobs=True)
-        ScanPerspectives.populate(self.key, display_progress=True, reserve_jobs=True)
-        ScanModulations.populate(self.key, display_progress=True, reserve_jobs=True)
+        ScanVisualPerspectives.populate(self.key, display_progress=True, reserve_jobs=True)
+        ScanVisualModulations.populate(self.key, display_progress=True, reserve_jobs=True)
         ScanUnits.populate(self.key, display_progress=True, reserve_jobs=True)
 
 
@@ -95,7 +95,7 @@ class ScanPerspectiveCache:
     @property
     def key_list(self):
         return [
-            recording.ScanPerspectives,
+            recording.ScanVisualPerspectives,
             recording.ScanTrials,
             utility.Resample,
             utility.Offset,
@@ -107,7 +107,7 @@ class ScanPerspectiveCache:
         from foundation.recording.cache import ResampledTraces
 
         # all keys
-        key = self.key * recording.ScanPerspectives * recording.ScanTrials * recording.TrialSet.Member
+        key = self.key * recording.ScanVisualPerspectives * recording.ScanTrials * recording.TrialSet.Member
 
         # break up keys into TraceResampling groups
         for _key in (recording.TraceSet * utility.Rate * utility.Offset * utility.Resample & key).proj():
@@ -124,7 +124,7 @@ class ScanModulationCache:
     @property
     def key_list(self):
         return [
-            recording.ScanModulations,
+            recording.ScanVisualModulations,
             recording.ScanTrials,
             utility.Resample,
             utility.Offset,
@@ -136,7 +136,7 @@ class ScanModulationCache:
         from foundation.recording.cache import ResampledTraces
 
         # all keys
-        key = self.key * recording.ScanModulations * recording.ScanTrials * recording.TrialSet.Member
+        key = self.key * recording.ScanVisualModulations * recording.ScanTrials * recording.TrialSet.Member
 
         # break up keys into TraceResampling groups
         for _key in (recording.TraceSet * utility.Rate * utility.Offset * utility.Resample & key).proj():
@@ -182,7 +182,7 @@ class ScanPerspectiveSummary:
     @property
     def key_list(self):
         return [
-            recording.ScanPerspectives,
+            recording.ScanVisualPerspectives,
             recording.ScanTrials,
             utility.Summary,
             utility.Resample,
@@ -195,7 +195,7 @@ class ScanPerspectiveSummary:
 
         # summary keys
         key = (recording.TraceSet.Member * recording.TrialSet * self.key).proj()
-        key &= recording.ScanTrials * recording.ScanPerspectives & self.key
+        key &= recording.ScanTrials * recording.ScanVisualPerspectives & self.key
 
         # populate summary
         TraceSummary.populate(key, display_progress=True, reserve_jobs=True)
@@ -208,7 +208,7 @@ class ScanModulationSummary:
     @property
     def key_list(self):
         return [
-            recording.ScanModulations,
+            recording.ScanVisualModulations,
             recording.ScanTrials,
             utility.Summary,
             utility.Resample,
@@ -221,7 +221,7 @@ class ScanModulationSummary:
 
         # summary keys
         key = (recording.TraceSet.Member * recording.TrialSet * self.key).proj()
-        key &= recording.ScanTrials * recording.ScanModulations & self.key
+        key &= recording.ScanTrials * recording.ScanVisualModulations & self.key
 
         # populate summary
         TraceSummary.populate(key, display_progress=True, reserve_jobs=True)

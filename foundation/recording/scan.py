@@ -35,7 +35,7 @@ class ScanTrials:
 
 
 @schema.computed
-class ScanPerspectives:
+class ScanVisualPerspectives:
     definition = """
     -> pipe_exp.Scan
     -> pipe_shared.TrackingMethod
@@ -64,7 +64,7 @@ class ScanPerspectives:
 
 
 @schema.computed
-class ScanModulations:
+class ScanVisualModulations:
     definition = """
     -> pipe_exp.Scan
     -> pipe_shared.TrackingMethod
@@ -127,7 +127,7 @@ class ScanUnits:
 
 
 @schema.computed
-class ScanVideoTiming:
+class ScanVideoTimeScale:
     definition = """
     -> scan.Scan
     ---

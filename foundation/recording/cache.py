@@ -7,7 +7,7 @@ from functools import reduce
 from foundation.virtual import utility
 from foundation.recording.trial import Trial, TrialSet
 from foundation.recording.trace import Trace, TraceSet
-from foundation.recording.scan import ScanTrials, ScanUnits, ScanModulations, ScanPerspectives
+from foundation.recording.scan import ScanTrials, ScanUnits, ScanVisualModulations, ScanVisualPerspectives
 from foundation.schemas import recording as schema
 
 
