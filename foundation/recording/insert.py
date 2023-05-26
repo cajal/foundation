@@ -89,7 +89,7 @@ class ScanVideoCache:
 
 
 @keys
-class ScanPerspectiveCache:
+class ScanVisualPerspectiveCache:
     """Cache resampled scan behavior traces"""
 
     @property
@@ -118,7 +118,7 @@ class ScanPerspectiveCache:
 
 
 @keys
-class ScanModulationCache:
+class ScanVisualModulationCache:
     """Cache resampled scan behavior traces"""
 
     @property
@@ -176,7 +176,7 @@ class ScanUnitCache:
 
 
 @keys
-class ScanPerspectiveSummary:
+class ScanVisualPerspectiveSummary:
     """Summary of scan perspective traces"""
 
     @property
@@ -202,7 +202,7 @@ class ScanPerspectiveSummary:
 
 
 @keys
-class ScanModulationSummary:
+class ScanVisualModulationSummary:
     """Summary of scan modulation traces"""
 
     @property
