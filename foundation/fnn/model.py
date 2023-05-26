@@ -146,9 +146,11 @@ class ModelNetwork:
     def model(self):
         from foundation.utils.torch import cuda_enabled
 
-        device = "cuda" if cuda_enabled() else "cpu"
-        module = (Network & self).link.module.to(device=device)
-        params = self.parameters(device=device)
-        module.load_state_dict(params)
+        module = (Network & self).link.module.freeze()
 
+        device = "cuda" if cuda_enabled() else "cpu"
+        module = module.to(device=device)
+        params = self.parameters(device=device)
+
+        module.load_state_dict(params)
         return module

@@ -4,7 +4,7 @@ from tqdm import tqdm
 from datajoint import U
 from djutils import keys, merge, keyproperty, rowproperty, rowmethod, cache_rowproperty
 from foundation.utils import logger
-from foundation.virtual import stimulus, recording, fnn
+from foundation.virtual import utility, stimulus, recording, fnn
 
 
 # ----------------------------- Data -----------------------------
@@ -566,8 +566,10 @@ class VisualResponse:
     @property
     def key_list(self):
         return [
-            stimulus.Video,
             fnn.ModelNetwork,
+            utility.Bool.proj(perspective="bool"),
+            utility.Bool.proj(modulation="bool"),
+            stimulus.Video,
         ]
 
     @rowproperty
@@ -576,29 +578,41 @@ class VisualResponse:
         Returns
         -------
         pandas.Series
-            index -- str : trial_id (foundation.recording.trial.Trial)
-            data -- 2D array -- [samples, units] : model response
+            index -- str -- trial_id (foundation.recording.trial.Trial)
+            data -- 2D array -- [samples, units]
         """
         from foundation.fnn.model import ModelNetwork
         from foundation.fnn.network import Network
 
         inputs = (Network & self.key).link.visual_inputs & self.key
-        trials = inputs.trials
 
+        trials = inputs.trials
         if trials:
             index = pd.Index([t["trial_id"] for t in trials], name="trial_id")
         else:
             index = pd.Index([None], name="trial_id")
 
         model = (ModelNetwork & self.key).model
+        perspective, modulation = self.key.fetch1("perspective", "modulation")
         responses = model.generate_responses(
             stimuli=inputs.stimuli(),
-            perspectives=inputs.perspectives(),
-            modulations=inputs.modulations(),
+            perspectives=inputs.perspectives() if perspective else None,
+            modulations=inputs.modulations() if modulation else None,
         )
-        responses = np.stack(list(responses), axis=1)
+        responses = np.stack(list(responses), 1)
+        responses = np.broadcast_to(responses, [index.size, *responses.shape[1:]])
 
         return pd.Series([*responses], index=index)
+
+    @rowproperty
+    def mean(self):
+        """
+        Returns
+        -------
+        1D array
+            resampled mean response
+        """
+        return np.stack(self.trials, 0).mean(0)
 
     @rowproperty
     def timing(self):

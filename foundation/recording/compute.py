@@ -298,11 +298,11 @@ class VisualResponse:
     @property
     def key_list(self):
         return [
-            stimulus.Video,
             recording.Trace,
             utility.Resample,
             utility.Offset,
             utility.Rate,
+            stimulus.Video,
         ]
 
     @rowproperty
@@ -311,8 +311,8 @@ class VisualResponse:
         Returns
         -------
         pandas.Series
-            index -- str : trial_id (foundation.recording.trial.Trial)
-            data -- 1D array : resampled trial response
+            index -- str -- trial_id (foundation.recording.trial.Trial)
+            data -- 1D array -- [samples]
         """
         from foundation.recording.trial import TrialSet
 
