@@ -20,7 +20,7 @@ class _Network:
         """
         Returns
         -------
-        fnn.modules.Module
+        fnn.networks.Network
             network module
         """
         raise NotImplementedError()

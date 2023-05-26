@@ -297,36 +297,6 @@ class VisualScanInputs:
         return generate()
 
 
-# ----------------------------- State -----------------------------
-
-
-@keys
-class RandomNetworkState:
-    """Random Network State"""
-
-    @property
-    def key_list(self):
-        return [
-            fnn.Network,
-            fnn.RandomState,
-        ]
-
-    @rowmethod
-    def build(self, initialize=True):
-        import torch
-        from foundation.fnn.network import Network
-
-        devices = list(range(torch.cuda.device_count()))
-        with torch.random.fork_rng(devices):
-
-            if initialize:
-                seed = self.key.fetch1("seed")
-                torch.manual_seed(seed)
-                logger.info(f"Initializing network with random seed {seed}")
-
-            return (Network & self.key).link.module
-
-
 # ----------------------------- Training -----------------------------
 
 

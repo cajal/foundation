@@ -15,8 +15,8 @@ class _State:
         """
         Returns
         -------
-        djutils.derived.Keys
-            keys with `network` rowproperty
+        foundation.fnn.compute_state.NetworkState
+           network state keys
         """
         raise NotImplementedError()
 
@@ -32,9 +32,9 @@ class RandomState(_State):
 
     @rowproperty
     def network_keys(self):
-        from foundation.fnn.compute import RandomNetworkState
+        from foundation.fnn.compute_state import RandomNetworkState
 
-        return RandomNetworkState
+        return RandomNetworkState & self
 
 
 # -- State --
