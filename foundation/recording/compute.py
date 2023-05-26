@@ -312,7 +312,7 @@ class VisualResponse:
         -------
         pandas.Series
             index -- str -- trial_id (foundation.recording.trial.Trial)
-            data -- 1D array -- [samples]
+            data -- 1D array -- [samples], trial response
         """
         from foundation.recording.trial import TrialSet
 
@@ -327,8 +327,8 @@ class VisualResponse:
         """
         Returns
         -------
-        1D array
-            resampled mean response
+        1D array -- [samples]
+            mean response
         """
         from foundation.utils.resample import truncate
 

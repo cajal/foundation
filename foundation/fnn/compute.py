@@ -579,7 +579,7 @@ class VisualResponse:
         -------
         pandas.Series
             index -- str -- trial_id (foundation.recording.trial.Trial)
-            data -- 2D array -- [samples, units]
+            data -- 2D array -- [samples, units], trial response
         """
         from foundation.fnn.model import ModelNetwork
         from foundation.fnn.network import Network
@@ -609,8 +609,8 @@ class VisualResponse:
         """
         Returns
         -------
-        1D array
-            resampled mean response
+        2D array -- [samples, units]
+            mean response
         """
         return np.stack(self.trials, 0).mean(0)
 
