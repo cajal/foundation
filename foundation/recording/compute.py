@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 from djutils import keys, merge, rowproperty, keyproperty, RestrictionError
+from foundation.utils import tqdm
 from foundation.virtual import utility, stimulus, recording
 
 

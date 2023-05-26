@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 from datajoint import U
 from djutils import keys, merge, keyproperty, rowproperty, rowmethod, cache_rowproperty
-from foundation.utils import logger
+from foundation.utils import logger, tqdm, disable_tqdm
 from foundation.virtual import utility, stimulus, recording, fnn
 
 
@@ -242,10 +241,12 @@ class VisualScanInputs:
 
         # load trials
         trials = self.trials
-        if not trials:
+        if trials:
+            trials = tqdm(trials, desc="Perspective Trials")
+        else:
             return
 
-        with cache_rowproperty():
+        with cache_rowproperty(), disable_tqdm():
             # traceset key and transform
             key = (VisualScan & self.key).perspectives_key
             transform = (VisualScan & self.key).perspectives_transform
@@ -274,10 +275,12 @@ class VisualScanInputs:
 
         # load trials
         trials = self.trials
-        if not trials:
+        if trials:
+            trials = tqdm(trials, desc="Modulation Trials")
+        else:
             return
 
-        with cache_rowproperty():
+        with cache_rowproperty(), disable_tqdm():
             # traceset key and transform
             key = (VisualScan & self.key).modulations_key
             transform = (VisualScan & self.key).modulations_transform
@@ -599,6 +602,7 @@ class VisualResponse:
             perspectives=inputs.perspectives() if perspective else None,
             modulations=inputs.modulations() if modulation else None,
         )
+        responses = tqdm(responses, desc="Response Frames")
         responses = np.stack(list(responses), 1)
         responses = np.broadcast_to(responses, [index.size, *responses.shape[1:]])
 
