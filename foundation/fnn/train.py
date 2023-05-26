@@ -2,7 +2,7 @@ from djutils import rowproperty
 from foundation.schemas import fnn as schema
 
 
-# -------------- State --------------
+# ----------------------------- State -----------------------------
 
 # -- State Base --
 
@@ -47,7 +47,7 @@ class State:
     comment = "network state"
 
 
-# -------------- Loader --------------
+# ----------------------------- Loader -----------------------------
 
 # -- Loader Base --
 
@@ -96,7 +96,7 @@ class Loader:
     comment = "data loader"
 
 
-# -------------- Objective --------------
+# ----------------------------- Objective -----------------------------
 
 # -- Objective Base --
 
@@ -142,7 +142,7 @@ class Objective:
     comment = "training objective"
 
 
-# -------------- Optimizer --------------
+# ----------------------------- Optimizer -----------------------------
 
 # -- Optimizer Base --
 
@@ -192,7 +192,7 @@ class Optimizer:
     comment = "module optimizer"
 
 
-# -------------- Scheduler --------------
+# ----------------------------- Scheduler -----------------------------
 
 # -- Scheduler Base --
 

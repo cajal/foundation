@@ -2,7 +2,7 @@ from djutils import rowproperty
 from foundation.schemas import fnn as schema
 
 
-# -------------- Monitor --------------
+# ----------------------------- Monitor -----------------------------
 
 # -- Monitor Base --
 
@@ -53,7 +53,7 @@ class Monitor:
     name = "monitor"
 
 
-# -------------- Luminance --------------
+# ----------------------------- Luminance -----------------------------
 
 # -- Luminance Base --
 
@@ -101,7 +101,7 @@ class Luminance:
     name = "luminance"
 
 
-# -------------- Retina --------------
+# ----------------------------- Retina -----------------------------
 
 # -- Retina Base --
 
@@ -145,7 +145,7 @@ class Retina:
     name = "retina"
 
 
-# -------------- Perspective --------------
+# ----------------------------- Perspective -----------------------------
 
 # -- Perspective Base --
 

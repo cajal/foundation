@@ -2,7 +2,7 @@ from djutils import rowproperty
 from foundation.schemas import fnn as schema
 
 
-# -------------- Feedforward --------------
+# ----------------------------- Feedforward -----------------------------
 
 # -- Feedforward Base --
 
@@ -52,7 +52,7 @@ class Feedforward:
     name = "feedforward"
 
 
-# -------------- Recurrent --------------
+# ----------------------------- Recurrent -----------------------------
 
 # -- Recurrent Base --
 
@@ -98,7 +98,7 @@ class Recurrent:
     name = "recurrent"
 
 
-# -------------- Core --------------
+# ----------------------------- Core -----------------------------
 
 # -- Core Base --
 

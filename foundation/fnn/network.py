@@ -7,7 +7,7 @@ from foundation.fnn.data import Data
 from foundation.schemas import fnn as schema
 
 
-# -------------- Neural Network --------------
+# ----------------------------- Neural Network -----------------------------
 
 # -- Neural Network Base --
 

@@ -2,7 +2,7 @@ from djutils import rowproperty
 from foundation.schemas import fnn as schema
 
 
-# -------------- Position --------------
+# ----------------------------- Position -----------------------------
 
 # -- Position Base --
 
@@ -47,7 +47,7 @@ class Position:
     name = "position"
 
 
-# -------------- Bound --------------
+# ----------------------------- Bound -----------------------------
 
 # -- Bound Base --
 
@@ -90,7 +90,7 @@ class Bound:
     name = "bound"
 
 
-# -------------- Feature --------------
+# ----------------------------- Feature -----------------------------
 
 # -- Feature Base --
 
@@ -133,7 +133,7 @@ class Feature:
     name = "feature"
 
 
-# -------------- Readout --------------
+# ----------------------------- Readout -----------------------------
 
 # -- Readout Base --
 
@@ -183,7 +183,7 @@ class Readout:
     name = "readout"
 
 
-# -------------- Unit --------------
+# ----------------------------- Unit -----------------------------
 
 # -- Unit Base --
 
@@ -226,7 +226,7 @@ class Unit:
     name = "unit"
 
 
-# -------------- Reduce --------------
+# ----------------------------- Reduce -----------------------------
 
 # -- Reduce Base --
 

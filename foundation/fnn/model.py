@@ -4,7 +4,7 @@ from foundation.fnn.train import State, Loader, Objective, Optimizer, Scheduler
 from foundation.schemas import fnn as schema
 
 
-# -------------- Model --------------
+# ----------------------------- Model -----------------------------
 
 # -- Model Base --
 
