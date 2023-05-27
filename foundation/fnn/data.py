@@ -56,33 +56,33 @@ class _DataSet:
         """
         Returns
         -------
-        dict
+        dict[str, int]
             network sizes
         """
         raise NotImplementedError()
 
-    @rowproperty
-    def visual_inputs(self):
-        """
-        Returns
-        -------
-        djutils.derived.Keys
-            key_list -- [foundation.stimulus.Video, ...]
-            rowmethod -- [trials, stimuli, perspectives, modulations, ...]
-        """
-        raise NotImplementedError()
+    # @rowproperty
+    # def visual_inputs(self):
+    #     """
+    #     Returns
+    #     -------
+    #     djutils.derived.Keys
+    #         key_list -- [foundation.stimulus.Video, ...]
+    #         rowmethod -- [trials, stimuli, perspectives, modulations, ...]
+    #     """
+    #     raise NotImplementedError()
 
-    @rowproperty
-    def response_timing(self):
-        """
-        Returns
-        -------
-        float
-            response period (seconds)
-        float
-            response offset (seconds)
-        """
-        raise NotImplementedError()
+    # @rowproperty
+    # def response_timing(self):
+    #     """
+    #     Returns
+    #     -------
+    #     float
+    #         response period (seconds)
+    #     float
+    #         response offset (seconds)
+    #     """
+    #     raise NotImplementedError()
 
 
 # -- Data Set Types --
@@ -104,31 +104,31 @@ class VisualScan(_DataSet):
 
     @rowproperty
     def trainset(self):
-        from foundation.fnn.compute import VisualScan
+        from foundation.fnn.compute_data import VisualScan
 
         return (VisualScan & self).trainset
 
     @rowproperty
     def network_sizes(self):
-        from foundation.fnn.compute import VisualScan
+        from foundation.fnn.compute_data import VisualScan
 
         return (VisualScan & self).network_sizes
 
-    @rowproperty
-    def visual_inputs(self):
-        from foundation.fnn.compute import VisualScanInputs
+    # @rowproperty
+    # def visual_inputs(self):
+    #     from foundation.fnn.compute_data import VisualScanInputs
 
-        return VisualScanInputs & self
+    #     return VisualScanInputs & self
 
-    @rowproperty
-    def response_timing(self):
-        from foundation.utility.resample import Rate, Offset
+    # @rowproperty
+    # def response_timing(self):
+    #     from foundation.utility.resample import Rate, Offset
 
-        key = self.proj(spec_id="units_id") * Spec.TraceSpec
-        period = (Rate & key).link.period
-        offset = (Offset & key).link.offset
+    #     key = self.proj(spec_id="units_id") * Spec.TraceSpec
+    #     period = (Rate & key).link.period
+    #     offset = (Offset & key).link.offset
 
-        return period, offset
+    #     return period, offset
 
 
 # -- Data Set Types --

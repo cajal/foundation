@@ -54,7 +54,7 @@ class NetworkSetModel(_Model):
 
     @rowproperty
     def networks(self):
-        from foundation.fnn.compute import TrainNetworkSet
+        from foundation.fnn.compute_model import TrainNetworkSet
 
         yield from (TrainNetworkSet & self).train()
 
@@ -84,7 +84,7 @@ class NetworkModel(_Model):
 
     @rowproperty
     def networks(self):
-        from foundation.fnn.compute import TrainNetwork
+        from foundation.fnn.compute_model import TrainNetwork
 
         yield (TrainNetwork & self).train()
 
