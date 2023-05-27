@@ -80,16 +80,6 @@ class VisualScan:
         return Trial & (TrialSet & key).members
 
     @rowproperty
-    def all_trials(self):
-        from foundation.recording.trial import Trial, TrialSet
-
-        key = [self.perspectives_key, self.modulations_key, self.units_key]
-        key = merge(recording.TraceSet.Member & key, recording.TraceTrials)
-        key = (U("trialset_id") & key).fetch1()
-
-        return Trial & (TrialSet & key).members
-
-    @rowproperty
     def samples(self):
         from foundation.recording.trial import TrialSamples
 

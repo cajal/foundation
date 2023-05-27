@@ -1,5 +1,4 @@
 from djutils import rowproperty
-from foundation.virtual.bridge import pipe_exp, pipe_shared
 from foundation.virtual import utility, recording
 from foundation.schemas import fnn as schema
 
@@ -92,13 +91,10 @@ class _DataSet:
 @schema.lookup
 class VisualScan(_DataSet):
     definition = """
-    -> pipe_exp.Scan
-    -> pipe_shared.TrackingMethod
-    -> pipe_shared.SpikeMethod
-    -> recording.ScanTrials
     -> recording.ScanVisualPerspectives
     -> recording.ScanVisualModulations
     -> recording.ScanUnits
+    -> recording.ScanTrials
     -> Spec.VideoSpec.proj(stimuli_id="spec_id")
     -> Spec.TraceSpec.proj(perspectives_id="spec_id")
     -> Spec.TraceSpec.proj(modulations_id="spec_id")
@@ -142,4 +138,4 @@ class VisualScan(_DataSet):
 class Data:
     links = [VisualScan]
     name = "data"
-    comment = "network data"
+    comment = "fnn data"
