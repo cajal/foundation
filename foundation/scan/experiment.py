@@ -1,6 +1,6 @@
 import numpy as np
 import datajoint as dj
-from foundation.virtual.bridge import pipe_exp, pipe_stim, pipe_eye, pipe_tread, resolve_pipe
+from foundation.virtual.bridge import pipe_exp, pipe_fuse, pipe_stim, pipe_eye, pipe_tread, resolve_pipe
 from foundation.schemas import scan as schema
 
 
@@ -13,6 +13,10 @@ class Scan:
     eye_times           : longblob      # eye trace times on the stimulus clock
     treadmill_times     : longblob      # treadmill trace times on the stimulus clock
     """
+
+    @property
+    def key_source(self):
+        return pipe_exp.Scan.proj() & pipe_fuse.ScanDone
 
     def make(self, key):
         from scipy.interpolate import interp1d

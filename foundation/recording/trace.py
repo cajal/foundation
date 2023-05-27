@@ -1,5 +1,5 @@
-from djutils import merge, rowproperty
-from foundation.virtual import scan, utility
+from djutils import merge, rowproperty, rowmethod
+from foundation.virtual import utility, scan
 from foundation.virtual.bridge import pipe_fuse, pipe_shared, pipe_stim, pipe_tread, resolve_pipe
 from foundation.recording.trial import Trial, TrialSet, TrialBounds
 from foundation.schemas import recording as schema
@@ -198,14 +198,38 @@ class TraceSummary:
 
 # ---------------------------- Trace Filter ----------------------------
 
-# -- Filter Types --
+# -- Trace Filter Base --
 
-# -- Filter --
+
+class _TraceFilter:
+    filtertype = Trace
+
+
+# -- Trace Filter Types --
+
+
+@schema.lookupfilter
+class ScanUnitFilter(_TraceFilter):
+    definition = """
+    -> pipe_shared.ClassificationMethod
+    -> pipe_shared.MaskType
+    """
+
+    @rowmethod
+    def filter(self, traces):
+        units = merge(traces, Trace.ScanUnit)
+        pipe = resolve_pipe(units)
+        key = units * pipe.ScanSet.Unit * pipe.MaskClassification.Type & self.fetch1()
+
+        return traces & key.proj()
+
+
+# -- Trace Filter --
 
 
 @schema.filterlink
 class TraceFilter:
-    links = []
+    links = [ScanUnitFilter]
     name = "trace_filter"
     comment = "trace filter"
 

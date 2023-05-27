@@ -1,8 +1,8 @@
 import numpy as np
 from djutils import merge, rowproperty, rowmethod
 from foundation.utils.resample import monotonic
-from foundation.virtual import utility, stimulus
-from foundation.virtual.bridge import pipe_stim
+from foundation.virtual import utility, stimulus, scan
+from foundation.virtual.bridge import pipe_stim, pipe_shared
 from foundation.schemas import recording as schema
 
 
@@ -20,17 +20,17 @@ class _Trial:
         Returns
         -------
         1D array
-            video flip times
+            stimulus flip times
         """
         raise NotImplementedError()
 
     @rowproperty
-    def video(self):
+    def video_id(self):
         """
         Returns
         -------
-        foundation.stimulus.video.Video (virtual)
-            tuple
+        str
+            video_id (foundation.stimulus.video.Video)
         """
         raise NotImplementedError()
 
@@ -49,13 +49,13 @@ class ScanTrial(_Trial):
         return (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
 
     @rowproperty
-    def video(self):
+    def video_id(self):
         from foundation.stimulus.video import Video
 
         trial = pipe_stim.Trial * pipe_stim.Condition & self
         stim_type = trial.fetch1("stimulus_type")
         stim_type = stim_type.split(".")[1]
-        return Video.get(stim_type, trial)
+        return Video.get(stim_type, trial).fetch1("video_id")
 
 
 # -- Trial --
@@ -126,43 +126,79 @@ class TrialVideo:
     """
 
     def make(self, key):
-        key["video_id"] = (Trial & key).link.video.fetch1("video_id")
+        key["video_id"] = (Trial & key).link.video_id
         self.insert1(key)
 
 
 # ---------------------------- Trial Filter ----------------------------
 
-# -- Filter Types --
+
+# -- Trial Filter Base --
+
+
+class _TrialFilter:
+    filtertype = Trial
+
+
+# -- Trial Filter Types --
 
 
 @schema.lookupfilter
-class TrialVideoFilter:
-    filtertype = Trial
+class VideoTypeFilter(_TrialFilter):
     definition = """
-    -> stimulus.VideoFilterSet
+    video_type      : varchar(128)  # video type
+    include         : bool          # include or exclude
     """
 
     @rowmethod
     def filter(self, trials):
-        from foundation.stimulus.video import Video, VideoFilterSet
+        key = merge(trials, TrialVideo, stimulus.Video) & self
 
-        # trial videos
-        trial_videos = merge(trials, TrialVideo)
-        videos = Video & trial_videos
-
-        # filter videos
-        videos = (VideoFilterSet & self).filter(videos)
-
-        # filter trials
-        return trials & (trial_videos & videos).proj()
+        if self.fetch1("include"):
+            return trials & key.proj()
+        else:
+            return trials - key.proj()
 
 
-# -- Filter --
+@schema.lookupfilter
+class VideoSetFilter(_TrialFilter):
+    definition = """
+    -> stimulus.VideoSet
+    include         : bool          # include or exclude
+    """
+
+    @rowmethod
+    def filter(self, trials):
+        from foundation.stimulus.video import VideoSet
+
+        key = merge(trials, TrialVideo, stimulus.Video) & (VideoSet & self).members
+
+        if self.fetch1("include"):
+            return trials & key.proj()
+        else:
+            return trials - key.proj()
+
+
+@schema.lookupfilter
+class ScanPupilFilter(_TrialFilter):
+    definition = """
+    -> pipe_shared.TrackingMethod
+    max_nans        : decimal(4, 3) # maximum tolerated fraction of nans
+    """
+
+    @rowmethod
+    def filter(self, trials):
+        key = merge(trials, self, Trial.ScanTrial, scan.PupilNans) & "nans < max_nans"
+
+        return trials & key.proj()
+
+
+# -- Trial Filter --
 
 
 @schema.filterlink
 class TrialFilter:
-    links = [TrialVideoFilter]
+    links = [VideoTypeFilter, VideoSetFilter, ScanPupilFilter]
     name = "trial_filter"
     comment = "trial filter"
 

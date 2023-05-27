@@ -28,9 +28,3 @@ class Scan:
         # scan pupil
         PupilTrace.populate(self.key, reserve_jobs=True, display_progress=True)
         PupilNans.populate(self.key, reserve_jobs=True, display_progress=True)
-
-        # scan trial set
-        FilteredTrials.populate(self.key, reserve_jobs=True, display_progress=True)
-
-        # scan unit set
-        FilteredUnits.populate(self.key, reserve_jobs=True, display_progress=True)
