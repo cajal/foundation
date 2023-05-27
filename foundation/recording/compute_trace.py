@@ -241,7 +241,7 @@ class StandardTraces:
         stand = (Standardize & self.key).link
 
         # trace and stat keys
-        trace_keys = (Traces & self.key).traceset_members
+        trace_keys = (TraceSet & self.key).members
         stat_keys = stand.summary_keys
 
         # homogeneous mask
