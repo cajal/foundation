@@ -31,6 +31,7 @@ class Scan:
 
             for key in self.key:
 
+                # traces
                 traces = table & key
                 if traces:
                     traces = (TraceSet & traces).members
