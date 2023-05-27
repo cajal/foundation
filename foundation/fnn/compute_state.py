@@ -1,4 +1,5 @@
 from djutils import keys, rowmethod
+from foundation.utils import logger
 from foundation.virtual import fnn
 
 
