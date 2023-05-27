@@ -63,7 +63,7 @@ class ScanTrials:
             utility.Resolution,
         ]
 
-    def fill(self, cache=True):
+    def fill(self):
         from foundation.recording.trial import TrialSet, TrialSamples, TrialVideo
         from foundation.recording.cache import ResampledTrial
         from foundation.stimulus.cache import ResizedVideo
@@ -78,13 +78,12 @@ class ScanTrials:
                 # trial samples
                 TrialSamples.populate(trials, key, display_progress=True, reserve_jobs=True)
 
-                if cache:
-                    # resampled trial
-                    ResampledTrial.populate(trials, key, display_progress=True, reserve_jobs=True)
+                # resampled trial
+                ResampledTrial.populate(trials, key, display_progress=True, reserve_jobs=True)
 
-                    # resized video
-                    videos = merge(trials, TrialVideo)
-                    ResizedVideo.populate(videos, key, display_progress=True, reserve_jobs=True)
+                # resized video
+                videos = merge(trials, TrialVideo)
+                ResizedVideo.populate(videos, key, display_progress=True, reserve_jobs=True)
 
 
 @keys
@@ -102,7 +101,7 @@ class ScanVisualPerspectives:
             utility.Standardize,
         ]
 
-    def fill(self, cache=True):
+    def fill(self):
         from foundation.recording.scan import ScanTrials, ScanVisualPerspectives
         from foundation.recording.trial import TrialSet
         from foundation.recording.trace import TraceSet, TraceSummary
@@ -124,9 +123,8 @@ class ScanVisualPerspectives:
                 summaries = (Standardize & key).link.summary_keys.proj()
                 TraceSummary.populate(traces, trials, summaries, key, display_progress=True, reserve_jobs=True)
 
-                if cache:
-                    # resampled trace
-                    ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
+                # resampled trace
+                ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
 
 
 @keys
@@ -144,7 +142,7 @@ class ScanUnits:
             utility.Standardize,
         ]
 
-    def fill(self, cache=True):
+    def fill(self):
         from foundation.recording.scan import ScanTrials, ScanUnits
         from foundation.recording.trial import TrialSet
         from foundation.recording.trace import TraceSet, TraceSummary
@@ -166,9 +164,8 @@ class ScanUnits:
                 summaries = (Standardize & key).link.summary_keys.proj()
                 TraceSummary.populate(traces, trials, summaries, key, display_progress=True, reserve_jobs=True)
 
-                if cache:
-                    # resampled trace
-                    ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
+                # resampled trace
+                ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
 
 
 @keys
@@ -186,7 +183,7 @@ class ScanVisualPerspectives:
             utility.Standardize,
         ]
 
-    def fill(self, cache=True):
+    def fill(self):
         from foundation.recording.scan import ScanTrials, ScanVisualPerspectives
         from foundation.recording.trial import TrialSet
         from foundation.recording.trace import TraceSet, TraceSummary
@@ -208,9 +205,8 @@ class ScanVisualPerspectives:
                 summaries = (Standardize & key).link.summary_keys.proj()
                 TraceSummary.populate(traces, trials, summaries, key, display_progress=True, reserve_jobs=True)
 
-                if cache:
-                    # resampled trace
-                    ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
+                # resampled trace
+                ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
 
 
 @keys
@@ -228,7 +224,7 @@ class ScanVisualModulations:
             utility.Standardize,
         ]
 
-    def fill(self, cache=True):
+    def fill(self):
         from foundation.recording.scan import ScanTrials, ScanVisualModulations
         from foundation.recording.trial import TrialSet
         from foundation.recording.trace import TraceSet, TraceSummary
@@ -250,6 +246,5 @@ class ScanVisualModulations:
                 summaries = (Standardize & key).link.summary_keys.proj()
                 TraceSummary.populate(traces, trials, summaries, key, display_progress=True, reserve_jobs=True)
 
-                if cache:
-                    # resampled trace
-                    ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
+                # resampled trace
+                ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
