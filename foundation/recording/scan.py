@@ -1,7 +1,7 @@
 import numpy as np
 from djutils import merge
 from foundation.virtual import scan, stimulus
-from foundation.virtual.bridge import pipe_stim, pipe_shared, pipe_fuse, pipe_tread
+from foundation.virtual.bridge import pipe_stim, pipe_fuse, pipe_eye, pipe_tread
 from foundation.recording.trial import (
     ScanTrial,
     Trial,
@@ -86,7 +86,7 @@ class ScanUnits:
 class ScanVisualPerspectives:
     definition = """
     -> scan.Scan
-    -> pipe_shared.TrackingMethod
+    -> pipe_eye.FittedPupil
     ---
     -> TraceSet
     """
@@ -114,7 +114,7 @@ class ScanVisualPerspectives:
 class ScanVisualModulations:
     definition = """
     -> scan.Scan
-    -> pipe_shared.TrackingMethod
+    -> pipe_eye.FittedPupil
     ---
     -> TraceSet
     """
