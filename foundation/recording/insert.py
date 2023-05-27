@@ -5,7 +5,7 @@ from foundation.virtual import scan, utility, recording
 
 @keys
 class Scan:
-    """Scan Recording"""
+    """Scan Dataset"""
 
     @property
     def key_list(self):
@@ -18,11 +18,32 @@ class Scan:
         ]
 
     def fill(self):
-        from foundation.recording.scan import ScanTrials, ScanUnits, ScanVisualPerspectives, ScanVisualModulations
+        from foundation.recording.scan import (
+            ScanRecording,
+            ScanTrials,
+            ScanUnits,
+            ScanVisualPerspectives,
+            ScanVisualModulations,
+        )
+        from foundation.recording.trial import TrialSet, TrialBounds, TrialVideo
         from foundation.recording.trace import TraceSet, TraceHomogeneous, TraceTrials
-        from foundation.recording.trial import TrialSet, TrialBounds
 
-        # scan dataset
+        # scan recording
+        ScanRecording.populate(self.key, display_progress=True, reserve_jobs=True)
+
+        for key in self.key:
+            # trials
+            trials = ScanRecording & key
+            if trials:
+                trials = (TrialSet & trials).members
+            else:
+                continue
+
+            # compute trials
+            TrialBounds.populate(trials, display_progress=True, reserve_jobs=True)
+            TrialVideo.populate(trials, display_progress=True, reserve_jobs=True)
+
+        # scan subsets
         for table in [ScanTrials, ScanUnits, ScanVisualPerspectives, ScanVisualModulations]:
             table.populate(self.key, display_progress=True, reserve_jobs=True)
 
@@ -30,7 +51,6 @@ class Scan:
         for table in [ScanVisualPerspectives, ScanVisualModulations, ScanUnits]:
 
             for key in self.key:
-
                 # traces
                 traces = table & key
                 if traces:
@@ -41,13 +61,6 @@ class Scan:
                 # compute traces
                 TraceHomogeneous.populate(traces, display_progress=True, reserve_jobs=True)
                 TraceTrials.populate(traces, display_progress=True, reserve_jobs=True)
-
-                # trials
-                trials = TrialSet & (TraceTrials & traces)
-                trials = trials.members
-
-                # compute trials
-                TrialBounds.populate(trials, display_progress=True, reserve_jobs=True)
 
 
 @keys

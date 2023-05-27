@@ -22,10 +22,9 @@ from foundation.schemas import recording as schema
 
 
 @schema.computed
-class ScanTrials:
+class ScanRecording:
     definition = """
     -> scan.Scan
-    -> TrialFilterSet
     ---
     -> TrialSet
     """
@@ -40,6 +39,27 @@ class ScanTrials:
 
         # trial keys
         trials = Trial & (Trial.ScanTrial & key)
+
+        # trial set
+        trials = TrialSet.fill(trials, prompt=False)
+
+        # insert
+        self.insert1(dict(key, **trials))
+
+
+@schema.computed
+class ScanTrials:
+    definition = """
+    -> scan.Scan
+    -> TrialFilterSet
+    ---
+    -> TrialSet
+    """
+
+    def make(self, key):
+        # all trials
+        trials = TrialSet & merge(scan.Scan & key, ScanRecording)
+        trials = Trial & trials.members
 
         # filter trials
         trials = (TrialFilterSet & key).filter(trials)
