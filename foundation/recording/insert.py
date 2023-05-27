@@ -87,47 +87,6 @@ class ScanTrials:
 
 
 @keys
-class ScanVisualPerspectives:
-    """Scan Visual Perspectives"""
-
-    @property
-    def key_list(self):
-        return [
-            recording.ScanTrials,
-            recording.ScanVisualPerspectives,
-            utility.Rate,
-            utility.Offset,
-            utility.Resample,
-            utility.Standardize,
-        ]
-
-    def fill(self):
-        from foundation.recording.scan import ScanTrials, ScanVisualPerspectives
-        from foundation.recording.trial import TrialSet
-        from foundation.recording.trace import TraceSet, TraceSummary
-        from foundation.recording.cache import ResampledTraces
-        from foundation.utility.standardize import Standardize
-
-        for key in self.key:
-
-            with cache_rowproperty():
-                # traces
-                traces = ScanVisualPerspectives & key
-                traces = (TraceSet & traces).members
-
-                # trials
-                trials = ScanTrials & key
-                trials = (TrialSet & trials).members
-
-                # trace summary stats
-                summaries = (Standardize & key).link.summary_keys.proj()
-                TraceSummary.populate(traces, trials, summaries, key, display_progress=True, reserve_jobs=True)
-
-                # resampled trace
-                ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
-
-
-@keys
 class ScanUnits:
     """Scan Units"""
 
