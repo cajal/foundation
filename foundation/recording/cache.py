@@ -12,7 +12,7 @@ from foundation.schemas import recording as schema
 
 
 @schema.computed
-class ResampledVideo(Filepath):
+class ResampledTrial(Filepath):
     definition = """
     -> Trial
     -> utility.Rate
@@ -21,10 +21,10 @@ class ResampledVideo(Filepath):
     """
 
     def make(self, key):
-        from foundation.recording.compute import ResampleTrial
+        from foundation.recording.compute_trial import ResampledTrial
 
         # resampled video frame indices
-        index = (ResampleTrial & key).video_index
+        index = (ResampledTrial & key).flip_index
 
         # save file
         filepath = self.createpath(key, "index", "npy")
@@ -48,10 +48,10 @@ class ResampledTraces(Filepath):
     """
 
     def make(self, key):
-        from foundation.recording.compute import ResampleTraces
+        from foundation.recording.compute_trace import ResampledTraces
 
         # resamples traces
-        traces = (ResampleTraces & key).trial
+        traces = (ResampledTraces & key).trial
 
         # trace values finite
         finite = np.isfinite(traces).all()

@@ -101,7 +101,7 @@ class VisualScan:
             self.trials,
             recording.TrialVideo,
             stimulus.ResizedVideo & key,
-            recording.ResampledVideo & key,
+            recording.ResampledTrial & key,
         )
         trial_id, video, imap = trials.fetch("trial_id", "video", "index", order_by="trial_id")
         index = pd.Index(trial_id, name="trial_id")

@@ -1,251 +1,254 @@
 from djutils import keys, merge, cache_rowproperty
-from foundation.virtual.bridge import pipe_stim, pipe_tread, pipe_shared
+from foundation.virtual.bridge import pipe_fuse, pipe_shared
 from foundation.virtual import scan, utility, recording
 
 
-# @keys
-# class Scan:
-#     """Scan recording"""
+@keys
+class Scan:
+    """Scan Recording"""
 
-#     @property
-#     def key_list(self):
-#         return [
-#             scan.Scan,
-#             pipe_shared.TrackingMethod & scan.PupilTrace,
-#             pipe_shared.SpikeMethod & "spike_method in (5, 6)",
-#             recording.TrialFilterSet,
-#             recording.TraceFilterSet,
-#         ]
+    @property
+    def key_list(self):
+        return [
+            scan.Scan,
+            pipe_fuse.ScanDone,
+            pipe_shared.TrackingMethod & scan.PupilTrace,
+            recording.TrialFilterSet,
+            recording.TraceFilterSet,
+        ]
 
-#     def fill(self):
-#         from foundation.recording.trial import ScanTrial, Trial, TrialBounds, TrialSamples, TrialVideo
-#         from foundation.recording.trace import ScanPupil, ScanTreadmill, ScanUnit, Trace, TraceHomogeneous, TraceTrials
-#         from foundation.recording.scan import ScanTrials, ScanVisualPerspectives, ScanVisualModulations, ScanUnits
+    def fill(self):
+        from foundation.recording.scan import ScanTrials, ScanUnits, ScanVisualPerspectives, ScanVisualModulations
+        from foundation.recording.trace import TraceSet, TraceHomogeneous, TraceTrials
+        from foundation.recording.trial import TrialSet, TrialBounds
 
-#         # scan trials
-#         key = pipe_stim.Trial & self.key - ScanTrial
-#         ScanTrial.insert(key, skip_duplicates=True, ignore_extra_fields=True)
+        # scan dataset
+        for table in [ScanTrials, ScanUnits, ScanVisualPerspectives, ScanVisualModulations]:
+            table.populate(self.key, display_progress=True, reserve_jobs=True)
 
-#         # trial link
-#         Trial.fill()
+        # scan traces
+        for table in [ScanVisualPerspectives, ScanVisualModulations, ScanUnits]:
 
-#         # computed trial
-#         key = Trial.ScanTrial & self.key
-#         TrialBounds.populate(key, display_progress=True, reserve_jobs=True)
-#         TrialSamples.populate(key, display_progress=True, reserve_jobs=True)
-#         TrialVideo.populate(key, display_progress=True, reserve_jobs=True)
+            for key in self.key:
 
-#         # trace keys
-#         keys = []
+                traces = table & key
+                if traces:
+                    traces = (TraceSet & traces).members
+                else:
+                    continue
 
-#         # scan pupils
-#         key = merge(self.key, scan.PupilTrace)
-#         ScanPupil.insert(key - ScanPupil, skip_duplicates=True, ignore_extra_fields=True)
-#         keys.append([Trace.ScanPupil, key])
+                # compute traces
+                TraceHomogeneous.populate(traces, display_progress=True, reserve_jobs=True)
+                TraceTrials.populate(traces, display_progress=True, reserve_jobs=True)
 
-#         # scan treadmill
-#         key = merge(self.key, pipe_tread.Treadmill)
-#         ScanTreadmill.insert(key - ScanTreadmill, skip_duplicates=True, ignore_extra_fields=True)
-#         keys.append([Trace.ScanTreadmill, key])
+                # trials
+                trials = TrialSet & (TraceTrials & traces)
+                trials = trials.members
 
-#         # scan units
-#         key = merge(self.key, scan.FilteredUnits, scan.UnitSet.Member)
-#         ScanUnit.insert(key - ScanUnit, skip_duplicates=True, ignore_extra_fields=True)
-#         keys.append([Trace.ScanUnit, key])
-
-#         # trace link
-#         Trace.fill()
-
-#         # computed trace
-#         key = Trace.proj() & [t & k for t, k in keys]
-#         TraceHomogeneous.populate(key, display_progress=True, reserve_jobs=True)
-#         TraceTrials.populate(key, display_progress=True, reserve_jobs=True)
-
-#         # filtered scan trials ansd traces
-#         ScanTrials.populate(self.key, display_progress=True, reserve_jobs=True)
-#         ScanVisualPerspectives.populate(self.key, display_progress=True, reserve_jobs=True)
-#         ScanVisualModulations.populate(self.key, display_progress=True, reserve_jobs=True)
-#         ScanUnits.populate(self.key, display_progress=True, reserve_jobs=True)
+                # compute trials
+                TrialBounds.populate(trials, display_progress=True, reserve_jobs=True)
 
 
-# @keys
-# class ScanVideoCache:
-#     """Cache resampled scan trial videos"""
+@keys
+class ScanTrials:
+    """Scan Trials"""
 
-#     @property
-#     def key_list(self):
-#         return [
-#             recording.ScanTrials,
-#             utility.Rate,
-#         ]
+    @property
+    def key_list(self):
+        return [
+            recording.ScanTrials,
+            utility.Rate,
+            utility.Resize,
+            utility.Resolution,
+        ]
 
-#     def fill(self):
-#         from foundation.recording.cache import ResampledVideo
+    def fill(self, cache=True):
+        from foundation.recording.trial import TrialSet, TrialSamples, TrialVideo
+        from foundation.recording.cache import ResampledTrial
+        from foundation.stimulus.cache import ResizedVideo
 
-#         trials = recording.TrialSet.Member & (recording.ScanTrials & self.key)
-#         ResampledVideo.populate(trials, self.key, display_progress=True, reserve_jobs=True)
+        for key in self.key:
 
+            with cache_rowproperty():
+                # trials
+                trials = recording.ScanTrials & key
+                trials = (TrialSet & trials).members
 
-# @keys
-# class ScanVisualPerspectiveCache:
-#     """Cache resampled scan behavior traces"""
+                # trial samples
+                TrialSamples.populate(trials, key, display_progress=True, reserve_jobs=True)
 
-#     @property
-#     def key_list(self):
-#         return [
-#             recording.ScanVisualPerspectives,
-#             recording.ScanTrials,
-#             utility.Resample,
-#             utility.Offset,
-#             utility.Rate,
-#         ]
+                if cache:
+                    # resampled trial
+                    ResampledTrial.populate(trials, key, display_progress=True, reserve_jobs=True)
 
-#     def fill(self):
-#         from foundation.recording.compute import TraceResampling
-#         from foundation.recording.cache import ResampledTraces
-
-#         # all keys
-#         key = self.key * recording.ScanVisualPerspectives * recording.ScanTrials * recording.TrialSet.Member
-
-#         # break up keys into TraceResampling groups
-#         for _key in (recording.TraceSet * utility.Rate * utility.Offset * utility.Resample & key).proj():
-
-#             # populate with TraceResampling cacheing
-#             with cache_rowproperty(TraceResampling):
-#                 ResampledTraces.populate(_key, key, display_progress=True, reserve_jobs=True)
+                    # resized video
+                    videos = merge(trials, TrialVideo)
+                    ResizedVideo.populate(videos, key, display_progress=True, reserve_jobs=True)
 
 
-# @keys
-# class ScanVisualModulationCache:
-#     """Cache resampled scan behavior traces"""
+@keys
+class ScanVisualPerspectives:
+    """Scan Visual Perspectives"""
 
-#     @property
-#     def key_list(self):
-#         return [
-#             recording.ScanVisualModulations,
-#             recording.ScanTrials,
-#             utility.Resample,
-#             utility.Offset,
-#             utility.Rate,
-#         ]
+    @property
+    def key_list(self):
+        return [
+            recording.ScanTrials,
+            recording.ScanVisualPerspectives,
+            utility.Rate,
+            utility.Offset,
+            utility.Resample,
+            utility.Standardize,
+        ]
 
-#     def fill(self):
-#         from foundation.recording.compute import TraceResampling
-#         from foundation.recording.cache import ResampledTraces
+    def fill(self, cache=True):
+        from foundation.recording.scan import ScanTrials, ScanVisualPerspectives
+        from foundation.recording.trial import TrialSet
+        from foundation.recording.trace import TraceSet, TraceSummary
+        from foundation.recording.cache import ResampledTraces
+        from foundation.utility.standardize import Standardize
 
-#         # all keys
-#         key = self.key * recording.ScanVisualModulations * recording.ScanTrials * recording.TrialSet.Member
+        for key in self.key:
 
-#         # break up keys into TraceResampling groups
-#         for _key in (recording.TraceSet * utility.Rate * utility.Offset * utility.Resample & key).proj():
+            with cache_rowproperty():
+                # traces
+                traces = ScanVisualPerspectives & key
+                traces = (TraceSet & traces).members
 
-#             # populate with TraceResampling cacheing
-#             with cache_rowproperty(TraceResampling):
-#                 ResampledTraces.populate(_key, key, display_progress=True, reserve_jobs=True)
+                # trials
+                trials = ScanTrials & key
+                trials = (TrialSet & trials).members
 
+                # trace summary stats
+                summaries = (Standardize & key).link.summary_keys.proj()
+                TraceSummary.populate(traces, trials, summaries, key, display_progress=True, reserve_jobs=True)
 
-# @keys
-# class ScanUnitCache:
-#     """Cache resampled scan unit traces"""
-
-#     @property
-#     def key_list(self):
-#         return [
-#             recording.ScanUnits,
-#             recording.ScanTrials,
-#             utility.Resample,
-#             utility.Offset,
-#             utility.Rate,
-#         ]
-
-#     def fill(self):
-#         from foundation.recording.compute import TraceResampling
-#         from foundation.recording.cache import ResampledTraces
-
-#         # all keys
-#         key = self.key * recording.ScanUnits * recording.ScanTrials * recording.TrialSet.Member
-
-#         # break up keys into TraceResampling groups
-#         for _key in (recording.TraceSet * utility.Rate * utility.Offset * utility.Resample & key).proj():
-
-#             # populate with TraceResampling cacheing
-#             with cache_rowproperty(TraceResampling):
-#                 ResampledTraces.populate(_key, key, display_progress=True, reserve_jobs=True)
+                if cache:
+                    # resampled trace
+                    ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
 
 
-# @keys
-# class ScanVisualPerspectiveSummary:
-#     """Summary of scan perspective traces"""
+@keys
+class ScanUnits:
+    """Scan Units"""
 
-#     @property
-#     def key_list(self):
-#         return [
-#             recording.ScanVisualPerspectives,
-#             recording.ScanTrials,
-#             utility.Summary,
-#             utility.Resample,
-#             utility.Offset,
-#             utility.Rate,
-#         ]
+    @property
+    def key_list(self):
+        return [
+            recording.ScanTrials,
+            recording.ScanUnits,
+            utility.Rate,
+            utility.Offset,
+            utility.Resample,
+            utility.Standardize,
+        ]
 
-#     def fill(self):
-#         from foundation.recording.trace import TraceSummary
+    def fill(self, cache=True):
+        from foundation.recording.scan import ScanTrials, ScanUnits
+        from foundation.recording.trial import TrialSet
+        from foundation.recording.trace import TraceSet, TraceSummary
+        from foundation.recording.cache import ResampledTraces
+        from foundation.utility.standardize import Standardize
 
-#         # summary keys
-#         key = (recording.TraceSet.Member * recording.TrialSet * self.key).proj()
-#         key &= recording.ScanTrials * recording.ScanVisualPerspectives & self.key
+        for key in self.key:
 
-#         # populate summary
-#         TraceSummary.populate(key, display_progress=True, reserve_jobs=True)
+            with cache_rowproperty():
+                # traces
+                traces = ScanUnits & key
+                traces = (TraceSet & traces).members
 
+                # trials
+                trials = ScanTrials & key
+                trials = (TrialSet & trials).members
 
-# @keys
-# class ScanVisualModulationSummary:
-#     """Summary of scan modulation traces"""
+                # trace summary stats
+                summaries = (Standardize & key).link.summary_keys.proj()
+                TraceSummary.populate(traces, trials, summaries, key, display_progress=True, reserve_jobs=True)
 
-#     @property
-#     def key_list(self):
-#         return [
-#             recording.ScanVisualModulations,
-#             recording.ScanTrials,
-#             utility.Summary,
-#             utility.Resample,
-#             utility.Offset,
-#             utility.Rate,
-#         ]
-
-#     def fill(self):
-#         from foundation.recording.trace import TraceSummary
-
-#         # summary keys
-#         key = (recording.TraceSet.Member * recording.TrialSet * self.key).proj()
-#         key &= recording.ScanTrials * recording.ScanVisualModulations & self.key
-
-#         # populate summary
-#         TraceSummary.populate(key, display_progress=True, reserve_jobs=True)
+                if cache:
+                    # resampled trace
+                    ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
 
 
-# @keys
-# class ScanUnitSummary:
-#     """Summary of scan unit traces"""
+@keys
+class ScanVisualPerspectives:
+    """Scan Visual Perspectives"""
 
-#     @property
-#     def key_list(self):
-#         return [
-#             recording.ScanUnits,
-#             recording.ScanTrials,
-#             utility.Summary,
-#             utility.Resample,
-#             utility.Offset,
-#             utility.Rate,
-#         ]
+    @property
+    def key_list(self):
+        return [
+            recording.ScanTrials,
+            recording.ScanVisualPerspectives,
+            utility.Rate,
+            utility.Offset,
+            utility.Resample,
+            utility.Standardize,
+        ]
 
-#     def fill(self):
-#         from foundation.recording.trace import TraceSummary
+    def fill(self, cache=True):
+        from foundation.recording.scan import ScanTrials, ScanVisualPerspectives
+        from foundation.recording.trial import TrialSet
+        from foundation.recording.trace import TraceSet, TraceSummary
+        from foundation.recording.cache import ResampledTraces
+        from foundation.utility.standardize import Standardize
 
-#         # summary keys
-#         key = (recording.TraceSet.Member * recording.TrialSet * self.key).proj()
-#         key &= recording.ScanTrials * recording.ScanUnits & self.key
+        for key in self.key:
 
-#         # populate summary
-#         TraceSummary.populate(key, display_progress=True, reserve_jobs=True)
+            with cache_rowproperty():
+                # traces
+                traces = ScanVisualPerspectives & key
+                traces = (TraceSet & traces).members
+
+                # trials
+                trials = ScanTrials & key
+                trials = (TrialSet & trials).members
+
+                # trace summary stats
+                summaries = (Standardize & key).link.summary_keys.proj()
+                TraceSummary.populate(traces, trials, summaries, key, display_progress=True, reserve_jobs=True)
+
+                if cache:
+                    # resampled trace
+                    ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
+
+
+@keys
+class ScanVisualModulations:
+    """Scan Visual Modulations"""
+
+    @property
+    def key_list(self):
+        return [
+            recording.ScanTrials,
+            recording.ScanVisualModulations,
+            utility.Rate,
+            utility.Offset,
+            utility.Resample,
+            utility.Standardize,
+        ]
+
+    def fill(self, cache=True):
+        from foundation.recording.scan import ScanTrials, ScanVisualModulations
+        from foundation.recording.trial import TrialSet
+        from foundation.recording.trace import TraceSet, TraceSummary
+        from foundation.recording.cache import ResampledTraces
+        from foundation.utility.standardize import Standardize
+
+        for key in self.key:
+
+            with cache_rowproperty():
+                # traces
+                traces = ScanVisualModulations & key
+                traces = (TraceSet & traces).members
+
+                # trials
+                trials = ScanTrials & key
+                trials = (TrialSet & trials).members
+
+                # trace summary stats
+                summaries = (Standardize & key).link.summary_keys.proj()
+                TraceSummary.populate(traces, trials, summaries, key, display_progress=True, reserve_jobs=True)
+
+                if cache:
+                    # resampled trace
+                    ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)

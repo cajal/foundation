@@ -12,15 +12,11 @@ class Scan:
         return [
             pipe_exp.Scan,
             pipe_eye.FittedPupil,
-            scan.TrialFilterSet,
-            scan.UnitFilterSet,
         ]
 
     def fill(self):
         from foundation.scan.experiment import Scan as ScanExperiment
         from foundation.scan.pupil import PupilTrace, PupilNans
-        from foundation.scan.trial import FilteredTrials
-        from foundation.scan.unit import FilteredUnits
 
         # scan timing
         ScanExperiment.populate(self.key, reserve_jobs=True, display_progress=True)

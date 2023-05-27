@@ -39,33 +39,3 @@ class Scan:
         # compute video
         keys = [Video.get(_, trials).proj() for _ in link_types]
         VideoInfo.populate(keys, reserve_jobs=True, display_progress=True)
-
-
-@keys
-class ScanCache:
-    """Scan stimulus cache"""
-
-    @property
-    def key_list(self):
-        return [
-            pipe_exp.Scan,
-            utility.Resize,
-            utility.Resolution,
-        ]
-
-    def fill(self):
-        from foundation.stimulus.video import Video
-        from foundation.stimulus.cache import ResizedVideo
-
-        # trials
-        trials = pipe_stim.Trial * pipe_stim.Condition & self.key
-
-        # stimulus types
-        stim_types = U("stimulus_type") & trials
-        link_types = [s.split(".")[1] for s in stim_types.fetch("stimulus_type")]
-
-        # video links
-        key = [Video.get(_, trials).proj() for _ in link_types]
-
-        # cache resized videos
-        ResizedVideo.populate(key, self.key, reserve_jobs=True, display_progress=True)

@@ -111,9 +111,9 @@ class TrialSamples:
     """
 
     def make(self, key):
-        from foundation.recording.compute import ResampleTrial
+        from foundation.recording.compute_trial import ResampledTrial
 
-        key["samples"] = (ResampleTrial & key).samples
+        key["samples"] = (ResampledTrial & key).samples
         self.insert1(key)
 
 
