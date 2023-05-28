@@ -45,7 +45,7 @@ class VisualRecording(Visual):
 
     @rowproperty
     def response(self):
-        from foundation.recording.trial import Trial, TrialSet, TrialFilterSet
+        from foundation.recording.trial import Trial, TrialVideo, TrialSet, TrialFilterSet
         from foundation.recording.compute_trace import ResampledTrace
 
         # all trials
@@ -54,7 +54,7 @@ class VisualRecording(Visual):
 
         # restricted trials
         trials = (TrialFilterSet & self.key).filter(trials)
-        trials = merge(trials, recording.TrialVideo) & self.key
+        trials = merge(trials, TrialVideo) & self.key
 
         # trial response
         return (ResampledTrace & trials & self.key).trials

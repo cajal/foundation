@@ -44,16 +44,17 @@ class Recording(_Response):
         return (Rate & self).link.period, (Offset & self).link.offset
 
 
-# @schema.lookup
-# class FnnRecording(_Response):
-#     definition = """
-#     -> fnn.ModelNetwork
-#     response_index      : int unsigned  # response index
-#     """
+@schema.lookup
+class FnnRecording(_Response):
+    definition = """
+    -> recording.TrialFilterSet
+    -> fnn.ModelNetwork
+    response_index      : int unsigned  # response index
+    """
 
-#     @rowproperty
-#     def timing(self):
-#         from foundation.fnn.dataspec import DataSp
+    # @rowproperty
+    # def timing(self):
+    #     from foundation.fnn.dataspec import DataSp
 
 
 # -- Response --
