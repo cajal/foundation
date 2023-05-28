@@ -28,8 +28,9 @@ class _Response:
 
 
 @schema.lookup
-class Recording(_Response):
+class RecordingTrials(_Response):
     definition = """
+    -> recording.TrialFilterSet
     -> recording.Trace
     -> utility.Resample
     -> utility.Offset
@@ -43,17 +44,16 @@ class Recording(_Response):
         return (Rate & self).link.period, (Offset & self).link.offset
 
 
-@schema.lookup
-class Fnn(_Response):
-    definition = """
-    -> fnn.ModelNetwork
-    response_index      : int unsigned  # response index
-    """
+# @schema.lookup
+# class Fnn(_Response):
+#     definition = """
+#     -> fnn.ModelNetwork
+#     response_index      : int unsigned  # response index
+#     """
 
-    # @rowproperty
-    # def timing(self):
-    #     from foundation.fnn.dataspec import DataSp
-
+#     @rowproperty
+#     def timing(self):
+#         from foundation.fnn.dataspec import DataSp
 
 
 # -- Response --
@@ -61,6 +61,6 @@ class Fnn(_Response):
 
 @schema.link
 class Response:
-    links = [Recording, Fnn]
+    links = [RecordingTrials]
     name = "response"
     comment = "functional response"
