@@ -27,7 +27,7 @@ class Visual:
         Returns
         -------
         pandas.Series
-            index -- str : unique trial identifier
+            index -- str | None : unique trial identifier | None
             data -- 1D array : visual response
         """
         raise NotImplementedError()
