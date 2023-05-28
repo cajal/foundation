@@ -44,7 +44,7 @@ class PupilNans:
 
     @property
     def key_source(self):
-        return pipe_eye.FittedPupil.proj() & Scan
+        return pipe_eye.FittedPupil.proj() & Scan & PupilTrace
 
     def make(self, key):
         from foundation.utils.resample import Nans
