@@ -28,7 +28,7 @@ class _Response:
 
 
 @schema.lookup
-class RecordingTrials(_Response):
+class Recording(_Response):
     definition = """
     -> recording.TrialFilterSet
     -> recording.Trace
@@ -45,7 +45,7 @@ class RecordingTrials(_Response):
 
 
 # @schema.lookup
-# class Fnn(_Response):
+# class FnnRecording(_Response):
 #     definition = """
 #     -> fnn.ModelNetwork
 #     response_index      : int unsigned  # response index
@@ -61,6 +61,6 @@ class RecordingTrials(_Response):
 
 @schema.link
 class Response:
-    links = [RecordingTrials]
+    links = [Recording]
     name = "response"
     comment = "functional response"
