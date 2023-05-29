@@ -86,8 +86,9 @@ class VisualScan(VisualInput):
 
     @property
     def input_list(self):
-        key = fnn.VisualScan.proj(spec_id="stimuli_id")
-        return [key * fnn.Spec.VideoSpec * fnn.VideoSpec]
+        key = fnn.VisualScan
+        spec = (fnn.Spec.VideoSpec * fnn.VideoSpec).proj(stimuli_id="spec_id")
+        return [key * spec]
 
     @rowproperty
     def time_scale(self):
@@ -178,8 +179,9 @@ class VisualScanRecording(VisualRecordingInput):
 
     @property
     def input_list(self):
-        key = fnn.VisualScan.proj(spec_id="stimuli_id", train_filterset_id="trial_filterset_id")
-        return [key * fnn.Spec.VideoSpec * fnn.VideoSpec]
+        key = fnn.VisualScan.proj(train_filterset_id="trial_filterset_id")
+        spec = (fnn.Spec.VideoSpec * fnn.VideoSpec).proj(stimuli_id="spec_id")
+        return [key * spec]
 
     @rowproperty
     def all_trials(self):
@@ -187,3 +189,49 @@ class VisualScanRecording(VisualRecordingInput):
 
         trials = TrialSet & merge(self.key, recording.ScanRecording)
         return Trial & trials.members
+
+    @rowmethod
+    def _traces(self, input_type):
+        from foundation.fnn.compute_dataset import VisualScan
+        from foundation.recording.compute_trace import StandardTraces, ResampledTraces
+        from foundation.utils.resample import truncate
+
+        if input_type not in ["perspective", "modulation"]:
+            raise ValueError("input_type must be either `perspective` or `modulation`")
+
+        # traceset key
+        key = VisualScan & self.key.proj(
+            all_filterset_id="trial_filterset_id",
+            trial_filterset_id="train_filterset_id",
+        )
+        key = getattr(key, f"{input_type}s_key")
+
+        # traceset transform
+        transform = (StandardTraces & key).transform
+
+        # trials
+        trials = []
+        trial_ids = tqdm(self.trial_ids, desc=f"{input_type.capitalize()}s")
+        with cache_rowproperty(), disable_tqdm():
+            for trial_id in trial_ids:
+                trial = (ResampledTraces & {"trial_id": trial_id} & key).trial
+                trial = transform(trial)
+                trials.append(trial)
+
+        # traceset
+        traces = truncate(*trials)
+        traces = np.stack(traces, axis=1)
+
+        # yield traceset frames
+        def frames():
+            yield from traces
+
+        return frames()
+
+    @rowmethod
+    def perspectives(self):
+        return self._traces("perspective")
+
+    @rowmethod
+    def modulations(self):
+        return self._traces("modulation")

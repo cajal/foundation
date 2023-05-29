@@ -3,7 +3,7 @@ from foundation.virtual import utility, recording, fnn
 from foundation.schemas import function as schema
 
 
-# -------------- Response --------------
+# ----------------------------- Response -----------------------------
 
 # -- Response Base --
 
