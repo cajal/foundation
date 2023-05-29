@@ -26,12 +26,12 @@ class _Network:
         raise NotImplementedError()
 
     @rowproperty
-    def trainset(self):
+    def data(self):
         """
         Returns
         -------
-        fnn.data.datset.Dataset
-            training dataset
+        foundation.fnn.data.Data
+            tuple, network data
         """
         raise NotImplementedError()
 
@@ -65,22 +65,14 @@ class VisualNetwork(_Network):
             unit=(Unit & self).link.nn,
         )
         module._init(
-            **(Data & self).link.network_sizes,
+            **(Data & self).link.sizes,
             streams=self.fetch1("streams"),
         )
         return module
 
     @rowproperty
-    def trainset(self):
-        return (Data & self).link.trainset
-
-    @rowproperty
-    def visual_inputs(self):
-        return (Data & self).link.visual_inputs
-
-    @rowproperty
-    def response_timing(self):
-        return (Data & self).link.response_timing
+    def data(self):
+        return Data & self
 
 
 # -- Neural Network Types --

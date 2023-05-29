@@ -108,7 +108,7 @@ class VisualScan:
         return pd.Series(data=data, index=index)
 
     @rowproperty
-    def trainset(self):
+    def dataset(self):
         from fnn.data import Dataset
 
         data = [
@@ -122,19 +122,6 @@ class VisualScan:
         assert not df.isnull().values.any()
 
         return Dataset(df)
-
-    @rowproperty
-    def network_sizes(self):
-        stimuli = merge(self.trials, recording.TrialVideo, stimulus.VideoInfo)
-        perspectives = recording.TraceSet & self.perspectives_key
-        modulations = recording.TraceSet & self.modulations_key
-        units = recording.TraceSet & self.units_key
-        return {
-            "stimuli": (U("channels") & stimuli).fetch1("channels"),
-            "perspectives": perspectives.fetch1("members"),
-            "modulations": modulations.fetch1("members"),
-            "units": units.fetch1("members"),
-        }
 
 
 # ----------------------------- Inputs -----------------------------

@@ -1,5 +1,6 @@
-from djutils import rowproperty
-from foundation.virtual import utility, recording
+from datajoint import U
+from djutils import merge, rowproperty
+from foundation.virtual import utility, stimulus, recording
 from foundation.schemas import fnn as schema
 
 
@@ -42,17 +43,17 @@ class _Data:
     """Data"""
 
     @rowproperty
-    def trainset(self):
+    def dataset(self):
         """
         Returns
         -------
         fnn.data.Dataset
-            training dataset
+            network dataset
         """
         raise NotImplementedError()
 
     @rowproperty
-    def network_sizes(self):
+    def sizes(self):
         """
         Returns
         -------
@@ -103,16 +104,26 @@ class VisualScan(_Data):
     """
 
     @rowproperty
-    def trainset(self):
-        from foundation.fnn.compute_dataset import VisualScan
+    def sizes(self):
+        from foundation.fnn.compute_data import VisualScan
 
-        return (VisualScan & self).trainset
+        sizes = dict()
+        key = VisualScan & self
+
+        stimuli = merge(key.trials, recording.TrialVideo, stimulus.VideoInfo)
+        sizes["stimuli"] = (U("channels") & stimuli).fetch1("channels")
+
+        for attr in ["perspectives", "modulations", "units"]:
+            _key = recording.TraceSet & getattr(key, f"{attr}_key")
+            sizes[attr] = _key.fetch1("members")
+
+        return sizes
 
     @rowproperty
-    def network_sizes(self):
+    def dataset(self):
         from foundation.fnn.compute_dataset import VisualScan
 
-        return (VisualScan & self).network_sizes
+        return (VisualScan & self).dataset
 
     # @rowproperty
     # def visual_inputs(self):

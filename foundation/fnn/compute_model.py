@@ -63,7 +63,9 @@ class _TrainNetwork:
             optimizer = (Optimizer & self.key).link.optimizer
             optimizer._init(scheduler=scheduler)
 
-        dataset = (Network & self.key).link.trainset
+        data = (Network & self.key).link.data
+        dataset = data.link.dataset
+
         loader = (Loader & self.key).link.loader
         loader._init(dataset=dataset)
 
