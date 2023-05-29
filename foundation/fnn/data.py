@@ -35,11 +35,11 @@ class Spec:
     comment = "data specification"
 
 
-# ---------------------------- Data Set ----------------------------
+# ---------------------------- Data ----------------------------
 
 
-class _DataSet:
-    """Data Set"""
+class _Data:
+    """Data"""
 
     @rowproperty
     def trainset(self):
@@ -89,7 +89,7 @@ class _DataSet:
 
 
 @schema.lookup
-class VisualScan(_DataSet):
+class VisualScan(_Data):
     definition = """
     -> recording.ScanVisualPerspectives
     -> recording.ScanVisualModulations
@@ -104,13 +104,13 @@ class VisualScan(_DataSet):
 
     @rowproperty
     def trainset(self):
-        from foundation.fnn.compute_data import VisualScan
+        from foundation.fnn.compute_dataset import VisualScan
 
         return (VisualScan & self).trainset
 
     @rowproperty
     def network_sizes(self):
-        from foundation.fnn.compute_data import VisualScan
+        from foundation.fnn.compute_dataset import VisualScan
 
         return (VisualScan & self).network_sizes
 

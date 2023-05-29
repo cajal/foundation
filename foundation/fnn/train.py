@@ -32,9 +32,9 @@ class RandomState(_State):
 
     @rowproperty
     def network_keys(self):
-        from foundation.fnn.compute_state import RandomNetworkState
+        from foundation.fnn.compute_state import RandomNetwork
 
-        return RandomNetworkState & self
+        return RandomNetwork & self
 
 
 # -- State --

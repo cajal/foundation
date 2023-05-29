@@ -20,6 +20,7 @@ class Scan:
     def fill(self):
         from foundation.recording.scan import (
             ScanRecording,
+            ScanVideoTimeScale,
             ScanTrials,
             ScanUnits,
             ScanVisualPerspectives,
@@ -30,6 +31,7 @@ class Scan:
 
         # scan recording
         ScanRecording.populate(self.key, display_progress=True, reserve_jobs=True)
+        ScanVideoTimeScale.populate(self.key, display_progress=True, reserve_jobs=True)
 
         for key in self.key:
             # trials

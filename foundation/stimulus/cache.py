@@ -16,10 +16,10 @@ class ResizedVideo(Filepath):
     """
 
     def make(self, key):
-        from foundation.stimulus.compute import ResizeVideo
+        from foundation.stimulus.compute import ResizedVideo
 
         # resize video
-        video = (ResizeVideo & key).video
+        video = (ResizedVideo & key).video
 
         # save video
         filepath = self.createpath(key, "video", "npy")

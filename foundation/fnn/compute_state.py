@@ -39,7 +39,7 @@ class NetworkState:
 # -- Network State Types --
 
 
-class RandomNetworkState(NetworkState):
+class RandomNetwork(NetworkState):
     """Random Network State"""
 
     @property

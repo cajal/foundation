@@ -3,7 +3,7 @@ from foundation.virtual import utility, stimulus
 
 
 @keys
-class ResizeVideo:
+class ResizedVideo:
     """Resize video"""
 
     @property

@@ -125,12 +125,10 @@ class VisualScan:
 
     @rowproperty
     def network_sizes(self):
-
         stimuli = merge(self.trials, recording.TrialVideo, stimulus.VideoInfo)
         perspectives = recording.TraceSet & self.perspectives_key
         modulations = recording.TraceSet & self.modulations_key
         units = recording.TraceSet & self.units_key
-
         return {
             "stimuli": (U("channels") & stimuli).fetch1("channels"),
             "perspectives": perspectives.fetch1("members"),
