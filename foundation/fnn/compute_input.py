@@ -39,7 +39,7 @@ class VisualInput:
         4D array -- [trials, height, width, channels]
             video frame
         """
-        from foundation.stimulus.compute import ResizedVideo
+        from foundation.stimulus.compute_video import ResizedVideo
         from foundation.utility.resample import Rate
         from foundation.utils.resample import flip_index
 
@@ -86,9 +86,10 @@ class VisualScan(VisualInput):
 
     @property
     def input_list(self):
-        key = fnn.VisualScan
-        spec = (fnn.Spec.VideoSpec * fnn.VideoSpec).proj(stimuli_id="spec_id")
-        return [key * spec]
+        return [
+            fnn.VisualScan,
+            (fnn.Spec.VideoSpec * fnn.VideoSpec).proj(stimuli_id="spec_id"),
+        ]
 
     @rowproperty
     def time_scale(self):
@@ -179,9 +180,10 @@ class VisualScanRecording(VisualRecordingInput):
 
     @property
     def input_list(self):
-        key = fnn.VisualScan.proj(train_filterset_id="trial_filterset_id")
-        spec = (fnn.Spec.VideoSpec * fnn.VideoSpec).proj(stimuli_id="spec_id")
-        return [key * spec]
+        return [
+            fnn.VisualScan.proj(fnn_filterset_id="trial_filterset_id"),
+            (fnn.Spec.VideoSpec * fnn.VideoSpec).proj(stimuli_id="spec_id"),
+        ]
 
     @rowproperty
     def all_trials(self):
@@ -201,8 +203,8 @@ class VisualScanRecording(VisualRecordingInput):
 
         # traceset key
         key = VisualScan & self.key.proj(
-            all_filterset_id="trial_filterset_id",
-            trial_filterset_id="train_filterset_id",
+            input_filterset_id="trial_filterset_id",
+            trial_filterset_id="fnn_filterset_id",
         )
         key = getattr(key, f"{input_type}s_key")
 

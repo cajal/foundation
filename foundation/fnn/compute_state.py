@@ -8,23 +8,16 @@ from foundation.virtual import fnn
 # -- Network State Base --
 
 
-@keys
 class NetworkState:
     """Network State"""
 
-    @property
-    def key_list(self):
-        return [fnn.Network] + self.state_list
-
-    @property
-    def state_list(self):
-        raise NotImplementedError()
-
     @rowmethod
-    def build(self, initialize=True):
+    def build(self, network_id, initialize=True):
         """
         Parameters
         ----------
+        network_id : str
+            key -- foundation.fnn.network.Network
         initialize : bool
             initialize network parameters
 
@@ -39,15 +32,16 @@ class NetworkState:
 # -- Network State Types --
 
 
+@keys
 class RandomNetwork(NetworkState):
     """Random Network State"""
 
     @property
-    def state_list(self):
+    def key_list(self):
         return [fnn.RandomState]
 
     @rowmethod
-    def build(self, initialize=True):
+    def build(self, network_id, initialize=True):
         import torch
         from foundation.fnn.network import Network
 
@@ -59,4 +53,4 @@ class RandomNetwork(NetworkState):
                 torch.manual_seed(seed)
                 logger.info(f"Initializing network with random seed {seed}")
 
-            return (Network & self.key).link.module
+            return (Network & {"network_id": network_id}).link.module

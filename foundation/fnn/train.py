@@ -11,12 +11,12 @@ class _State:
     """State"""
 
     @rowproperty
-    def network_keys(self):
+    def network_state(self):
         """
         Returns
         -------
         foundation.fnn.compute_state.NetworkState
-           network state keys
+           network state
         """
         raise NotImplementedError()
 
@@ -31,7 +31,7 @@ class RandomState(_State):
     """
 
     @rowproperty
-    def network_keys(self):
+    def network_state(self):
         from foundation.fnn.compute_state import RandomNetwork
 
         return RandomNetwork & self

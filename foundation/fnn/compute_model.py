@@ -36,8 +36,8 @@ class _TrainNetwork:
         init = not checkpoint and cycle == 0
         cuda = device("cuda", current_device())
 
-        nets = (State & self.key).link.network_keys
-        module = (nets & self.key).build(initialize=init).to(device=cuda)
+        state = (State & self.key).link.network_state
+        module = state.build(network_id, initialize=init).to(device=cuda)
 
         if checkpoint:
             assert len(checkpoint) == size
