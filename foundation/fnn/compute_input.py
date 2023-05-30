@@ -9,48 +9,83 @@ from foundation.virtual import utility, stimulus, recording, fnn
 # -- Visual Input Base --
 
 
-@keys
 class VisualInput:
     """Visual Input"""
 
-    @property
-    def key_list(self):
-        return [stimulus.Video, fnn.VideoSpec, utility.Rate] + self.input_list
-
-    @property
-    def input_list(self):
-        raise NotImplementedError()
-
-    @rowproperty
-    def time_scale(self):
-        """
-        Returns
-        -------
-        float
-            video time scale
-        """
-        raise NotImplementedError()
-
     @rowmethod
-    def stimuli(self):
+    def stimuli(self, video_id):
         """
+        Parameters
+        ----------
+        video_id : str
+            key -- foundation.stimulus.video.Video
+
         Yields
         ------
         4D array -- [trials, height, width, channels]
             video frame
         """
+        raise NotImplementedError()
+
+    @rowmethod
+    def perspectives(self, video_id):
+        """
+        Parameters
+        ----------
+        video_id : str
+            key -- foundation.stimulus.video.Video
+
+        Yields
+        ------
+        2d array -- [trials, perspectives]
+            perspective frame
+        """
+        raise NotImplementedError()
+
+    @rowmethod
+    def modulations(self, video_id):
+        """
+        Parameters
+        ----------
+        video_id : str
+            key -- foundation.stimulus.video.Video
+
+        Yields
+        ------
+        2d array -- [trials, modulations]
+            modulation frame
+        """
+        raise NotImplementedError()
+
+
+# -- Visual Input Types --
+
+
+@keys
+class VisualScan(VisualInput):
+    """Visual Scan Input"""
+
+    @property
+    def key_list(self):
+        return [fnn.VisualScan]
+
+    @rowmethod
+    def stimuli(self, video_id):
         from foundation.stimulus.compute_video import ResizedVideo
         from foundation.utility.resample import Rate
         from foundation.utils.resample import flip_index
 
         # video
-        video = (ResizedVideo & self.key).video
+        video = (ResizedVideo & {"video_id": video_id}).video
+
+        # time scale
+        time_scale = merge(self.key, recording.ScanVideoTimeScale).fetch1("time_scale")
 
         # sampling rate
         period = (Rate & self.key).link.period
 
         # video index
-        index = flip_index(video.times * self.time_scale, period)
+        index = flip_index(video.times * time_scale, period)
 
         # yield video frames
         varray = video.array
@@ -58,42 +93,12 @@ class VisualInput:
             yield varray[i, None]
 
     @rowmethod
-    def perspectives(self):
-        """
-        Yields
-        ------
-        2d array -- [trials, perspectives]
-            perspective frame
-        """
+    def perspectives(self, video_id):
         return
 
     @rowmethod
-    def modulations(self):
-        """
-        Yields
-        ------
-        2d array -- [trials, modulations]
-            modulation frame
-        """
+    def modulations(self, video_id):
         return
-
-
-# -- Visual Input Types --
-
-
-class VisualScan(VisualInput):
-    """Visual Scan Input"""
-
-    @property
-    def input_list(self):
-        return [
-            fnn.VisualScan,
-            (fnn.Spec.VideoSpec * fnn.VideoSpec).proj(stimuli_id="spec_id"),
-        ]
-
-    @rowproperty
-    def time_scale(self):
-        return merge(self.key, recording.ScanVideoTimeScale).fetch1("time_scale")
 
 
 # ----------------------------- Visual Recording Input -----------------------------
@@ -108,6 +113,57 @@ class VisualRecordingInput(VisualInput):
     def key_list(self):
         return [stimulus.Video, fnn.VideoSpec, utility.Rate, recording.TrialFilterSet] + self.input_list
 
+    @rowmethod
+    def stimuli(self, video_id, trial_filterset_id):
+        """
+        Parameters
+        ----------
+        video_id : str
+            key -- foundation.stimulus.video.Video
+        trial_filterset_id : str
+            key -- foundation.recording.trial.TrialFilterSet
+
+        Yields
+        ------
+        4D array -- [trials, height, width, channels]
+            video frame
+        """
+        raise NotImplementedError()
+
+    @rowmethod
+    def perspectives(self, video_id, trial_filterset_id):
+        """
+        Parameters
+        ----------
+        video_id : str
+            key -- foundation.stimulus.video.Video
+        trial_filterset_id : str
+            key -- foundation.recording.trial.TrialFilterSet
+
+        Yields
+        ------
+        2d array -- [trials, perspectives]
+            perspective frame
+        """
+        raise NotImplementedError()
+
+    @rowmethod
+    def modulations(self, video_id, trial_filterset_id):
+        """
+        Parameters
+        ----------
+        video_id : str
+            key -- foundation.stimulus.video.Video
+        trial_filterset_id : str
+            key -- foundation.recording.trial.TrialFilterSet
+
+        Yields
+        ------
+        2d array -- [trials, modulations]
+            modulation frame
+        """
+        raise NotImplementedError()
+
     @rowproperty
     def all_trials(self):
         """
@@ -118,9 +174,16 @@ class VisualRecordingInput(VisualInput):
         """
         raise NotImplementedError()
 
-    @rowproperty
-    def trial_ids(self):
+    @rowmethod
+    def trial_ids(self, video_id, trial_filterset_id):
         """
+        Parameters
+        ----------
+        video_id : str
+            key -- foundation.stimulus.video.Video
+        trial_filterset_id : str
+            key -- foundation.recording.trial.TrialFilterSet
+
         Returns
         -------
         list[str]
@@ -132,10 +195,10 @@ class VisualRecordingInput(VisualInput):
         trials = self.all_trials
 
         # filtered trials
-        trials = (TrialFilterSet & self.key).filter(trials)
+        trials = (TrialFilterSet & {"trial_filterset_id": trial_filterset_id}).filter(trials)
 
         # filtered trials restricted by video
-        trials = merge(trials, recording.TrialVideo) & self.key
+        trials = merge(trials, recording.TrialVideo) & {"video_id": video_id}
 
         if trials:
             return merge(trials, TrialBounds).fetch("trial_id", order_by="start").tolist()
@@ -143,17 +206,31 @@ class VisualRecordingInput(VisualInput):
             raise RestrictionError("No trials found.")
 
     @rowmethod
-    def stimuli(self):
+    def stimuli(self, video_id, trial_filterset_id):
+        """
+        Parameters
+        ----------
+        video_id : str
+            key -- foundation.stimulus.video.Video
+        trial_filterset_id : str
+            key -- foundation.recording.trial.TrialFilterSet
+
+        Yields
+        ------
+        4D array -- [trials, height, width, channels]
+            video frame
+        """
         from foundation.stimulus.compute import ResizedVideo
         from foundation.recording.compute_trial import ResampledTrial
         from foundation.utils.resample import truncate
 
         # video
-        video = (ResizedVideo & self.key).video
+        video = (ResizedVideo & {"video_id": video_id}).video
 
         # video indexes
         indexes = []
-        trial_ids = tqdm(self.trial_ids, desc="Stimuli")
+        trial_ids = self.trial_ids(video_id, trial_filterset_id)
+        trial_ids = tqdm(trial_ids, desc="Stimuli")
 
         with cache_rowproperty(), disable_tqdm():
             for trial_id in trial_ids:

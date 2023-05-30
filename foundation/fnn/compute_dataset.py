@@ -15,9 +15,7 @@ class VisualScan:
 
     @property
     def key_list(self):
-        return [
-            fnn.VisualScan,
-        ]
+        return [fnn.VisualScan]
 
     @rowproperty
     def stimuli_key(self):
