@@ -105,7 +105,7 @@ class VisualScan(_Data):
 
     @rowproperty
     def sizes(self):
-        from foundation.fnn.compute_data import VisualScan
+        from foundation.fnn.compute_dataset import VisualScan
 
         sizes = dict()
         key = VisualScan & self
@@ -124,22 +124,6 @@ class VisualScan(_Data):
         from foundation.fnn.compute_dataset import VisualScan
 
         return (VisualScan & self).dataset
-
-    # @rowproperty
-    # def visual_inputs(self):
-    #     from foundation.fnn.compute_data import VisualScanInputs
-
-    #     return VisualScanInputs & self
-
-    # @rowproperty
-    # def response_timing(self):
-    #     from foundation.utility.resample import Rate, Offset
-
-    #     key = self.proj(spec_id="units_id") * Spec.TraceSpec
-    #     period = (Rate & key).link.period
-    #     offset = (Offset & key).link.offset
-
-    #     return period, offset
 
 
 # -- Data Set Types --
