@@ -100,7 +100,7 @@ class VisualScan:
             recording.ResampledTraces & key,
         )
         trial_id, traces = trials.fetch("trial_id", "traces", order_by="trial_id")
-        index = index = pd.Index(trial_id, name="trial_id")
+        index = pd.Index(trial_id, name="trial_id")
         data = [NpyFile(t, transform=transform, dtype=np.float32) for t in tqdm(traces, desc="Traces")]
 
         return pd.Series(data=data, index=index)
