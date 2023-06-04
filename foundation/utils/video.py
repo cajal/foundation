@@ -34,7 +34,7 @@ class Video:
             assert len(self.times) == len(self)
 
         else:
-            ValueError("Either `period` or `times` can be provided, not both.")
+            raise ValueError("Either `period` or `times` can be provided, not both.")
 
     def __len__(self):
         return len(self.frames)
@@ -138,4 +138,11 @@ class Video:
         Video
             new video with tranformed frames
         """
-        return Video(map(transform, self.frames), period=self.period, times=self.times)
+        if self.period is not None:
+            return Video(map(transform, self.frames), period=self.period)
+
+        elif self.times is not None:
+            return Video(map(transform, self.frames), times=self.times)
+
+        else:
+            return Video(map(transform, self.frames))

@@ -133,21 +133,16 @@ class VisualScan:
         video = (ResizedVideo & {"video_id": video_id}).video
         varray = video.array
 
+        # trials
         if trial_filterset_id is None:
-            # time scale
-            time_scale = merge(self.key, recording.ScanVideoTimeScale).fetch1("time_scale")
-
-            # sampling rate
-            period = (Rate & self.key).link.period
-
-            # video index
-            indexes = flip_index(video.times * time_scale, period)[:, None]
+            trial_ids = []
         else:
-            # trials
             trial_ids = self.trial_ids(video_id, trial_filterset_id)
+
+        if trial_ids:
             trial_ids = tqdm(trial_ids, desc="Stimuli")
 
-            # compute video indexes
+            # video indexes
             indexes = []
             with cache_rowproperty(), disable_tqdm():
                 for trial_id in trial_ids:
@@ -160,6 +155,16 @@ class VisualScan:
             indexes = np.stack(indexes, axis=1)
             if not np.diff(indexes, axis=1).any():
                 indexes = indexes[:, :1]
+
+        else:
+            # time scale
+            time_scale = merge(self.key, recording.ScanVideoTimeScale).fetch1("time_scale")
+
+            # sampling rate
+            period = (Rate & self.key).link.period
+
+            # video index
+            indexes = flip_index(video.times * time_scale, period)[:, None]
 
         # yield video frames
         for i in indexes:
