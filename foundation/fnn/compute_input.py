@@ -1,5 +1,5 @@
 import numpy as np
-from djutils import keys, merge, rowmethod, rowproperty, cache_rowproperty, RestrictionError
+from djutils import keys, merge, rowmethod, rowproperty, cache_rowproperty
 from foundation.utils import tqdm, disable_tqdm
 from foundation.virtual import utility, stimulus, recording, fnn
 
@@ -9,11 +9,11 @@ from foundation.virtual import utility, stimulus, recording, fnn
 # -- Visual Input Base --
 
 
-class VisualInput:
+class Visual:
     """Visual Input"""
 
     @rowmethod
-    def stimuli(self, video_id, trial_filterset_id=None):
+    def inputs(self, video_id, trial_filterset_id=None):
         """
         Parameters
         ----------
@@ -22,44 +22,14 @@ class VisualInput:
         trial_filterset_id : str | None
             key -- foundation.recording.trial.TrialFilterSet | None
 
-        Yields
-        ------
-        4D array -- [trials, height, width, channels]
-            video frame
-        """
-        raise NotImplementedError()
-
-    @rowmethod
-    def perspectives(self, video_id, trial_filterset_id=None):
-        """
-        Parameters
-        ----------
-        video_id : str
-            key -- foundation.stimulus.video.Video
-        trial_filterset_id : str | None
-            key -- foundation.recording.trial.TrialFilterSet | None
-
-        Yields
-        ------
-        2d array -- [trials, perspectives]
-            perspective frame
-        """
-        raise NotImplementedError()
-
-    @rowmethod
-    def modulations(self, video_id, trial_filterset_id=None):
-        """
-        Parameters
-        ----------
-        video_id : str
-            key -- foundation.stimulus.video.Video
-        trial_filterset_id : str | None
-            key -- foundation.recording.trial.TrialFilterSet | None
-
-        Yields
-        ------
-        2d array -- [trials, modulations]
-            modulation frame
+        Returns
+        -------
+        Iterable[4D array]
+            [trials, height, width, channels] x timepoints --- dtype=unit8
+        Iterable[2D array] | None
+            [trials, perspectives] x timepoints --- dtype=float | None
+        Iterable[2D array] | None
+            [trials, modulations] x timepoints --- dtype=float | None
         """
         raise NotImplementedError()
 
@@ -68,84 +38,52 @@ class VisualInput:
 
 
 @keys
-class VisualScanTrials:
-    """Visual Scan Recording Trials"""
-
-    @property
-    def key_list(self):
-        return [
-            fnn.VisualScan.proj(fnn_filterset_id="trial_filterset_id"),
-            stimulus.Video,
-            recording.TrialFilterSet,
-        ]
-
-    @rowproperty
-    def trial_ids(self):
-        from foundation.recording.trial import Trial, TrialSet, TrialFilterSet
-
-        # all trials
-        key = recording.ScanRecording & self.key
-        trials = Trial & (TrialSet & key).members
-
-        # filtered trials
-        trials = (TrialFilterSet & self.key).filter(trials)
-
-        # video trials
-        trials = merge(trials, recording.TrialVideo) & self.key
-
-        # trial ids, sorted
-        return trials.fetch("trial_id", order_by="trial_id").tolist()
-
-
-@keys
-class VisualScan:
-    """Visual Scan Recording Trials"""
+class VisualScan(Visual):
+    """Visual Scan Inputs"""
 
     @property
     def key_list(self):
         return [fnn.VisualScan]
 
     @rowmethod
-    def trial_ids(self, video_id, trial_filterset_id=None):
+    def inputs(self, video_id, trial_filterset_id=None):
+        from foundation.utils.resample import flip_index, truncate
+        from foundation.utility.resample import Rate
         from foundation.recording.trial import Trial, TrialSet, TrialFilterSet
-
-        if trial_filterset_id is None:
-            return []
-
-        # all trials
-        key = recording.ScanRecording & self.key
-        trials = Trial & (TrialSet & key).members
-
-        # filtered trials
-        trials = (TrialFilterSet & {"trial_filterset_id": trial_filterset_id}).filter(trials)
-
-        # video trials
-        trials = merge(trials, recording.TrialVideo) & {"video_id": video_id}
-
-        # trial ids, sorted
-        return trials.fetch("trial_id", order_by="trial_id").tolist()
-
-    @rowmethod
-    def stimuli(self, video_id, trial_filterset_id=None):
         from foundation.stimulus.compute_video import ResizedVideo
         from foundation.recording.compute_trial import ResampledTrial
-        from foundation.utility.resample import Rate
-        from foundation.utils.resample import flip_index, truncate
+        from foundation.recording.compute_trace import StandardTraces, ResampledTraces
+        from foundation.fnn.compute_dataset import VisualScan as Dataset
+
+        if trial_filterset_id is None:
+            # no trials
+            trial_ids = []
+        else:
+            # all trials
+            key = recording.ScanRecording & self.key
+            trials = Trial & (TrialSet & key).members
+
+            # filtered trials
+            trials = (TrialFilterSet & {"trial_filterset_id": trial_filterset_id}).filter(trials)
+
+            # video trials
+            trials = merge(trials, recording.TrialVideo) & {"video_id": video_id}
+
+            # trial ids, sorted
+            trial_ids = trials.fetch("trial_id", order_by="trial_id").tolist()
+
+        # -------------------- stimuli --------------------
 
         # video
         video = (ResizedVideo & {"video_id": video_id}).video
         varray = video.array
 
-        # trials
-        trial_ids = self.trial_ids(video_id, trial_filterset_id)
-
         if trial_ids:
-            trial_ids = tqdm(trial_ids, desc="Stimuli")
-
             # video indexes
             indexes = []
+            _trial_ids = tqdm(trial_ids, desc="Stimuli")
             with cache_rowproperty(), disable_tqdm():
-                for trial_id in trial_ids:
+                for trial_id in _trial_ids:
                     key = {"trial_id": trial_id}
                     index = (ResampledTrial & key & self.key).flip_index
                     indexes.append(index)
@@ -167,81 +105,70 @@ class VisualScan:
             indexes = flip_index(video.times * time_scale, period)[:, None]
 
         # yield video frames
-        for i in indexes:
-            yield varray[i]
+        def stimuli():
+            for i in indexes:
+                yield varray[i]
 
-    @rowmethod
-    def perspectives(self, video_id, trial_filterset_id=None):
-        from foundation.fnn.compute_dataset import VisualScan
-        from foundation.recording.compute_trace import StandardTraces, ResampledTraces
-        from foundation.utils.resample import truncate
-
-        # traceset key
-        key = (VisualScan & self.key).perspectives_key
-
-        # traceset transform
-        transform = (StandardTraces & key).transform
-
-        # trials
-        trial_ids = self.trial_ids(video_id, trial_filterset_id)
+        # -------------------- perspectives --------------------
 
         if trial_ids:
-            trial_ids = tqdm(trial_ids, desc="Perspectives")
+            # traceset key
+            key = (Dataset & self.key).perspectives_key
+
+            # traceset transform
+            transform = (StandardTraces & key).transform
+
+            # resampled traceset
+            trials = []
+            _trial_ids = tqdm(trial_ids, desc="Perspectives")
+            with cache_rowproperty(), disable_tqdm():
+                for trial_id in _trial_ids:
+                    trial = (ResampledTraces & {"trial_id": trial_id} & key).trial
+                    trial = transform(trial)
+                    trials.append(trial)
+
+            # stacked traceset
+            ptraces = truncate(*trials)
+            ptraces = np.stack(ptraces, axis=1)
+
+            # yield traceset frames
+            def perspectives():
+                yield from ptraces
+
         else:
-            return
 
-        # resampled traceset
-        trials = []
-        with cache_rowproperty(), disable_tqdm():
-            for trial_id in trial_ids:
-                trial = (ResampledTraces & {"trial_id": trial_id} & key).trial
-                trial = transform(trial)
-                trials.append(trial)
+            def perspectives():
+                return
 
-        # stacked traceset
-        traces = truncate(*trials)
-        traces = np.stack(traces, axis=1)
-
-        # yield traceset frames
-        def frames():
-            yield from traces
-
-        return frames()
-
-    @rowmethod
-    def modulations(self, video_id, trial_filterset_id=None):
-        from foundation.fnn.compute_dataset import VisualScan
-        from foundation.recording.compute_trace import StandardTraces, ResampledTraces
-        from foundation.utils.resample import truncate
-
-        # traceset key
-        key = (VisualScan & self.key).modulations_key
-
-        # traceset transform
-        transform = (StandardTraces & key).transform
-
-        # trials
-        trial_ids = self.trial_ids(video_id, trial_filterset_id)
+        # -------------------- modulations --------------------
 
         if trial_ids:
-            trial_ids = tqdm(trial_ids, desc="Modulations")
+            # traceset key
+            key = (Dataset & self.key).modulations_key
+
+            # traceset transform
+            transform = (StandardTraces & key).transform
+
+            # resampled traceset
+            trials = []
+            _trial_ids = tqdm(trial_ids, desc="Modulations")
+            with cache_rowproperty(), disable_tqdm():
+                for trial_id in _trial_ids:
+                    trial = (ResampledTraces & {"trial_id": trial_id} & key).trial
+                    trial = transform(trial)
+                    trials.append(trial)
+
+            # stacked traceset
+            mtraces = truncate(*trials)
+            mtraces = np.stack(mtraces, axis=1)
+
+            # yield traceset frames
+            def modulations():
+                yield from mtraces
+
         else:
-            return
 
-        # resampled traceset
-        trials = []
-        with cache_rowproperty(), disable_tqdm():
-            for trial_id in trial_ids:
-                trial = (ResampledTraces & {"trial_id": trial_id} & key).trial
-                trial = transform(trial)
-                trials.append(trial)
+            def modulations():
+                return
 
-        # stacked traceset
-        traces = truncate(*trials)
-        traces = np.stack(traces, axis=1)
-
-        # yield traceset frames
-        def frames():
-            yield from traces
-
-        return frames()
+        return stimuli(), perspectives(), modulations()
