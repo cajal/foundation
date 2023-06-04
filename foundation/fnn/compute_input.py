@@ -106,8 +106,11 @@ class VisualScan:
         return [fnn.VisualScan]
 
     @rowmethod
-    def trial_ids(self, video_id, trial_filterset_id):
+    def trial_ids(self, video_id, trial_filterset_id=None):
         from foundation.recording.trial import Trial, TrialSet, TrialFilterSet
+
+        if trial_filterset_id is None:
+            return []
 
         # all trials
         key = recording.ScanRecording & self.key
@@ -123,7 +126,7 @@ class VisualScan:
         return trials.fetch("trial_id", order_by="trial_id").tolist()
 
     @rowmethod
-    def stimuli(self, video_id, trial_filterset_id):
+    def stimuli(self, video_id, trial_filterset_id=None):
         from foundation.stimulus.compute_video import ResizedVideo
         from foundation.recording.compute_trial import ResampledTrial
         from foundation.utility.resample import Rate
@@ -134,10 +137,7 @@ class VisualScan:
         varray = video.array
 
         # trials
-        if trial_filterset_id is None:
-            trial_ids = []
-        else:
-            trial_ids = self.trial_ids(video_id, trial_filterset_id)
+        trial_ids = self.trial_ids(video_id, trial_filterset_id)
 
         if trial_ids:
             trial_ids = tqdm(trial_ids, desc="Stimuli")
@@ -171,7 +171,7 @@ class VisualScan:
             yield varray[i]
 
     @rowmethod
-    def perspectives(self, video_id, trial_filterset_id):
+    def perspectives(self, video_id, trial_filterset_id=None):
         from foundation.fnn.compute_dataset import VisualScan
         from foundation.recording.compute_trace import StandardTraces, ResampledTraces
         from foundation.utils.resample import truncate
@@ -184,6 +184,7 @@ class VisualScan:
 
         # trials
         trial_ids = self.trial_ids(video_id, trial_filterset_id)
+
         if trial_ids:
             trial_ids = tqdm(trial_ids, desc="Perspectives")
         else:
@@ -208,7 +209,7 @@ class VisualScan:
         return frames()
 
     @rowmethod
-    def modulations(self, video_id, trial_filterset_id):
+    def modulations(self, video_id, trial_filterset_id=None):
         from foundation.fnn.compute_dataset import VisualScan
         from foundation.recording.compute_trace import StandardTraces, ResampledTraces
         from foundation.utils.resample import truncate
@@ -221,6 +222,7 @@ class VisualScan:
 
         # trials
         trial_ids = self.trial_ids(video_id, trial_filterset_id)
+
         if trial_ids:
             trial_ids = tqdm(trial_ids, desc="Modulations")
         else:
