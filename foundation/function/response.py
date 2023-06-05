@@ -1,5 +1,6 @@
 from djutils import rowproperty
-from foundation.virtual import utility, recording, fnn
+from foundation.utils import tqdm, disable_tqdm
+from foundation.virtual import utility, stimulus, recording, fnn
 from foundation.schemas import function as schema
 
 
@@ -23,6 +24,16 @@ class _Response:
         """
         raise NotImplementedError()
 
+    @rowproperty
+    def response(self):
+        """
+        Returns
+        -------
+        foundation.function.response.Response
+            functional response
+        """
+        raise NotImplementedError()
+
 
 # -- Response Types --
 
@@ -42,6 +53,12 @@ class Recording(_Response):
         from foundation.utility.resample import Rate, Offset
 
         return (Rate & self).link.period, (Offset & self).link.offset
+
+    @rowproperty
+    def response(self):
+        from foundation.function.compute_response import Recording
+
+        return Recording & self
 
 
 @schema.lookup
@@ -65,3 +82,17 @@ class Response:
     links = [Recording]
     name = "response"
     comment = "functional response"
+
+
+# -- Computed Response --
+
+
+@schema.computed
+class VisualMeasure:
+    definition = """
+    -> stimulus.VideoSet
+    -> Response
+    """
+
+    def make(self, key):
+        pass

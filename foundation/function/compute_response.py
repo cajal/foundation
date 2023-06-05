@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from djutils import keys, merge, rowproperty
+from djutils import keys, merge, rowmethod
 from foundation.virtual import utility, stimulus, recording, function
 
 
@@ -12,9 +12,14 @@ from foundation.virtual import utility, stimulus, recording, function
 class Response:
     """Functional Response"""
 
-    @rowproperty
-    def response(self):
+    @rowmethod
+    def visual(self, video_id):
         """
+        Parameters
+        ----------
+        video_id : str
+            key (foundation.stimulus.video.Video)
+
         Returns
         -------
         pandas.Series
@@ -29,18 +34,32 @@ class Response:
 # -- Visual Response Types --
 
 
-class VisualRecording(Visual):
-    """Visual Recording Response"""
+@keys
+class Recording(Response):
+    """Recording Response"""
 
     @property
     def key_list(self):
         return [
-            stimulus.Video,
             function.Recording,
         ]
 
-    @rowproperty
-    def response(self):
+    @rowmethod
+    def visual(self, video_id):
+        """
+        Parameters
+        ----------
+        video_id : str
+            key (foundation.stimulus.video.Video)
+
+        Returns
+        -------
+        pandas.Series
+            index -- str | None
+                : trial_id -- key (foundation.recording.trial.Trial) | None
+            data -- 1D array
+                : [timepoints] ; response trace
+        """
         from foundation.recording.trial import Trial, TrialVideo, TrialSet, TrialFilterSet
         from foundation.recording.compute_trace import ResampledTrace
 
@@ -50,7 +69,7 @@ class VisualRecording(Visual):
 
         # restricted trials
         trials = (TrialFilterSet & self.key).filter(trials)
-        trials = merge(trials, TrialVideo) & self.key
+        trials = merge(trials, TrialVideo) & self.key & {"video_id": video_id}
 
         # trial response
         return (ResampledTrace & trials & self.key).trials

@@ -123,10 +123,7 @@ class ResampledTrace:
         samples = [resampler(a, b) for a, b in zip(starts, ends)]
 
         # pandas Series containing resampled trials
-        return pd.Series(
-            data=samples,
-            index=pd.Index(trial_ids, name="trial_id"),
-        )
+        return pd.Series(data=samples, index=pd.Index(trial_ids, name="trial_id"))
 
 
 @keys

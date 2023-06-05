@@ -75,11 +75,11 @@ class _Data:
         raise NotImplementedError()
 
     @rowproperty
-    def visual_input(self):
+    def network_input(self):
         """
         Returns
         -------
-        foundation.fnn.compute_input.Visual
+        foundation.fnn.compute_input.NetworkInput
             network visual input
         """
         raise NotImplementedError()
@@ -131,7 +131,7 @@ class VisualScan(_Data):
         return (Rate & self).link.period, (Offset & self).link.offset
 
     @rowproperty
-    def visual_input(self):
+    def network_input(self):
         from foundation.fnn.compute_input import VisualScan
 
         return VisualScan & self

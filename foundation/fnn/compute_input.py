@@ -1,33 +1,37 @@
 import numpy as np
-from djutils import keys, merge, rowmethod, rowproperty, cache_rowproperty
+from djutils import keys, merge, rowmethod, cache_rowproperty, RestrictionError
 from foundation.utils import tqdm, disable_tqdm
 from foundation.virtual import utility, stimulus, recording, fnn
 
 
-# ----------------------------- Visual Input -----------------------------
+# ----------------------------- Network Input -----------------------------
 
-# -- Visual Input Base --
+# -- Network Input Base --
 
 
-class Visual:
-    """Visual Input"""
+class NetworkInput:
+    """Network Input"""
 
     @rowmethod
-    def inputs(self, video_id, trial_filterset_id=None, perspective=True, modulation=True):
+    def visual(self, video_id, trial_filterset_id=None, trial_perspectives=True, trial_modulations=True):
         """
         Parameters
         ----------
         video_id : str
-            key -- foundation.stimulus.video.Video
+            key (foundation.stimulus.video.Video)
         trial_filterset_id : str | None
-            key -- foundation.recording.trial.TrialFilterSet | None
+            key (foundation.recording.trial.TrialFilterSet) | None
+        trial_perspective : bool
+            use recording trial perspective
+        trial_modulation : bool
+            use recording trial modulation
 
         Returns
         -------
         List[str]
             list of trial_id's (foundation.recording.trial.Trial)
         Iterable[4D array]
-            [trials, height, width, channels] x timepoints --- dtype=unit8
+            [trials, height, width, channels] x timepoints --- dtype=uint8
         Iterable[2D array] | None
             [trials, perspectives] x timepoints --- dtype=float | None
         Iterable[2D array] | None
@@ -36,11 +40,14 @@ class Visual:
         raise NotImplementedError()
 
 
-# -- Visual Input Types --
+# -- Network Input Types --
+
+
+# -- Network Input Intermediates --
 
 
 @keys
-class VisualScan(Visual):
+class VisualScan(NetworkInput):
     """Visual Scan"""
 
     @property
@@ -48,7 +55,7 @@ class VisualScan(Visual):
         return [fnn.VisualScan]
 
     @rowmethod
-    def inputs(self, video_id, trial_filterset_id=None, perspective=True, modulation=True):
+    def visual(self, video_id, trial_filterset_id=None, trial_perspectives=True, trial_modulations=True):
         from foundation.utils.resample import flip_index, truncate
         from foundation.utility.resample import Rate
         from foundation.recording.trial import Trial, TrialBounds, TrialVideo, TrialSet, TrialFilterSet
@@ -73,6 +80,9 @@ class VisualScan(Visual):
 
             # trial ids, sorted
             trial_ids = trials.fetch("trial_id", order_by="start").tolist()
+
+            if not trial_ids:
+                raise RestrictionError("Video not part of recording trial set.")
 
         # -------------------- stimuli --------------------
 
@@ -111,7 +121,7 @@ class VisualScan(Visual):
 
         # -------------------- perspectives --------------------
 
-        if trial_ids and perspective:
+        if trial_ids and trial_perspectives:
             # traceset key
             key = (Dataset & self.key).perspectives_key
 
@@ -142,7 +152,7 @@ class VisualScan(Visual):
 
         # -------------------- modulations --------------------
 
-        if trial_ids and modulation:
+        if trial_ids and trial_modulations:
             # traceset key
             key = (Dataset & self.key).modulations_key
 
