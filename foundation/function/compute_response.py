@@ -4,22 +4,13 @@ from djutils import keys, merge, rowproperty
 from foundation.virtual import utility, stimulus, recording, function
 
 
-# ----------------------------- Visual Response -----------------------------
+# ----------------------------- Response -----------------------------
 
-# -- Visual Response Base --
+# -- Response Base --
 
 
-@keys
-class Visual:
-    """Visual Response"""
-
-    @property
-    def key_list(self):
-        return [stimulus.Video] + self.response_list
-
-    @property
-    def response_list(self):
-        raise NotImplementedError()
+class Response:
+    """Functional Response"""
 
     @rowproperty
     def response(self):
@@ -27,8 +18,10 @@ class Visual:
         Returns
         -------
         pandas.Series
-            index -- str | None : unique trial identifier | None
-            data -- 1D array : visual response
+            index -- str | None
+                : unique trial identifier | None
+            data -- 1D array
+                : [timepoints] ; response trace
         """
         raise NotImplementedError()
 
@@ -40,8 +33,11 @@ class VisualRecording(Visual):
     """Visual Recording Response"""
 
     @property
-    def response_list(self):
-        return [function.Recording]
+    def key_list(self):
+        return [
+            stimulus.Video,
+            function.Recording,
+        ]
 
     @rowproperty
     def response(self):

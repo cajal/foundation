@@ -13,7 +13,7 @@ class Visual:
     """Visual Input"""
 
     @rowmethod
-    def inputs(self, video_id, trial_filterset_id=None):
+    def inputs(self, video_id, trial_filterset_id=None, perspective=True, modulation=True):
         """
         Parameters
         ----------
@@ -24,6 +24,8 @@ class Visual:
 
         Returns
         -------
+        List[str]
+            list of trial_id's (foundation.recording.trial.Trial)
         Iterable[4D array]
             [trials, height, width, channels] x timepoints --- dtype=unit8
         Iterable[2D array] | None
@@ -39,17 +41,17 @@ class Visual:
 
 @keys
 class VisualScan(Visual):
-    """Visual Scan Inputs"""
+    """Visual Scan"""
 
     @property
     def key_list(self):
         return [fnn.VisualScan]
 
     @rowmethod
-    def inputs(self, video_id, trial_filterset_id=None):
+    def inputs(self, video_id, trial_filterset_id=None, perspective=True, modulation=True):
         from foundation.utils.resample import flip_index, truncate
         from foundation.utility.resample import Rate
-        from foundation.recording.trial import Trial, TrialSet, TrialFilterSet
+        from foundation.recording.trial import Trial, TrialBounds, TrialVideo, TrialSet, TrialFilterSet
         from foundation.stimulus.compute_video import ResizedVideo
         from foundation.recording.compute_trial import ResampledTrial
         from foundation.recording.compute_trace import StandardTraces, ResampledTraces
@@ -67,10 +69,10 @@ class VisualScan(Visual):
             trials = (TrialFilterSet & {"trial_filterset_id": trial_filterset_id}).filter(trials)
 
             # video trials
-            trials = merge(trials, recording.TrialVideo) & {"video_id": video_id}
+            trials = merge(trials, TrialBounds, TrialVideo) & {"video_id": video_id}
 
             # trial ids, sorted
-            trial_ids = trials.fetch("trial_id", order_by="trial_id").tolist()
+            trial_ids = trials.fetch("trial_id", order_by="start").tolist()
 
         # -------------------- stimuli --------------------
 
@@ -88,11 +90,9 @@ class VisualScan(Visual):
                     index = (ResampledTrial & key & self.key).flip_index
                     indexes.append(index)
 
-            # truncate and squeeze indexes
+            # truncate and stack indexes
             indexes = truncate(*indexes)
             indexes = np.stack(indexes, axis=1)
-            if not np.diff(indexes, axis=1).any():
-                indexes = indexes[:, :1]
 
         else:
             # time scale
@@ -111,7 +111,7 @@ class VisualScan(Visual):
 
         # -------------------- perspectives --------------------
 
-        if trial_ids:
+        if trial_ids and perspective:
             # traceset key
             key = (Dataset & self.key).perspectives_key
 
@@ -142,7 +142,7 @@ class VisualScan(Visual):
 
         # -------------------- modulations --------------------
 
-        if trial_ids:
+        if trial_ids and modulation:
             # traceset key
             key = (Dataset & self.key).modulations_key
 
@@ -171,4 +171,4 @@ class VisualScan(Visual):
             def modulations():
                 return
 
-        return stimuli(), perspectives(), modulations()
+        return trial_ids, stimuli(), perspectives(), modulations()

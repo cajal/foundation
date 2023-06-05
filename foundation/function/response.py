@@ -19,7 +19,7 @@ class _Response:
         float
             sampling period (seconds)
         float
-            sampling offset (seconds)
+            response offset (seconds)
         """
         raise NotImplementedError()
 

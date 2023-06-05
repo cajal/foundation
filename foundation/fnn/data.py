@@ -62,28 +62,27 @@ class _Data:
         """
         raise NotImplementedError()
 
-    # @rowproperty
-    # def visual_inputs(self):
-    #     """
-    #     Returns
-    #     -------
-    #     djutils.derived.Keys
-    #         key_list -- [foundation.stimulus.Video, ...]
-    #         rowmethod -- [trials, stimuli, perspectives, modulations, ...]
-    #     """
-    #     raise NotImplementedError()
+    @rowproperty
+    def timing(self):
+        """
+        Returns
+        -------
+        float
+            sampling period (seconds)
+        float
+            response offset (seconds)
+        """
+        raise NotImplementedError()
 
-    # @rowproperty
-    # def response_timing(self):
-    #     """
-    #     Returns
-    #     -------
-    #     float
-    #         response period (seconds)
-    #     float
-    #         response offset (seconds)
-    #     """
-    #     raise NotImplementedError()
+    @rowproperty
+    def visual_input(self):
+        """
+        Returns
+        -------
+        foundation.fnn.compute_input.Visual
+            network visual input
+        """
+        raise NotImplementedError()
 
 
 # -- Data Set Types --
@@ -124,6 +123,18 @@ class VisualScan(_Data):
         from foundation.fnn.compute_dataset import VisualScan
 
         return (VisualScan & self).dataset
+
+    @rowproperty
+    def timing(self):
+        from foundation.utility.resample import Rate, Offset
+
+        return (Rate & self).link.period, (Offset & self).link.offset
+
+    @rowproperty
+    def visual_input(self):
+        from foundation.fnn.compute_input import VisualScan
+
+        return VisualScan & self
 
 
 # -- Data Set Types --

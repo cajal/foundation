@@ -100,8 +100,10 @@ class ResampledTrace:
         Returns
         -------
         pandas.Series
-            index -- str : trial_id (foundation.recording.trial.Trial)
-            data -- 1D array : resampled trace values
+            index -- str
+                : trial_id (foundation.recording.trial.Trial)
+            data -- 1D array
+                : [timepoints] ; resampled trace values
         """
         from foundation.recording.trial import TrialSet
 
