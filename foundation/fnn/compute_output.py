@@ -30,7 +30,7 @@ class NetworkOutput:
         Returns
         -------
         2D array
-            [timepoints, units] ; response traces
+            [samples, units] ; response traces
         """
         return (Visual & self.key & {"video_id": video_id}).output
 
@@ -54,7 +54,7 @@ class NetworkOutput:
             index -- str | None
                 : trial_id -- key (foundation.recording.trial.Trial) | None
             data -- 2D array
-                : [timepoints, units] ; response traces
+                : [samples, units] ; response traces
         """
         key = VisualRecording & self.key
         key &= {

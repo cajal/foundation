@@ -26,7 +26,7 @@ class Response:
             index -- str | None
                 : unique trial identifier | None
             data -- 1D array
-                : [timepoints] ; response trace
+                : [samples] ; response trace
         """
         raise NotImplementedError()
 
@@ -58,8 +58,9 @@ class Recording(Response):
             index -- str | None
                 : trial_id -- key (foundation.recording.trial.Trial) | None
             data -- 1D array
-                : [timepoints] ; response trace
+                : [samples] ; response trace
         """
+        from foundation.utils.resample import truncate
         from foundation.recording.trial import Trial, TrialVideo, TrialSet, TrialFilterSet
         from foundation.recording.compute_trace import ResampledTrace
 
@@ -71,5 +72,8 @@ class Recording(Response):
         trials = (TrialFilterSet & self.key).filter(trials)
         trials = merge(trials, TrialVideo) & self.key & {"video_id": video_id}
 
-        # trial response
-        return (ResampledTrace & trials & self.key).trials
+        # trial responses (truncated to the same length)
+        trials = (ResampledTrace & trials & self.key).trials
+        data = truncate(*trials.values)
+
+        return pd.Series(data=data, index=trials.index)

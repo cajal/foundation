@@ -31,11 +31,11 @@ class NetworkInput:
         List[str]
             list of trial_id's (foundation.recording.trial.Trial)
         Iterable[4D array]
-            [trials, height, width, channels] x timepoints --- dtype=uint8
+            [trials, height, width, channels] x samples --- dtype=uint8
         Iterable[2D array] | None
-            [trials, perspectives] x timepoints --- dtype=float | None
+            [trials, perspectives] x samples --- dtype=float | None
         Iterable[2D array] | None
-            [trials, modulations] x timepoints --- dtype=float | None
+            [trials, modulations] x samples --- dtype=float | None
         """
         raise NotImplementedError()
 
