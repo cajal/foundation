@@ -1,4 +1,3 @@
-from PIL import Image
 from djutils import rowproperty
 from foundation.utils import resize
 from foundation.schemas import utility as schema
@@ -45,6 +44,8 @@ class PilResize(_Resize):
 
     @rowproperty
     def resize(self):
+        from PIL import Image
+
         resample = getattr(Image.Resampling, self.fetch1("resample"))
         return resize.PilResize(resample)
 

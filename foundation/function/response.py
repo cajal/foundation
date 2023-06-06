@@ -29,7 +29,7 @@ class _Response:
         """
         Returns
         -------
-        foundation.function.response.Response
+        foundation.function.compute_response.Response
             functional response
         """
         raise NotImplementedError()
@@ -88,11 +88,24 @@ class Response:
 
 
 @schema.computed
-class VisualMeasure:
+class VisualResponseMeasure:
     definition = """
     -> stimulus.VideoSet
     -> Response
+    -> utility.Measure
+    ---
+    measure = NULL      : float     # visual response measure
     """
 
     def make(self, key):
-        pass
+        from foundation.utils.response import concatenate
+        from foundation.utility.measure import Measure
+        from foundation.stimulus.video import VideoSet
+
+        keys = (VideoSet & key).ordered_keys
+
+        response = (Response & key).link.response
+        response = concatenate([response.visual(**k) for k in tqdm(keys, desc="Videos")])
+
+        measure = (Measure & key).link.measure(response)
+        self.insert1(dict(key, measure=measure))
