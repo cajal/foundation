@@ -259,6 +259,12 @@ class NetworkSetCore(_State):
     freeze_core     : bool              # freeze core parameters
     """
 
+    @rowproperty
+    def network_state(self):
+        from foundation.fnn.compute_state import NetworkSetCore
+
+        return NetworkSetCore & self
+
 
 # -- State --
 
