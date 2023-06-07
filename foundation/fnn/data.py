@@ -79,7 +79,7 @@ class _Data:
         """
         Returns
         -------
-        foundation.fnn.compute_input.NetworkInput
+        foundation.fnn.compute_input.NetworkInput (row)
             network visual input
         """
         raise NotImplementedError()

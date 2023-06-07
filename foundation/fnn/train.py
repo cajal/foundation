@@ -222,7 +222,7 @@ class _State:
         """
         Returns
         -------
-        foundation.fnn.compute_state.NetworkState
+        foundation.fnn.compute_state.NetworkState (row)
            network state
         """
         raise NotImplementedError()

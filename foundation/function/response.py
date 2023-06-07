@@ -13,23 +13,11 @@ class _Response:
     """Functional Response"""
 
     @rowproperty
-    def timing(self):
-        """
-        Returns
-        -------
-        float
-            sampling period (seconds)
-        float
-            response offset (seconds)
-        """
-        raise NotImplementedError()
-
-    @rowproperty
     def response(self):
         """
         Returns
         -------
-        foundation.function.compute_response.Response
+        foundation.function.compute_response.Response (row)
             functional response
         """
         raise NotImplementedError()
@@ -41,18 +29,12 @@ class _Response:
 @schema.lookup
 class Recording(_Response):
     definition = """
-    -> recording.TrialFilterSet
     -> recording.Trace
+    -> recording.TrialFilterSet
     -> utility.Resample
     -> utility.Offset
     -> utility.Rate
     """
-
-    @rowproperty
-    def timing(self):
-        from foundation.utility.resample import Rate, Offset
-
-        return (Rate & self).link.period, (Offset & self).link.offset
 
     @rowproperty
     def response(self):
@@ -64,14 +46,18 @@ class Recording(_Response):
 @schema.lookup
 class FnnRecording(_Response):
     definition = """
-    -> recording.TrialFilterSet
     -> fnn.ModelNetwork
+    -> recording.TrialFilterSet
+    trial_perspectives  : bool          # recording trial perspectives
+    trial_modulations   : bool          # recording trial modulations
     response_index      : int unsigned  # response index
     """
 
-    # @rowproperty
-    # def timing(self):
-    #     from foundation.fnn.dataspec import DataSp
+    @rowproperty
+    def response(self):
+        from foundation.function.compute_response import FnnRecording
+
+        return FnnRecording & self
 
 
 # -- Response --
@@ -79,7 +65,7 @@ class FnnRecording(_Response):
 
 @schema.link
 class Response:
-    links = [Recording]
+    links = [Recording, FnnRecording]
     name = "response"
     comment = "functional response"
 
