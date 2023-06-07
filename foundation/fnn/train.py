@@ -1,50 +1,6 @@
 from djutils import rowproperty
+from foundation.fnn.network import NetworkSet
 from foundation.schemas import fnn as schema
-
-
-# ----------------------------- State -----------------------------
-
-# -- State Base --
-
-
-class _State:
-    """State"""
-
-    @rowproperty
-    def network_state(self):
-        """
-        Returns
-        -------
-        foundation.fnn.compute_state.NetworkState
-           network state
-        """
-        raise NotImplementedError()
-
-
-# -- State Types --
-
-
-@schema.lookup
-class RandomState(_State):
-    definition = """
-    seed            : int unsigned      # seed for initialization
-    """
-
-    @rowproperty
-    def network_state(self):
-        from foundation.fnn.compute_state import RandomNetwork
-
-        return RandomNetwork & self
-
-
-# -- State --
-
-
-@schema.link
-class State:
-    links = [RandomState]
-    name = "state"
-    comment = "network state"
 
 
 # ----------------------------- Loader -----------------------------
@@ -251,3 +207,64 @@ class Scheduler:
     links = [CosineLr]
     name = "scheduler"
     comment = "hyperparameter scheduler"
+
+
+# ----------------------------- State -----------------------------
+
+# -- State Base --
+
+
+class _State:
+    """State"""
+
+    @rowproperty
+    def network_state(self):
+        """
+        Returns
+        -------
+        foundation.fnn.compute_state.NetworkState
+           network state
+        """
+        raise NotImplementedError()
+
+
+# -- State Types --
+
+
+@schema.lookup
+class RandomState(_State):
+    definition = """
+    seed            : int unsigned      # seed for initialization
+    """
+
+    @rowproperty
+    def network_state(self):
+        from foundation.fnn.compute_state import RandomNetwork
+
+        return RandomNetwork & self
+
+
+@schema.lookup
+class NetworkSetCore(_State):
+    definition = """
+    -> NetworkSet
+    -> Loader
+    -> Objective
+    -> Optimizer
+    -> Scheduler
+    -> RandomState.proj(state_seed="seed")
+    model_seed      : int unsigned      # seed for optimization
+    cycle           : int unsigned      # training cycle
+    instances       : int unsigned      # parallel training instances
+    freeze_core     : bool              # freeze core parameters
+    """
+
+
+# -- State --
+
+
+@schema.link
+class State:
+    links = [RandomState, NetworkSetCore]
+    name = "state"
+    comment = "network state"
