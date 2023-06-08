@@ -93,8 +93,9 @@ class VisualResponseMeasure:
         videos = tqdm(videos, desc="Videos")
 
         # video responses
-        response = (Response & key).link.response
-        response = concatenate([response.visual(video_id=v) for v in videos])
+        with disable_tqdm():
+            response = (Response & key).link.response
+            response = concatenate([response.visual(video_id=v) for v in videos])
 
         # response measure
         measure = (Measure & key).link.measure(response)

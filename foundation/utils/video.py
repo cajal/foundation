@@ -100,8 +100,8 @@ class Video:
         else:
             raise NotImplementedError(f"Mode {self.mode} has not yet been implemented.")
 
-    @staticmethod
-    def fromarray(array, mode=None, period=None, times=None):
+    @classmethod
+    def fromarray(cls, array, mode=None, period=None, times=None):
         """
         Returns
         -------
@@ -117,14 +117,14 @@ class Video:
         Returns
         -------
         Video
-            new video with tranformed frames
+            video object from the provided arrays and attributes
         """
         if array.ndim == 4:
             array = array.squeeze(3)
         elif array.ndim != 3:
             raise ValueError("Array must be either 4D or 3D")
 
-        return Video([Frame.fromarray(frame, mode=mode) for frame in array], period=period, times=times)
+        return cls([Frame.fromarray(frame, mode=mode) for frame in array], period=period, times=times)
 
     def apply(self, transform):
         """
@@ -139,10 +139,10 @@ class Video:
             new video with tranformed frames
         """
         if self.period is not None:
-            return Video(map(transform, self.frames), period=self.period)
+            return self.__class__(map(transform, self.frames), period=self.period)
 
         elif self.times is not None:
-            return Video(map(transform, self.frames), times=self.times)
+            return self.__class__(map(transform, self.frames), times=self.times)
 
         else:
-            return Video(map(transform, self.frames))
+            return self.__class__(map(transform, self.frames))
