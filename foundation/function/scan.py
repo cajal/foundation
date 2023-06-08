@@ -37,10 +37,8 @@ class VisualScanFnnTrialResponse:
         units = units.fetch(as_dict=True, order_by="traceset_index")
 
         # units dataframe
-        df = pd.DataFrame(units)
-
-        # response index
-        df["response_index"] = np.arange(len(df))
+        df = pd.merge(pd.DataFrame([key]), pd.DataFrame(units), how="cross")
+        df = df.rename(columns={"traceset_index": "response_index"})
 
         # data spec
         spec = data.proj("rate_id", spec_id="units_id") * fnn.Spec.TraceSpec
