@@ -260,3 +260,47 @@ class StandardTraces:
 
         # standarization transform
         return stand.standardize(homogeneous=hom, **kwargs)
+
+
+# ----------------------------- Visual -----------------------------
+
+
+@keys
+class Visual:
+    """Visual Trace"""
+
+    @property
+    def key_list(self):
+        return [
+            stimulus.Video,
+            recording.Trace,
+            recording.TrialFilterSet,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
+        ]
+
+    @rowproperty
+    def response(self):
+        """
+        Returns
+        -------
+        foundation.utils.response.Response
+            response trials
+        """
+        from foundation.utils.response import Response
+        from foundation.recording.trial import Trial, TrialVideo, TrialSet, TrialFilterSet
+
+        # all trials
+        trials = merge(self.key, recording.TraceTrials)
+        trials = Trial & (TrialSet & trials).members
+
+        # restricted trials
+        trials = (TrialFilterSet & self.key).filter(trials)
+        trials = merge(trials, TrialVideo) & self.key
+
+        # resample trace
+        trials = (ResampledTrace & trials & self.key).trials
+
+        # visual response
+        return Response(data=trials.tolist(), index=trials.index)

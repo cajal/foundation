@@ -88,10 +88,16 @@ class VisualResponseMeasure:
         from foundation.utility.measure import Measure
         from foundation.stimulus.video import VideoSet
 
-        keys = (VideoSet & key).ordered_keys
+        # videos
+        videos = (VideoSet & key).members.fetch("video_id", order_by="video_id")
+        videos = tqdm(videos, desc="Videos")
 
+        # video responses
         response = (Response & key).link.response
-        response = concatenate([response.visual(**k) for k in tqdm(keys, desc="Videos")])
+        response = concatenate([response.visual(video_id=v) for v in videos])
 
+        # response measure
         measure = (Measure & key).link.measure(response)
+
+        # insert
         self.insert1(dict(key, measure=measure))

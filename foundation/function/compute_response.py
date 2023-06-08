@@ -40,7 +40,7 @@ class Response:
         raise NotImplementedError()
 
 
-# -- Visual Response Types --
+# -- Response Types --
 
 
 @keys
@@ -55,28 +55,15 @@ class Recording(Response):
 
     @rowmethod
     def visual(self, video_id):
-        from foundation.utils.response import Response
-        from foundation.recording.trial import Trial, TrialVideo, TrialSet, TrialFilterSet
-        from foundation.recording.compute_trace import ResampledTrace
+        from foundation.recording.compute_trace import Visual
 
-        # all trials
-        trials = merge(self.key, recording.TraceTrials)
-        trials = Trial & (TrialSet & trials).members
-
-        # restricted trials
-        trials = (TrialFilterSet & self.key).filter(trials)
-        trials = merge(trials, TrialVideo) & self.key & {"video_id": video_id}
-
-        # response trials
-        trials = (ResampledTrace & trials & self.key).trials
-
-        return Response(data=trials.tolist(), index=trials.index)
+        return (Visual & self.key & {"video_id": video_id}).response
 
     @rowproperty
     def timing(self):
         from foundation.utility.resample import Rate, Offset
 
-        return (Rate & self).link.period, (Offset & self).link.offset
+        return (Rate & self.key).link.period, (Offset & self.key).link.offset
 
 
 @keys

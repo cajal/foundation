@@ -77,7 +77,7 @@ class NetworkSetCore(NetworkState):
         from foundation.fnn.model import Model, ModelNetwork
 
         # network set
-        networks = (NetworkSet & self.key).ordered_keys
+        networks = (NetworkSet & self.key).members.fetch("network_id", order_by="network_id", as_dict=True)
 
         # make sure that network set core == network core
         (core_id,) = set(map(lambda k: (Network & k).link.fetch1("core_id"), networks))
