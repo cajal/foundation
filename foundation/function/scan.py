@@ -60,7 +60,7 @@ class VisualScanFnnTrialResponse:
                 FnnTrialResponse.insert(keys, skip_duplicates=True, ignore_extra_fields=True)
 
                 # insert computed
-                self.insert(keys, ignore_extra_fields=True, allow_direct_insert=True)
+                self.insert(keys, ignore_extra_fields=True)
 
         # fill response
         Response.fill()
