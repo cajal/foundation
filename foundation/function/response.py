@@ -27,13 +27,13 @@ class _Response:
 
 
 @schema.lookup
-class Recording(_Response):
+class TrialResponse(_Response):
     definition = """
     -> recording.Trace
-    -> recording.TrialFilterSet
     -> utility.Resample
     -> utility.Offset
     -> utility.Rate
+    -> recording.TrialFilterSet
     """
 
     @rowproperty
@@ -44,13 +44,13 @@ class Recording(_Response):
 
 
 @schema.lookup
-class FnnRecording(_Response):
+class FnnTrialResponse(_Response):
     definition = """
     -> fnn.ModelNetwork
+    response_index              : int unsigned  # response index
+    trial_perspective           : bool          # use recording trial perspective
+    trial_modulation            : bool          # use recording trial modulation
     -> recording.TrialFilterSet
-    trial_perspectives  : bool          # recording trial perspectives
-    trial_modulations   : bool          # recording trial modulations
-    response_index      : int unsigned  # response index
     """
 
     @rowproperty
@@ -65,9 +65,16 @@ class FnnRecording(_Response):
 
 @schema.link
 class Response:
-    links = [Recording, FnnRecording]
+    links = [TrialResponse, FnnTrialResponse]
     name = "response"
     comment = "functional response"
+
+
+@schema.linkset
+class ResponseSet:
+    link = Response
+    name = "responseset"
+    comment = "functional response set"
 
 
 # -- Computed Response --

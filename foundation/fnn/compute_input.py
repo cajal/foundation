@@ -13,7 +13,7 @@ class NetworkInput:
     """Network Input"""
 
     @rowmethod
-    def visual(self, video_id, trial_filterset_id=None, trial_perspectives=True, trial_modulations=True):
+    def visual(self, video_id, trial_filterset_id=None, trial_perspective=True, trial_modulation=True):
         """
         Parameters
         ----------
@@ -55,7 +55,7 @@ class VisualScan(NetworkInput):
         return [fnn.VisualScan]
 
     @rowmethod
-    def visual(self, video_id, trial_filterset_id=None, trial_perspectives=True, trial_modulations=True):
+    def visual(self, video_id, trial_filterset_id=None, trial_perspective=True, trial_modulation=True):
         from foundation.utils.resample import flip_index, truncate
         from foundation.utility.resample import Rate
         from foundation.recording.trial import Trial, TrialBounds, TrialVideo, TrialSet, TrialFilterSet
@@ -121,7 +121,7 @@ class VisualScan(NetworkInput):
 
         # -------------------- perspectives --------------------
 
-        if trial_ids and trial_perspectives:
+        if trial_ids and trial_perspective:
             # traceset key
             key = (Dataset & self.key).perspectives_key
 
@@ -152,7 +152,7 @@ class VisualScan(NetworkInput):
 
         # -------------------- modulations --------------------
 
-        if trial_ids and trial_modulations:
+        if trial_ids and trial_modulation:
             # traceset key
             key = (Dataset & self.key).modulations_key
 
