@@ -90,12 +90,12 @@ class VisualResponseMeasure:
     -> utility.Measure
     -> utility.Burnin
     ---
-    measure = NULL      : float     # visual response measure
+    measure = NULL          : float     # visual response measure
     """
 
     def make(self, key):
         from foundation.utils.response import concatenate
-        from foundation.utility.measure import Measure
+        from foundation.utility.response import Measure
         from foundation.stimulus.video import VideoSet
 
         # videos
@@ -115,3 +115,55 @@ class VisualResponseMeasure:
 
         # insert
         self.insert1(dict(key, measure=measure))
+
+
+@schema.computed
+class VisualResponseCorrelation:
+    definition = """
+    -> stimulus.VideoSet
+    -> ResponseSet
+    -> utility.Correlation
+    -> utility.Burnin
+    ---
+    correlation = NULL      : float     # visual response correlation
+    """
+
+    @property
+    def key_source(self):
+        return (
+            stimulus.VideoSet.proj()
+            * (ResponseSet & "members=2").proj()
+            * utility.Correlation.proj()
+            * utility.Burnin.proj()
+        )
+
+    def make(self, key):
+        from foundation.utils.response import concatenate
+        from foundation.utility.response import Correlation
+        from foundation.stimulus.video import VideoSet
+
+        # videos
+        videos = (VideoSet & key).members.fetch("video_id", order_by="video_id")
+        videos_x = tqdm(videos, desc="Videos -- X")
+        videos_y = tqdm(videos, desc="Videos -- Y")
+
+        # responses
+        responses = (ResponseSet & key).members
+        responses = responses.fetch("response_id", order_by="response_id", as_dict=True)
+
+        # video responses
+        xy = []
+        with disable_tqdm():
+            for videos, response in zip([videos_x, videos_y], responses):
+                response = (Response & response).link.response
+                response = concatenate(
+                    *(response.visual(video_id=v) for v in videos),
+                    burnin=key["burnin"],
+                )
+                xy.append(response)
+
+        # response correlation
+        correlation = (Correlation & key).link.correlation(*xy)
+
+        # insert
+        self.insert1(dict(key, correlation=correlation))

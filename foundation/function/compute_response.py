@@ -82,7 +82,7 @@ class FnnTrialResponse(Response):
         from foundation.fnn.compute_output import NetworkOutput
 
         # fetch attributes
-        filterset, index, perpective, modulation = self.key.fetch1(
+        filterset, index, perspective, modulation = self.key.fetch1(
             "trial_filterset_id", "response_index", "perspective", "modulation"
         )
 
@@ -91,7 +91,7 @@ class FnnTrialResponse(Response):
         output = output.visual_recording(
             video_id=video_id,
             trial_filterset_id=filterset,
-            perspective=perpective,
+            perspective=perspective,
             modulation=modulation,
         )
 

@@ -35,7 +35,7 @@ class NetworkOutput:
         return (Visual & self.key & {"video_id": video_id}).output
 
     @rowmethod
-    def visual_recording(self, video_id, trial_filterset_id, perpsective=True, modulation=True):
+    def visual_recording(self, video_id, trial_filterset_id, perspective=True, modulation=True):
         """
         Parameters
         ----------
@@ -60,7 +60,7 @@ class NetworkOutput:
         key &= {
             "video_id": video_id,
             "trial_filterset_id": trial_filterset_id,
-            "perspective": perpsective,
+            "perspective": perspective,
             "modulation": modulation,
         }
         return key.output
