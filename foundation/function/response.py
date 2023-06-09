@@ -40,9 +40,9 @@ class TrialResponse(_Response):
 
     @rowproperty
     def response(self):
-        from foundation.function.compute_response import Recording
+        from foundation.function.compute_response import TrialResponse
 
-        return Recording & self
+        return TrialResponse & self
 
 
 @schema.lookup
@@ -57,9 +57,9 @@ class FnnTrialResponse(_Response):
 
     @rowproperty
     def response(self):
-        from foundation.function.compute_response import FnnRecording
+        from foundation.function.compute_response import FnnTrialResponse
 
-        return FnnRecording & self
+        return FnnTrialResponse & self
 
 
 # -- Response --
@@ -88,6 +88,7 @@ class VisualResponseMeasure:
     -> stimulus.VideoSet
     -> Response
     -> utility.Measure
+    -> utility.Burnin
     ---
     measure = NULL      : float     # visual response measure
     """
@@ -104,7 +105,10 @@ class VisualResponseMeasure:
         # video responses
         with disable_tqdm():
             response = (Response & key).link.response
-            response = concatenate([response.visual(video_id=v) for v in videos])
+            response = concatenate(
+                *(response.visual(video_id=v) for v in videos),
+                burnin=key["burnin"],
+            )
 
         # response measure
         measure = (Measure & key).link.measure(response)

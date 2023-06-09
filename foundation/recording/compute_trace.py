@@ -335,10 +335,10 @@ class VisualTrace:
         """
         Returns
         -------
-        foundation.utils.response.Response
+        foundation.utils.response.Trials
             response trials
         """
-        from foundation.utils.response import Response
+        from foundation.utils.response import Trials
         from foundation.recording.trial import Trial, TrialVideo, TrialSet, TrialFilterSet
 
         # all trials
@@ -356,4 +356,4 @@ class VisualTrace:
         transform = (StandardizedTrace & self.key).transform
 
         # visual response
-        return Response(data=map(transform, trials.values), index=trials.index)
+        return Trials(data=map(transform, trials.values), index=trials.index, tolerance=1)

@@ -22,7 +22,7 @@ class Response:
 
         Returns
         -------
-        foundation.utils.response.Response
+        foundation.utils.response.Trials
             response trials
         """
         raise NotImplementedError()
@@ -44,13 +44,13 @@ class Response:
 
 
 @keys
-class Recording(Response):
-    """Recording Response"""
+class TrialResponse(Response):
+    """Recording Trial Response"""
 
     @property
     def key_list(self):
         return [
-            function.Recording,
+            function.TrialResponse,
         ]
 
     @rowmethod
@@ -67,18 +67,18 @@ class Recording(Response):
 
 
 @keys
-class FnnRecording(Response):
-    """Fnn Recording Response"""
+class FnnTrialResponse(Response):
+    """Fnn Recording Trial Response"""
 
     @property
     def key_list(self):
         return [
-            function.FnnRecording,
+            function.FnnTrialResponse,
         ]
 
     @rowmethod
     def visual(self, video_id):
-        from foundation.utils.response import Response
+        from foundation.utils.response import Trials
         from foundation.fnn.compute_output import NetworkOutput
 
         # fetch attributes
@@ -95,7 +95,8 @@ class FnnRecording(Response):
             modulation=modulation,
         )
 
-        return Response(data=[o[:, index] for o in output.values], index=output.index)
+        # response trials
+        return Trials(data=[o[:, index] for o in output.values], index=output.index)
 
     @rowproperty
     def timing(self):

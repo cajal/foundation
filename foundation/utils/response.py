@@ -1,9 +1,13 @@
 import numpy as np
 import pandas as pd
+from scipy import stats
 from .resample import truncate
 
 
-class Response(pd.Series):
+# ---------------------------- Response Trials ----------------------------
+
+
+class Trials(pd.Series):
     """Response Trials"""
 
     def __init__(self, data, index=None, tolerance=0):
@@ -26,11 +30,11 @@ class Response(pd.Series):
         # initialize
         super().__init__(data=data, index=[None] if index is None else index)
 
-    def to_array(self, trials=None):
+    def to_array(self, size=None):
         """
         Parameters
         ----------
-        trials : int | None
+        size : int | None
             number of trials
 
         Returns
@@ -40,18 +44,15 @@ class Response(pd.Series):
         """
         # 2D response array
         array = np.stack(self.values, axis=0)
+        trials, samples = array.shape
 
-        if trials is None or trials == len(self):
+        if size is None or size == trials:
+            # response array
             return array
 
-        elif trials > len(self):
-            # nans for missing trials
-            _trials = trials - len(self)
-            samples = self.iloc[0].size
-            dtype = self.iloc[0].dtype
-            nans = np.full([_trials, samples], np.nan, dtype=dtype)
-
-            # nan-filled array
+        elif size > array.shape[0]:
+            # nan-filled response array
+            nans = np.full([size - trials, samples], np.nan, dtype=array.dtype)
             return np.concatenate([array, nans], axis=0)
 
         else:
@@ -72,12 +73,17 @@ class Response(pd.Series):
         return [*self.index, self.iloc[0].size] == [*other.index, other.iloc[0].size]
 
 
-def concatenate(responses):
+# -- Response Trial Functions --
+
+
+def concatenate(*trials, burnin=0):
     """
     Parameters
     ----------
-    Sequence[Response]
+    *trials : Trials
         trial responses to concatenate
+    burnin : int
+        number of initial frames to discard
 
     Returns
     -------
@@ -85,10 +91,102 @@ def concatenate(responses):
         [trials, samples]
     """
     # max response trials
-    trials = max(map(len, responses))
+    size = max(map(len, trials))
 
     # convert responses to arrays, filling missing trials with NaNs
-    arrays = [r.to_array(trials) for r in responses]
+    arrays = [r.to_array(size)[:, burnin:] for r in trials]
 
     # concatenate along samples dimensions
     return np.concatenate(arrays, axis=1)
+
+
+# ---------------------------- Response Measure ----------------------------
+
+# -- Response Measure Base --
+
+
+class Measure:
+    """Response Measure"""
+
+    def __call__(self, x):
+        """
+        Parameters
+        ----------
+        x : 2D array
+            [trials, samples]
+
+        Returns
+        -------
+        float
+            functional measure
+        """
+        raise NotImplementedError()
+
+
+# -- Response Measure Types --
+
+
+class CCMax(Measure):
+    """Upper bound of signal correlation -- http://dx.doi.org/10.3389/fncom.2016.00010"""
+
+    def __call__(self, x):
+        # number of trials per sample
+        trials, samples = x.shape
+        t = trials - np.isnan(x).sum(axis=0)
+
+        # pooled variance -> n
+        v = 1 / t**2
+        w = t - 1
+        z = t.sum() - samples
+        n = np.sqrt(z / (w * v).sum())
+
+        # response mean
+        y_m = np.nanmean(x, axis=0)
+
+        # signal power
+        P = np.var(y_m, axis=0, ddof=1)
+        TP = np.mean(np.nanvar(x, axis=1, ddof=1), axis=0)
+        SP = (n * P - TP) / (n - 1)
+
+        # variance of response mean
+        y_m_v = np.var(y_m, axis=0, ddof=0)
+
+        # correlation coefficient ceiling
+        return np.sqrt(SP / y_m_v)
+
+
+# ---------------------------- Response Correlations ----------------------------
+
+# -- Response Correlation Base --
+
+
+class Correlation:
+    """Response Correlation"""
+
+    def __call__(self, x, y):
+        """
+        Parameters
+        ----------
+        x : 2D array
+            [trials, samples]
+        y : 2D array
+            [trials, samples]
+
+        Returns
+        -------
+        float
+            functional measure
+        """
+        raise NotImplementedError()
+
+
+# -- Response Correlation Types --
+
+
+class CCSignal(Correlation):
+    """Signal Correlation"""
+
+    def __call__(self, x, y):
+        x = np.nanmean(x, axis=0)
+        y = np.nanmean(y, axis=0)
+        return stats.pearsonr(x, y)[0]
