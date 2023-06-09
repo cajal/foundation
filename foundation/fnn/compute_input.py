@@ -62,7 +62,7 @@ class VisualScan(NetworkInput):
         from foundation.stimulus.compute_video import ResizedVideo
         from foundation.recording.compute_trial import ResampledTrial
         from foundation.recording.compute_trace import StandardizedTraces, ResampledTraces
-        from foundation.fnn.compute_dataset import VisualScan as Dataset
+        from foundation.fnn.compute_data import VisualScan as Dataset
 
         if trial_filterset_id is None:
             # no trials

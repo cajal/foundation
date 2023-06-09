@@ -1,4 +1,5 @@
 from djutils import merge, rowproperty
+from foundation.virtual.bridge import pipe_fuse
 from foundation.fnn.model import ModelNetwork
 from foundation.fnn.network import Network
 from foundation.fnn.data import Data, VisualScan
@@ -27,10 +28,27 @@ class VisualScanModel:
         self.insert1(dict(key, **data))
 
 
-# @schema.computed
-# class VisualScanModel:
-#     definition = """
-#     -> ModelNetwork
-#     ---
-#     -> VisualScan
-#     """
+@schema.computed
+class VisualScanResponse:
+    definition = """
+    -> VisualScanModel
+    response_index              : int unsigned      # network response index
+    ---
+    -> pipe_fuse.ScanSet.Unit
+    """
+
+    def make(self, key):
+        from foundation.recording.scan import ScanUnits
+        from foundation.recording.trace import Trace, TraceSet
+
+        # scan units
+        units = (Network & key).link.data
+        units = ScanUnits & units.link
+        units = (TraceSet & units).members
+        units = merge(units, Trace.ScanUnit)
+
+        # unit keys
+        keys = (VisualScanModel & key).proj() * units.proj(..., response_index="traceset_index")
+
+        # insert
+        self.insert(keys, ignore_extra_fields=True)

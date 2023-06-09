@@ -104,7 +104,7 @@ class VisualScan(_Data):
 
     @rowproperty
     def sizes(self):
-        from foundation.fnn.compute_dataset import VisualScan
+        from foundation.fnn.compute_data import VisualScan
 
         sizes = dict()
         key = VisualScan & self
@@ -120,7 +120,7 @@ class VisualScan(_Data):
 
     @rowproperty
     def dataset(self):
-        from foundation.fnn.compute_dataset import VisualScan
+        from foundation.fnn.compute_data import VisualScan
 
         return (VisualScan & self).dataset
 
