@@ -61,7 +61,7 @@ class VisualScan(NetworkInput):
         from foundation.recording.trial import Trial, TrialBounds, TrialVideo, TrialSet, TrialFilterSet
         from foundation.stimulus.compute_video import ResizedVideo
         from foundation.recording.compute_trial import ResampledTrial
-        from foundation.recording.compute_trace import StandardTraces, ResampledTraces
+        from foundation.recording.compute_trace import StandardizedTraces, ResampledTraces
         from foundation.fnn.compute_dataset import VisualScan as Dataset
 
         if trial_filterset_id is None:
@@ -126,7 +126,7 @@ class VisualScan(NetworkInput):
             key = (Dataset & self.key).perspectives_key
 
             # traceset transform
-            transform = (StandardTraces & key).transform
+            transform = (StandardizedTraces & key).transform
 
             # resampled traceset
             trials = []
@@ -157,7 +157,7 @@ class VisualScan(NetworkInput):
             key = (Dataset & self.key).modulations_key
 
             # traceset transform
-            transform = (StandardTraces & key).transform
+            transform = (StandardizedTraces & key).transform
 
             # resampled traceset
             trials = []

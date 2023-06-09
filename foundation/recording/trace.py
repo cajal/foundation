@@ -137,7 +137,7 @@ class ScanTreadmill(_Scan):
 class Trace:
     links = [ScanUnit, ScanPupil, ScanTreadmill]
     name = "trace"
-    comment = "trace"
+    comment = "recording trace"
 
 
 @schema.linkset

@@ -29,11 +29,11 @@ class _Response:
 @schema.lookup
 class TrialResponse(_Response):
     definition = """
+    -> recording.TrialFilterSet
     -> recording.Trace
+    -> utility.Rate
     -> utility.Resample
     -> utility.Offset
-    -> utility.Rate
-    -> recording.TrialFilterSet
     """
 
     @rowproperty
@@ -46,11 +46,11 @@ class TrialResponse(_Response):
 @schema.lookup
 class FnnTrialResponse(_Response):
     definition = """
+    -> recording.TrialFilterSet
     -> fnn.ModelNetwork
     response_index              : int unsigned  # response index
-    trial_perspective           : bool          # use recording trial perspective
-    trial_modulation            : bool          # use recording trial modulation
-    -> recording.TrialFilterSet
+    perspective                 : bool          # use recording perspective
+    modulation                  : bool          # use recording modulation
     """
 
     @rowproperty

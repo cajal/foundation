@@ -65,7 +65,7 @@ class ScanTrial(_Trial):
 class Trial:
     links = [ScanTrial]
     name = "trial"
-    comment = "trial"
+    comment = "recording trial"
 
 
 @schema.linkset

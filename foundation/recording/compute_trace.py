@@ -207,12 +207,60 @@ class TraceSummary:
         return (Summary & self.key).link.summary(samples)
 
 
-# ----------------------------- Standardized Traces -----------------------------
+# ----------------------------- Standardized Trace/Traces -----------------------------
 
 
 @keys
-class StandardTraces:
-    """Trace Standardization"""
+class StandardizedTrace:
+    """Standardized Trace"""
+
+    @property
+    def key_list(self):
+        return [
+            recording.Trace,
+            recording.TrialSet & "members > 0",
+            utility.Standardize,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
+        ]
+
+    @rowproperty
+    def transform(self):
+        """
+        Returns
+        -------
+        foundation.utility.standardize.Standardize
+            callable, standardizes trace
+        """
+        from foundation.utility.standardize import Standardize
+
+        # standardization link
+        stand = (Standardize & self.key).link
+
+        # stat keys
+        stat_keys = stand.summary_keys
+
+        # homogeneous mask
+        hom = merge(self.key, recording.TraceHomogeneous)
+        hom = hom.fetch1("homogeneous")
+        hom = [hom.astype(bool)]
+
+        # summary stats
+        stats = self.key * stat_keys
+        stats = merge(stats, recording.TraceSummary)
+
+        # stats dict
+        summary_id, summary = stats.fetch("summary_id", "summary")
+        kwargs = {k: [v] for k, v in zip(summary_id, summary)}
+
+        # standarization transform
+        return stand.standardize(homogeneous=hom, **kwargs)
+
+
+@keys
+class StandardizedTraces:
+    """Standardized Trace Set"""
 
     @property
     def key_list(self):
@@ -231,7 +279,7 @@ class StandardTraces:
         Returns
         -------
         foundation.utility.standardize.Standardize
-            trace set standardization
+            callable, standardizes trace set
         """
         from foundation.utility.standardize import Standardize
         from foundation.recording.trace import TraceSet
@@ -262,19 +310,21 @@ class StandardTraces:
         return stand.standardize(homogeneous=hom, **kwargs)
 
 
-# ----------------------------- Visual -----------------------------
+# ----------------------------- Visual Trace -----------------------------
 
 
 @keys
-class Visual:
+class VisualTrace:
     """Visual Trace"""
 
     @property
     def key_list(self):
         return [
             stimulus.Video,
-            recording.Trace,
             recording.TrialFilterSet,
+            recording.Trace,
+            recording.TrialSet,
+            utility.Standardize,
             utility.Resample,
             utility.Offset,
             utility.Rate,
@@ -292,15 +342,18 @@ class Visual:
         from foundation.recording.trial import Trial, TrialVideo, TrialSet, TrialFilterSet
 
         # all trials
-        trials = merge(self.key, recording.TraceTrials)
+        trials = merge(recording.Trace & self.key, recording.TraceTrials)
         trials = Trial & (TrialSet & trials).members
 
         # restricted trials
         trials = (TrialFilterSet & self.key).filter(trials)
         trials = merge(trials, TrialVideo) & self.key
 
-        # resample trace
+        # trace trials
         trials = (ResampledTrace & trials & self.key).trials
 
+        # trace standardization
+        transform = (StandardizedTrace & self.key).transform
+
         # visual response
-        return Response(data=trials.tolist(), index=trials.index)
+        return Response(data=map(transform, trials.values), index=trials.index)

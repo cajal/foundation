@@ -35,7 +35,7 @@ class NetworkOutput:
         return (Visual & self.key & {"video_id": video_id}).output
 
     @rowmethod
-    def visual_recording(self, video_id, trial_filterset_id, trial_perspective=True, trial_modulation=True):
+    def visual_recording(self, video_id, trial_filterset_id, perpsective=True, modulation=True):
         """
         Parameters
         ----------
@@ -43,10 +43,10 @@ class NetworkOutput:
             key (foundation.stimulus.video.Video)
         trial_filterset_id : str
             key (foundation.recording.trial.TrialFilterSet)
-        trial_perspective : bool
-            use recording trial perspective
-        trial_modulation : bool
-            use recording trial modulation
+        perspective : bool
+            use recording perspective
+        modulation : bool
+            use recording modulation
 
         Returns
         -------
@@ -60,8 +60,8 @@ class NetworkOutput:
         key &= {
             "video_id": video_id,
             "trial_filterset_id": trial_filterset_id,
-            "trial_perspective": trial_perspective,
-            "trial_modulation": trial_modulation,
+            "perspective": perpsective,
+            "modulation": modulation,
         }
         return key.output
 
@@ -110,8 +110,8 @@ class VisualRecording:
             fnn.ModelNetwork,
             stimulus.Video,
             recording.TrialFilterSet,
-            utility.Bool.proj(trial_perspective="bool"),
-            utility.Bool.proj(trial_modulation="bool"),
+            utility.Bool.proj(perspective="bool"),
+            utility.Bool.proj(modulation="bool"),
         ]
 
     @rowproperty
@@ -120,8 +120,8 @@ class VisualRecording:
         from foundation.fnn.model import ModelNetwork
 
         # fetch attributes
-        video_id, tset_id, persp, modul = self.key.fetch1(
-            "video_id", "trial_filterset_id", "trial_perspective", "trial_modulation"
+        video_id, tset_id, perspective, modulation = self.key.fetch1(
+            "video_id", "trial_filterset_id", "perspective", "modulation"
         )
 
         # load model
@@ -130,7 +130,7 @@ class VisualRecording:
         # load data
         data = (Network & self.key).link.data
         trial_ids, stimuli, perspectives, modulations = data.link.network_input.visual(
-            video_id=video_id, trial_filterset_id=tset_id, trial_perspective=persp, trial_modulation=modul
+            video_id=video_id, trial_filterset_id=tset_id, trial_perspective=perspective, trial_modulation=modulation
         )
 
         # generate outputs

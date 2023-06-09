@@ -91,10 +91,10 @@ class VisualScan:
 
     @rowmethod
     def _traces(self, key):
-        from foundation.recording.compute_trace import StandardTraces
+        from foundation.recording.compute_trace import StandardizedTraces
         from fnn.data import NpyFile
 
-        transform = (StandardTraces & key).transform
+        transform = (StandardizedTraces & key).transform
         trials = merge(
             self.trials,
             recording.ResampledTraces & key,

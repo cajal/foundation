@@ -55,9 +55,9 @@ class Recording(Response):
 
     @rowmethod
     def visual(self, video_id):
-        from foundation.recording.compute_trace import Visual
+        from foundation.recording.compute_trace import VisualTrace
 
-        return (Visual & self.key & {"video_id": video_id}).response
+        return (VisualTrace & self.key & {"video_id": video_id}).response
 
     @rowproperty
     def timing(self):
@@ -82,8 +82,8 @@ class FnnRecording(Response):
         from foundation.fnn.compute_output import NetworkOutput
 
         # fetch attributes
-        filterset, perpective, modulation, index = self.key.fetch1(
-            "trial_filterset_id", "trial_perspective", "trial_modulation", "response_index"
+        filterset, index, perpective, modulation = self.key.fetch1(
+            "trial_filterset_id", "response_index", "perspective", "modulation"
         )
 
         # compute output
@@ -91,8 +91,8 @@ class FnnRecording(Response):
         output = output.visual_recording(
             video_id=video_id,
             trial_filterset_id=filterset,
-            trial_perspective=perpective,
-            trial_modulation=modulation,
+            perspective=perpective,
+            modulation=modulation,
         )
 
         return Response(data=[o[:, index] for o in output.values], index=output.index)
