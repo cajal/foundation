@@ -49,4 +49,6 @@ class FnnVisualScanCCNorm:
                     self.key,
                     key * ResponseSet.Member & Response.TrialResponse,
                     utility.Measure.CCMax,
+                    display_progress=True,
+                    reserve_jobs=True,
                 )
