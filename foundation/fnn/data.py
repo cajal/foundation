@@ -43,34 +43,12 @@ class _Data:
     """Data"""
 
     @rowproperty
-    def dataset(self):
+    def network_data(self):
         """
         Returns
         -------
-        fnn.data.Dataset
-            network dataset
-        """
-        raise NotImplementedError()
-
-    @rowproperty
-    def sizes(self):
-        """
-        Returns
-        -------
-        dict[str, int]
-            network sizes
-        """
-        raise NotImplementedError()
-
-    @rowproperty
-    def timing(self):
-        """
-        Returns
-        -------
-        float
-            sampling period (seconds)
-        float
-            response offset (seconds)
+        foundation.fnn.compute_data.NetworkData (row)
+            network input
         """
         raise NotImplementedError()
 
@@ -80,7 +58,7 @@ class _Data:
         Returns
         -------
         foundation.fnn.compute_input.NetworkInput (row)
-            network visual input
+            network input
         """
         raise NotImplementedError()
 
@@ -103,32 +81,10 @@ class VisualScan(_Data):
     """
 
     @rowproperty
-    def sizes(self):
+    def network_data(self):
         from foundation.fnn.compute_data import VisualScan
 
-        sizes = dict()
-        key = VisualScan & self
-
-        stimuli = merge(key.trials, recording.TrialVideo, stimulus.VideoInfo)
-        sizes["stimuli"] = (U("channels") & stimuli).fetch1("channels")
-
-        for attr in ["perspectives", "modulations", "units"]:
-            _key = recording.TraceSet & getattr(key, f"{attr}_key")
-            sizes[attr] = _key.fetch1("members")
-
-        return sizes
-
-    @rowproperty
-    def dataset(self):
-        from foundation.fnn.compute_data import VisualScan
-
-        return (VisualScan & self).dataset
-
-    @rowproperty
-    def timing(self):
-        from foundation.utility.resample import Rate, Offset
-
-        return (Rate & self).link.period, (Offset & self).link.offset
+        return VisualScan & self
 
     @rowproperty
     def network_input(self):

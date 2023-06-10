@@ -16,22 +16,22 @@ class _Network:
     """Neural Network"""
 
     @rowproperty
+    def data(self):
+        """
+        Returns
+        -------
+        foundation.fnn.compute_data.NetworkData (row)
+            network input
+        """
+        raise NotImplementedError()
+
+    @rowproperty
     def module(self):
         """
         Returns
         -------
         fnn.networks.Network
             network module
-        """
-        raise NotImplementedError()
-
-    @rowproperty
-    def data(self):
-        """
-        Returns
-        -------
-        foundation.fnn.data.Data
-            tuple, network data
         """
         raise NotImplementedError()
 
@@ -53,6 +53,10 @@ class VisualNetwork(_Network):
     """
 
     @rowproperty
+    def data(self):
+        return (Data & self).link.network_data
+
+    @rowproperty
     def module(self):
         from fnn.model.networks import Visual
 
@@ -64,15 +68,15 @@ class VisualNetwork(_Network):
             reduce=(Reduce & self).link.nn,
             unit=(Unit & self).link.nn,
         )
+        stimuli, perspectives, modulations, units = self.data.sizes
         module._init(
-            **(Data & self).link.sizes,
+            stimuli=stimuli,
+            perspectives=perspectives,
+            modulations=modulations,
+            units=units,
             streams=self.fetch1("streams"),
         )
         return module
-
-    @rowproperty
-    def data(self):
-        return Data & self
 
 
 # -- Neural Network Types --

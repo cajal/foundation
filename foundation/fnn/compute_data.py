@@ -6,11 +6,58 @@ from foundation.utils import logger, tqdm, disable_tqdm
 from foundation.virtual import utility, stimulus, recording, fnn
 
 
-# ----------------------------- Dataset -----------------------------
+# ----------------------------- Network Data -----------------------------
+
+# -- Network Data Base --
+
+
+class NetworkData:
+    """Network Data"""
+
+    @rowproperty
+    def dataset(self):
+        """
+        Returns
+        -------
+        fnn.data.Dataset
+            network dataset
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def sizes(self):
+        """
+        Returns
+        -------
+        int
+            stimulus channels
+        int
+            perspective features
+        int
+            modulation features
+        int
+            number of units
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def timing(self):
+        """
+        Returns
+        -------
+        float
+            sampling period (seconds)
+        float
+            response offset (seconds)
+        """
+        raise NotImplementedError()
+
+
+# -- Network Data Types --
 
 
 @keys
-class VisualScan:
+class VisualScan(NetworkData):
     """Visual Scan"""
 
     @property
@@ -120,3 +167,22 @@ class VisualScan:
         assert not df.isnull().values.any()
 
         return Dataset(df)
+
+    @rowproperty
+    def sizes(self):
+        stimuli = merge(self.trials, recording.TrialVideo, stimulus.VideoInfo)
+        stimuli = (U("channels") & stimuli).fetch1("channels")
+        sizes = [stimuli]
+
+        for attr in ["perspectives", "modulations", "units"]:
+            traces = recording.TraceSet & getattr(self, f"{attr}_key")
+            traces = traces.fetch1("members")
+            sizes.append(traces)
+
+        return sizes
+
+    @rowproperty
+    def timing(self):
+        from foundation.utility.resample import Rate, Offset
+
+        return (Rate & self.key).link.period, (Offset & self.key).link.offset
