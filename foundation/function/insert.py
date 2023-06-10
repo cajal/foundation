@@ -1,53 +1,51 @@
-from djutils import keys, merge, rowproperty, rowmethod
-from foundation.virtual import utility, scan, recording, fnn
+from djutils import keys, merge, cache_rowproperty
+from foundation.virtual import utility, stimulus, scan, recording, fnn
 
 
-# @keys
-# class VisualFnnScan:
-#     """Visual Fnn Scan Model"""
+@keys
+class FnnVisualScanCCNorm:
+    """Fnn Visual Scan -- Normalized Signal Correlation"""
 
-#     @property
-#     def key_list(self):
-#         return [
-#             fnn.ModelNetwork * fnn.Network.VisualNetwork & fnn.VisualSet.VisualScan & fnn.VisualSpec.ResampleVisual,
-#         ]
+    @property
+    def key_list(self):
+        return [
+            fnn.VisualScanModel,
+            recording.TrialFilterSet,
+            stimulus.VideoSet,
+            utility.Bool.proj(perspective="bool"),
+            utility.Bool.proj(modulation="bool"),
+            utility.Burnin,
+        ]
 
-#     @property
-#     def responses(self):
-#         key = merge(
-#             self.key,
-#             fnn.Network.VisualNetwork,
-#             fnn.VisualSet.VisualScan,
-#             fnn.VisualSpec.ResampleVisual,
-#             fnn.VisualRecording,
-#         )
-#         key = key.proj(
-#             ...,
-#             resample_id="resample_id_u",
-#             offset_id="offset_id_u",
-#             traceset_id="traceset_id_u",
-#         )
-#         key = merge(
-#             key,
-#             utility.Resample,
-#             utility.Offset,
-#             utility.Rate,
-#             recording.TraceSet.Member,
-#         )
-#         return key.proj(response_index="traceset_index")
+    def fill(self):
+        from foundation.utils.torch import use_cuda
+        from foundation.function.scan import VisualScanFnnTrialResponse
+        from foundation.function.response import Response, ResponseSet, VisualResponseMeasure, VisualResponseCorrelation
 
-#     def fill_responses(self):
-#         from foundation.function.response import Recording, Fnn, Response
+        # scan response
+        VisualScanFnnTrialResponse.populate(self.key, display_progress=True, reserve_jobs=True)
 
-#         responses = self.responses
-#         Recording.insert(
-#             responses,
-#             ignore_extra_fields=True,
-#             skip_duplicates=True,
-#         )
-#         Fnn.insert(
-#             responses,
-#             ignore_extra_fields=True,
-#             skip_duplicates=True,
-#         )
-#         Response.fill()
+        # scan response keys
+        keys = fnn.VisualScanModel.proj() * recording.TrialFilterSet.proj() & self.key
+        for key in keys:
+            with cache_rowproperty(), use_cuda():
+                # populate with caching and cuda
+                key = merge(
+                    fnn.VisualScanModel.proj() & key,
+                    fnn.VisualScanResponse,
+                    VisualScanFnnTrialResponse & self.key,
+                )
+                # cc_abs
+                VisualResponseCorrelation.populate(
+                    self.key,
+                    key,
+                    utility.Correlation.CCSignal,
+                    display_progress=True,
+                    reserve_jobs=True,
+                )
+                # cc_max
+                VisualResponseMeasure.populate(
+                    self.key,
+                    key * ResponseSet.Member & Response.TrialResponse,
+                    utility.Measure.CCMax,
+                )
