@@ -17,7 +17,8 @@ class FnnVisualScanCCNorm:
             utility.Burnin,
         ]
 
-    def fill(self):
+    def fill(self, cuda=True):
+        from contextlib import nullcontext
         from foundation.utils.torch import use_cuda
         from foundation.function.scan import VisualScanFnnTrialResponse
         from foundation.function.response import Response, ResponseSet, VisualResponseMeasure, VisualResponseCorrelation
@@ -28,7 +29,7 @@ class FnnVisualScanCCNorm:
         # scan response keys
         keys = fnn.VisualScanModel.proj() * recording.TrialFilterSet.proj() & self.key
         for key in keys:
-            with cache_rowproperty(), use_cuda():
+            with cache_rowproperty(), use_cuda() if cuda else nullcontext():
                 # populate with caching and cuda
                 key = merge(
                     fnn.VisualScanModel.proj() & key,
