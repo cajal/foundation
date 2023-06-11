@@ -42,6 +42,16 @@ class NetworkData:
         """
         raise NotImplementedError()
 
+    @rowproperty
+    def trainset(self):
+        """
+        Returns
+        -------
+        fnn.data.Dataset
+            training dataset
+        """
+        raise NotImplementedError()
+
     @rowmethod
     def trials(self, training=None):
         """
@@ -57,13 +67,30 @@ class NetworkData:
         """
         raise NotImplementedError()
 
-    @rowproperty
-    def trainset(self):
+    @rowmethod
+    def visual_inputs(self, video_id, perspectives=True, modulations=True, training=None):
         """
+        Parameters
+        ----------
+        video_id : str
+            key (foundation.stimulus.video.Video)
+        perspectives : bool
+            include perspectives
+        modulations : bool
+            include modulations
+        training : bool | None
+            True (training trials) | False (non-training trials) | None (all trials)
+
         Returns
         -------
-        fnn.data.Dataset
-            training dataset
+        Iterable[3D array -- [height, width, channels], dtype=uint8]
+            video frames
+        None | Iterable[2D array -- [trials, perspectives], dtype=float-like]
+            recorded trial perspectives
+        None | Iterable[2D array -- [trials, modulations], dtype=float-like]
+            recorded trial modulations
+        None | List[str]
+            list of trial_ids/keys (foundation.recording.trial.Trial)
         """
         raise NotImplementedError()
 
