@@ -63,8 +63,8 @@ class Traces:
 
 
 @keys
-class ResampleTrace:
-    """Resample Trace"""
+class ResampledTrace:
+    """Resampled Trace"""
 
     @property
     def key_list(self):
@@ -151,8 +151,8 @@ class ResampleTrace:
 
 
 @keys
-class ResampleTraces:
-    """Resample Trace Set"""
+class ResampledTraces:
+    """Resampled Trace Set"""
 
     @property
     def key_list(self):
@@ -181,7 +181,7 @@ class ResampleTraces:
         # trace resamplers
         resamplers = []
         for trace in traces:
-            resampler = (ResampleTrace & trace & self.key).resampler
+            resampler = (ResampledTrace & trace & self.key).resampler
             resamplers.append(resampler)
 
         return tuple(resamplers)
@@ -245,7 +245,7 @@ class TraceSummary:
         trial_ids = (TrialSet & self.key).members.fetch("trial_id", order_by="trial_id")
 
         # resampled traces
-        trials = (ResampleTrace & self.key).trials(trial_ids)
+        trials = (ResampledTrace & self.key).trials(trial_ids)
         trials = np.concatenate(list(trials))
 
         # summary statistic
