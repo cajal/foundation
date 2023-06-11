@@ -48,7 +48,7 @@ class NetworkInput:
 
 @keys
 class VisualScan(NetworkInput):
-    """Visual Scan"""
+    """Visual Scan Input"""
 
     @property
     def key_list(self):

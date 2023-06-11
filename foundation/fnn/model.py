@@ -12,90 +12,73 @@ from foundation.schemas import fnn as schema
 class _Model:
     """Model"""
 
-    @rowproperty
-    def networks(self):
-        """
-        Yields
-        ------
-        str
-            network_id
-        dict
-            parameter state dict
-        """
-        raise NotImplementedError()
+    # @rowproperty
+    # def networks(self):
+    #     """
+    #     Yields
+    #     ------
+    #     str
+    #         network_id
+    #     dict
+    #         parameter state dict
+    #     """
+    #     raise NotImplementedError()
 
-    @rowproperty
-    def previous_networks(self):
-        """
-        Returns
-        -------
-        foundation.fnn.ModelNetwork | None
-            tuple(s) | None
-        """
-        raise NotImplementedError()
+    # @rowproperty
+    # def previous_networks(self):
+    #     """
+    #     Returns
+    #     -------
+    #     foundation.fnn.ModelNetwork | None
+    #         tuple(s) | None
+    #     """
+    #     raise NotImplementedError()
 
 
 # -- Model Types --
 
 
 @schema.lookup
-class NetworkSetModel(_Model):
+class Instance(_Model):
     definition = """
-    -> NetworkSet
     -> State
     -> Loader
     -> Objective
     -> Optimizer
     -> Scheduler
+    parallel        : int unsigned      # parallel groups
     cycle           : int unsigned      # training cycle
-    seed            : int unsigned      # seed for optimization
-    instances       : int unsigned      # parallel training instances
     """
 
-    @rowproperty
-    def networks(self):
-        from foundation.fnn.compute_model import TrainNetworkSet
 
-        yield from (TrainNetworkSet & self).train()
+# @schema.lookup
+# class NetworkModel(_Model):
+#     definition = """
+#     -> Network
+#     -> State
+#     -> Loader
+#     -> Objective
+#     -> Optimizer
+#     -> Scheduler
+#     cycle           : int unsigned      # training cycle
+#     seed            : int unsigned      # seed for optimization
+#     instances       : int unsigned      # parallel training instances
+#     """
 
-    @rowproperty
-    def previous_networks(self):
-        key = self.fetch1("KEY")
-        if key["cycle"] == 0:
-            return
-        else:
-            key["cycle"] -= 1
-            return ModelNetwork & (Model.NetworkSetModel & key).fetch1("KEY")
+#     @rowproperty
+#     def networks(self):
+#         from foundation.fnn.compute_model import TrainNetwork
 
+#         yield (TrainNetwork & self).train()
 
-@schema.lookup
-class NetworkModel(_Model):
-    definition = """
-    -> Network
-    -> State
-    -> Loader
-    -> Objective
-    -> Optimizer
-    -> Scheduler
-    cycle           : int unsigned      # training cycle
-    seed            : int unsigned      # seed for optimization
-    instances       : int unsigned      # parallel training instances
-    """
-
-    @rowproperty
-    def networks(self):
-        from foundation.fnn.compute_model import TrainNetwork
-
-        yield (TrainNetwork & self).train()
-
-    @rowproperty
-    def previous_networks(self):
-        key = self.fetch1("KEY")
-        if key["cycle"] == 0:
-            return
-        else:
-            key["cycle"] -= 1
-            return ModelNetwork & (Model.NetworkModel & key).fetch1("KEY")
+#     @rowproperty
+#     def previous_networks(self):
+#         key = self.fetch1("KEY")
+#         if key["cycle"] == 0:
+#             return
+#         else:
+#             key["cycle"] -= 1
+#             return ModelNetwork & (Model.NetworkModel & key).fetch1("KEY")
 
 
 # -- Model --
@@ -103,7 +86,7 @@ class NetworkModel(_Model):
 
 @schema.link
 class Model:
-    links = [NetworkSetModel, NetworkModel]
+    links = [Instance]
     name = "model"
     comment = "neural network model"
 
@@ -112,17 +95,17 @@ class Model:
 
 
 @schema.computed
-class ModelNetwork:
+class NetworkModel:
     definition = """
-    -> Model
     -> Network
+    -> Model
     ---
     parameters      : longblob      # parameter state dict
     """
 
     @property
     def key_source(self):
-        return Model
+        raise NotImplementedError()
 
     def make(self, key):
         from foundation.utils.torch import save_to_array

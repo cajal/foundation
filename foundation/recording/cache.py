@@ -48,10 +48,10 @@ class ResampledTraces(Filepath):
     """
 
     def make(self, key):
-        from foundation.recording.compute_trace import ResampledTraces
+        from foundation.recording.compute_trace import ResampleTraces
 
-        # resamples traces
-        traces = (ResampledTraces & key).trial
+        # resampled traces
+        traces = (ResampleTraces & key).trial(trial_id=key["trial_id"])
 
         # trace values finite
         finite = np.isfinite(traces).all()

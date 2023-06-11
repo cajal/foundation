@@ -1,5 +1,5 @@
 from djutils import keys, merge, rowproperty
-from foundation.virtual import utility, recording
+from foundation.virtual import utility, stimulus, recording
 
 
 # ----------------------------- Resampling -----------------------------
@@ -59,3 +59,42 @@ class ResampledTrial:
 
         # interpolated flip index
         return flip_index(flips - start, period)
+
+
+# ----------------------------- Scan -----------------------------
+
+
+@keys
+class VisualScanTrials:
+    """Visual Scan Trials"""
+
+    @property
+    def key_list(self):
+        return [
+            stimulus.Video,
+            recording.ScanRecording,
+            recording.TrialFilterSet,
+        ]
+
+    @rowproperty
+    def trial_ids(self):
+        """
+        Returns
+        -------
+        List[str]
+            list of trial_ids (foundation.recording.Trial), ordered by trial start
+        """
+        from foundation.recording.trial import Trial, TrialSet, TrialFilterSet, TrialBounds, TrialVideo
+
+        # all trials
+        key = recording.ScanRecording & self.key
+        trials = Trial & (TrialSet & key).members
+
+        # filtered trials
+        trials = (TrialFilterSet & self.key).filter(trials)
+
+        # video trials
+        trials = merge(trials, TrialBounds, TrialVideo) & self.key
+
+        # trial ids, ordered by trial start
+        return trials.fetch("trial_id", order_by="start").tolist()

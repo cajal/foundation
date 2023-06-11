@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from djutils import keys, merge, rowproperty, keyproperty, RestrictionError
+from djutils import keys, merge, rowmethod, rowproperty, cache_rowproperty, keyproperty, RestrictionError
 from foundation.utils import tqdm
 from foundation.virtual import utility, stimulus, recording
 
@@ -10,7 +10,62 @@ from foundation.virtual import utility, stimulus, recording
 
 @keys
 class Trace:
-    """Trace Resampling"""
+    """Trace"""
+
+    @property
+    def key_list(self):
+        return [
+            recording.Trace,
+        ]
+
+    @rowproperty
+    def valid_trials(self):
+        """
+        Returns
+        -------
+        foundation.recording.Trial (tuples)
+            valid trials
+        """
+        from foundation.recording.trial import Trial, TrialSet
+
+        # trace trials
+        key = merge(self.key, recording.TraceTrials)
+        return Trial & (TrialSet & key).members
+
+
+@keys
+class Traces:
+    """Trace Set"""
+
+    @property
+    def key_list(self):
+        return [
+            recording.TraceSet & "members > 0",
+        ]
+
+    @rowproperty
+    def valid_trials(self):
+        """
+        Returns
+        -------
+        foundation.recording.Trial (tuples)
+            valid trials
+        """
+        from foundation.recording.trace import TraceSet
+        from foundation.recording.trial import Trial, TrialSet
+
+        # trace set trials
+        key = (TraceSet & self.key).members
+        key = merge(key, recording.TraceTrials)
+        return Trial & (TrialSet & key).members
+
+
+# ----------------------------- Resample Trace/Traces -----------------------------
+
+
+@keys
+class ResampleTrace:
+    """Resample Trace"""
 
     @property
     def key_list(self):
@@ -27,7 +82,7 @@ class Trace:
         Returns
         -------
         foundation.utils.resample.Resample
-            callable that resamples traces
+            callable, trace resampler
         """
         from foundation.utility.resample import Rate, Offset, Resample
         from foundation.recording.trace import Trace
@@ -41,15 +96,69 @@ class Trace:
         trace = (Trace & self.key).link
         return resample(times=trace.times, values=trace.values, target_period=period, target_offset=offset)
 
+    @rowmethod
+    def trial(self, trial_id):
+        """
+        Parameters
+        ----------
+        trial_id : str
+            key (foundation.recording.trial.Trial)
+
+        Returns
+        -------
+        1D array -- [samples]
+            resampled trace
+        """
+        # recording trial
+        trial = recording.Trial.proj() & {"trial_id": trial_id}
+
+        # ensure trial is valid
+        assert not trial - (Trace & self.key).valid_trials, "Invalid trial"
+
+        # trial start and end times
+        start, end = merge(trial, recording.TrialBounds).fetch1("start", "end")
+
+        # resampled trace
+        return self.resampler(start, end)
+
+    @rowmethod
+    def trials(self, trial_ids):
+        """
+        Parameters
+        ----------
+        trial_id : Sequence[str]
+            sequence of keys (foundation.recording.trial.Trial)
+
+        Yields
+        ------
+        1D array -- [samples]
+            resampled trace
+        """
+        # recording trials
+        trials = recording.Trial.proj() & [dict(trial_id=trial_id) for trial_id in trial_ids]
+
+        # ensure trials are valid
+        assert not trials - (Trace & self.key).valid_trials, "Invalid trials"
+
+        # trial start and end times
+        starts, ends = merge(trials, recording.TrialBounds).fetch("start", "end")
+
+        # trace resampler
+        resampler = self.resampler
+
+        for start, end in zip(starts, ends):
+            # resampled trace
+            yield resampler(start, end)
+
 
 @keys
-class Traces:
-    """Trace Set Resampling"""
+class ResampleTraces:
+    """Resample Trace Set"""
 
     @property
     def key_list(self):
         return [
-            recording.TraceSet & "members > 0",
+            recording.TraceSet,
             utility.Resample,
             utility.Offset,
             utility.Rate,
@@ -61,110 +170,47 @@ class Traces:
         Returns
         -------
         tuple[foundation.utils.resample.Resample]
-            tuple of callable that resamples traces, ordered by traceset_index
+            tuple of callables, trace resamplers, ordered by traceset_index
         """
         from foundation.recording.trace import TraceSet
 
+        # trace set
         traces = (TraceSet & self.key).members
         traces = traces.fetch("trace_id", order_by="traceset_index", as_dict=True)
         traces = tqdm(traces, desc="Traces")
 
+        # trace resamplers
         resamplers = []
         for trace in traces:
-            resampler = (Trace & trace & self.key).resampler
+            resampler = (ResampleTrace & trace & self.key).resampler
             resamplers.append(resampler)
 
         return tuple(resamplers)
 
-
-# ----------------------------- Resample Trace/Traces -----------------------------
-
-
-@keys
-class ResampledTrace:
-    """Resample Trace"""
-
-    @property
-    def key_list(self):
-        return [
-            recording.Trace,
-            recording.Trial,
-            utility.Resample,
-            utility.Offset,
-            utility.Rate,
-        ]
-
-    @keyproperty(recording.Trace, utility.Rate, utility.Offset, utility.Resample)
-    def trials(self):
+    @rowmethod
+    def trial(self, trial_id):
         """
+        Parameters
+        ----------
+        trial_id : str
+            key (foundation.recording.trial.Trial)
+
         Returns
         -------
-        pandas.Series
-            index -- str
-                : trial_id (foundation.recording.trial.Trial)
-            data -- 1D array
-                : [timepoints] ; resampled trace values
-        """
-        from foundation.recording.trial import TrialSet
-
-        # requested trials
-        trials = merge(self.key, recording.TrialBounds)
-
-        # ensure requested trials are valid
-        valid_trials = merge(recording.Trace & self.key, recording.TraceTrials)
-        if trials - (TrialSet & valid_trials).members:
-            raise RestrictionError("Requested trials do not belong to the trace.")
-
-        # fetch trials, ordered by start time
-        trial_ids, starts, ends = trials.fetch("trial_id", "start", "end", order_by="start")
-
-        # resample traces
-        resampler = (Trace & self.key).resampler
-        samples = [resampler(a, b) for a, b in zip(starts, ends)]
-
-        # pandas Series containing resampled trials
-        return pd.Series(data=samples, index=pd.Index(trial_ids, name="trial_id"))
-
-
-@keys
-class ResampledTraces:
-    """Resample Trace Set"""
-
-    @property
-    def key_list(self):
-        return [
-            recording.TraceSet & "members > 0",
-            recording.Trial,
-            utility.Resample,
-            utility.Offset,
-            utility.Rate,
-        ]
-
-    @rowproperty
-    def trial(self):
-        """
-        Returns
-        ------
         2D array -- [samples, traces]
-            resampled traces, ordered by traceset_index
+            resampled traces, ordered by traceset index
         """
-        from foundation.recording.trial import TrialSet
-        from foundation.recording.trace import TraceSet
+        # recording trial
+        trial = recording.Trial.proj() & {"trial_id": trial_id}
 
-        # ensure requested trial is valid
-        trial_sets = TrialSet & merge((TraceSet & self.key).members, recording.TraceTrials)
-        for trial_set in trial_sets.proj():
-            if self.key - (TrialSet & trial_set).members:
-                raise RestrictionError("Requested trial does not belong to the trace set.")
+        # ensure trial is valid
+        assert not trial - (Traces & self.key).valid_trials, "Invalid trial"
 
         # trial start and end times
-        start, end = merge(self.key, recording.TrialBounds).fetch1("start", "end")
+        start, end = merge(trial, recording.TrialBounds).fetch1("start", "end")
 
-        # resample traces
-        samples = [r(start, end) for r in (Traces & self.key).resamplers]
-
-        # [samples, traces]
-        return np.stack(samples, 1)
+        # resampled traces
+        return np.stack([r(start, end) for r in self.resamplers], axis=1)
 
 
 # ----------------------------- Trace Statistics -----------------------------
@@ -172,7 +218,7 @@ class ResampledTraces:
 
 @keys
 class TraceSummary:
-    """Summarize Trace"""
+    """Trace Summary"""
 
     @property
     def key_list(self):
@@ -196,15 +242,15 @@ class TraceSummary:
         from foundation.utility.stat import Summary
         from foundation.recording.trial import TrialSet
 
-        # trial set
-        trial_keys = (TrialSet & self.key).members
+        # recording trials
+        trial_ids = (TrialSet & self.key).members.fetch("trial_id", order_by="trial_id")
 
-        # resampled trace
-        samples = (ResampledTrace & self.key & trial_keys).trials
-        samples = np.concatenate(samples)
+        # resampled traces
+        trials = (ResampleTrace & self.key).trials(trial_ids)
+        trials = np.concatenate(list(trials))
 
         # summary statistic
-        return (Summary & self.key).link.summary(samples)
+        return (Summary & self.key).link.summary(trials)
 
 
 # ----------------------------- Standardized Trace/Traces -----------------------------
@@ -313,47 +359,47 @@ class StandardizedTraces:
 # ----------------------------- Visual Trace -----------------------------
 
 
-@keys
-class VisualTrace:
-    """Visual Trace"""
+# @keys
+# class VisualTrace:
+#     """Visual Trace"""
 
-    @property
-    def key_list(self):
-        return [
-            stimulus.Video,
-            recording.TrialFilterSet,
-            recording.Trace,
-            recording.TrialSet,
-            utility.Standardize,
-            utility.Resample,
-            utility.Offset,
-            utility.Rate,
-        ]
+#     @property
+#     def key_list(self):
+#         return [
+#             stimulus.Video,
+#             recording.TrialFilterSet,
+#             recording.Trace,
+#             recording.TrialSet,
+#             utility.Standardize,
+#             utility.Resample,
+#             utility.Offset,
+#             utility.Rate,
+#         ]
 
-    @rowproperty
-    def response(self):
-        """
-        Returns
-        -------
-        foundation.utils.response.Trials
-            response trials
-        """
-        from foundation.utils.response import Trials
-        from foundation.recording.trial import Trial, TrialVideo, TrialSet, TrialFilterSet
+#     @rowproperty
+#     def response(self):
+#         """
+#         Returns
+#         -------
+#         foundation.utils.response.Trials
+#             response trials
+#         """
+#         from foundation.utils.response import Trials
+#         from foundation.recording.trial import Trial, TrialVideo, TrialSet, TrialFilterSet
 
-        # all trials
-        trials = merge(recording.Trace & self.key, recording.TraceTrials)
-        trials = Trial & (TrialSet & trials).members
+#         # all trials
+#         trials = merge(recording.Trace & self.key, recording.TraceTrials)
+#         trials = Trial & (TrialSet & trials).members
 
-        # restricted trials
-        trials = (TrialFilterSet & self.key).filter(trials)
-        trials = merge(trials, TrialVideo) & self.key
+#         # restricted trials
+#         trials = (TrialFilterSet & self.key).filter(trials)
+#         trials = merge(trials, TrialVideo) & self.key
 
-        # trace trials
-        trials = (ResampledTrace & trials & self.key).trials
+#         # trace trials
+#         trials = (ResampledTrace & trials & self.key).trials
 
-        # trace standardization
-        transform = (StandardizedTrace & self.key).transform
+#         # trace standardization
+#         transform = (StandardizedTrace & self.key).transform
 
-        # visual response
-        return Trials(data=map(transform, trials.values), index=trials.index, tolerance=1)
+#         # visual response
+#         return Trials(data=map(transform, trials.values), index=trials.index, tolerance=1)

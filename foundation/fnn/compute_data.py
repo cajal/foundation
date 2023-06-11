@@ -52,13 +52,17 @@ class NetworkData:
         """
         raise NotImplementedError()
 
+    @rowmethod
+    def visual_trials(self, video_id, trial_filterset_id=None):
+        pass
+
 
 # -- Network Data Types --
 
 
 @keys
 class VisualScan(NetworkData):
-    """Visual Scan"""
+    """Visual Scan Data"""
 
     @property
     def key_list(self):

@@ -79,7 +79,7 @@ class VisualNetwork(_Network):
         return module
 
 
-# -- Neural Network Types --
+# -- Neural Network --
 
 
 @schema.link

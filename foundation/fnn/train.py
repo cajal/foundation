@@ -129,6 +129,7 @@ class SgdClip(_Optimizer):
     nesterov    : bool              # enables nesterov momentum
     clip        : decimal(6, 6)     # adaptive gradient clipping factor
     eps         : decimal(6, 6)     # adaptive gradient clipping mininum
+    seed        : int unsigned      # seed for optimization
     """
 
     @rowproperty
@@ -218,7 +219,7 @@ class _State:
     """State"""
 
     @rowproperty
-    def network_state(self):
+    def state(self):
         """
         Returns
         -------
@@ -232,38 +233,14 @@ class _State:
 
 
 @schema.lookup
-class RandomState(_State):
+class Initial(_State):
     definition = """
     seed            : int unsigned      # seed for initialization
     """
 
     @rowproperty
-    def network_state(self):
-        from foundation.fnn.compute_state import RandomNetwork
-
-        return RandomNetwork & self
-
-
-@schema.lookup
-class NetworkSetCore(_State):
-    definition = """
-    -> NetworkSet
-    -> Loader
-    -> Objective
-    -> Optimizer
-    -> Scheduler
-    -> RandomState.proj(state_seed="seed")
-    model_seed      : int unsigned      # seed for optimization
-    cycle           : int unsigned      # training cycle
-    instances       : int unsigned      # parallel training instances
-    freeze_core     : bool              # freeze core parameters
-    """
-
-    @rowproperty
-    def network_state(self):
-        from foundation.fnn.compute_state import NetworkSetCore
-
-        return NetworkSetCore & self
+    def state(self):
+        raise NotImplementedError()
 
 
 # -- State --
@@ -271,6 +248,6 @@ class NetworkSetCore(_State):
 
 @schema.link
 class State:
-    links = [RandomState, NetworkSetCore]
+    links = [Initial]
     name = "state"
     comment = "network state"
