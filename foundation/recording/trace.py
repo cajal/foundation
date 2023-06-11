@@ -62,10 +62,9 @@ class _Scan(_Trace):
 
     @rowproperty
     def trialset_id(self):
-        key = pipe_stim.Trial.proj() & self
-        key = merge(key, Trial.ScanTrial)
-        key = TrialSet.fill(key, prompt=False, silent=True)
-        return key["trialset_id"]
+        from foundation.recording.scan import ScanRecording
+
+        return merge(self, ScanRecording).fetch1("trialset_id")
 
 
 @schema.lookup
