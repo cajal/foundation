@@ -114,10 +114,10 @@ class _ScanTraces:
         return [
             self.traces_table,
             recording.ScanTrials,
-            utility.Rate,
-            utility.Offset,
-            utility.Resample,
             utility.Standardize,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
         ]
 
     def fill(self):

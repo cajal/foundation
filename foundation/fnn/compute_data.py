@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from datajoint import U
 from djutils import keys, merge, rowproperty, rowmethod, cache_rowproperty
-from foundation.utils import logger, tqdm, disable_tqdm
+from foundation.utils import logger, tqdm
 from foundation.virtual import utility, stimulus, recording, fnn
 
 
@@ -13,16 +13,6 @@ from foundation.virtual import utility, stimulus, recording, fnn
 
 class NetworkData:
     """Network Data"""
-
-    @rowproperty
-    def dataset(self):
-        """
-        Returns
-        -------
-        fnn.data.Dataset
-            network dataset
-        """
-        raise NotImplementedError()
 
     @rowproperty
     def sizes(self):
@@ -53,8 +43,29 @@ class NetworkData:
         raise NotImplementedError()
 
     @rowmethod
-    def visual_trials(self, video_id, trial_filterset_id=None):
-        pass
+    def trials(self, training=None):
+        """
+        Parameters
+        ----------
+        training : bool | None
+            True (training trials) | False (non-training trials) | None (all trials)
+
+        Returns
+        -------
+        foundation.recording.trial.Trial (tuples)
+            recording trials
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def trainset(self):
+        """
+        Returns
+        -------
+        fnn.data.Dataset
+            training dataset
+        """
+        raise NotImplementedError()
 
 
 # -- Network Data Types --
@@ -66,17 +77,19 @@ class VisualScan(NetworkData):
 
     @property
     def key_list(self):
-        return [fnn.VisualScan]
+        return [
+            fnn.VisualScan,
+        ]
 
     @rowproperty
-    def stimuli_key(self):
+    def training_stimuli(self):
         return merge(
             self.key.proj(spec_id="stimuli_id"),
             fnn.Spec.VideoSpec,
         ).fetch1()
 
     @rowproperty
-    def perspectives_key(self):
+    def training_perspectives(self):
         return merge(
             self.key.proj(spec_id="perspectives_id"),
             fnn.Spec.TraceSpec,
@@ -85,7 +98,7 @@ class VisualScan(NetworkData):
         ).fetch1()
 
     @rowproperty
-    def modulations_key(self):
+    def training_modulations(self):
         return merge(
             self.key.proj(spec_id="modulations_id"),
             fnn.Spec.TraceSpec,
@@ -94,7 +107,7 @@ class VisualScan(NetworkData):
         ).fetch1()
 
     @rowproperty
-    def units_key(self):
+    def training_units(self):
         return merge(
             self.key.proj(spec_id="units_id"),
             fnn.Spec.TraceSpec,
@@ -103,90 +116,116 @@ class VisualScan(NetworkData):
         ).fetch1()
 
     @rowproperty
-    def trials(self):
-        from foundation.recording.trial import Trial, TrialSet
-
-        key = merge(self.key, recording.ScanTrials).fetch1()
-
-        return Trial & (TrialSet & key).members
-
-    @rowproperty
-    def samples(self):
-        from foundation.recording.trial import TrialSamples
-
-        trials = merge(
-            self.trials,
-            TrialSamples & self.key,
-        )
-        trial_id, samples = trials.fetch("trial_id", "samples", order_by="trial_id")
-        index = pd.Index(trial_id, name="trial_id")
-
-        return pd.Series(data=samples, index=index)
-
-    @rowproperty
-    def stimuli(self):
-        from fnn.data import NpyFile
-
-        key = self.stimuli_key
-        trials = merge(
-            self.trials,
-            recording.TrialVideo,
-            stimulus.ResizedVideo & key,
-            recording.ResampledTrial & key,
-        )
-        trial_id, video, imap = trials.fetch("trial_id", "video", "index", order_by="trial_id")
-        index = pd.Index(trial_id, name="trial_id")
-        data = [NpyFile(v, indexmap=np.load(i), dtype=np.uint8) for v, i in zip(video, tqdm(imap, desc="Video"))]
-
-        return pd.Series(data=data, index=index)
-
-    @rowmethod
-    def _traces(self, key):
-        from foundation.recording.compute_trace import StandardizedTraces
-        from fnn.data import NpyFile
-
-        transform = (StandardizedTraces & key).transform
-        trials = merge(
-            self.trials,
-            recording.ResampledTraces & key,
-        )
-        trial_id, traces = trials.fetch("trial_id", "traces", order_by="trial_id")
-        index = pd.Index(trial_id, name="trial_id")
-        data = [NpyFile(t, transform=transform, dtype=np.float32) for t in tqdm(traces, desc="Traces")]
-
-        return pd.Series(data=data, index=index)
-
-    @rowproperty
-    def dataset(self):
-        from fnn.data import Dataset
-
-        data = [
-            self.samples.rename("samples"),
-            self.stimuli.rename("stimuli"),
-            self._traces(self.perspectives_key).rename("perspectives"),
-            self._traces(self.modulations_key).rename("modulations"),
-            self._traces(self.units_key).rename("units"),
-        ]
-        df = pd.concat(data, axis=1, join="outer")
-        assert not df.isnull().values.any()
-
-        return Dataset(df)
-
-    @rowproperty
     def sizes(self):
-        stimuli = merge(self.trials, recording.TrialVideo, stimulus.VideoInfo)
+        # number of stimulus channels
+        stimuli = merge(self.trials(training=True), recording.TrialVideo, stimulus.VideoInfo)
         stimuli = (U("channels") & stimuli).fetch1("channels")
         sizes = [stimuli]
 
+        # number of perspective, modulation, and unit traces
         for attr in ["perspectives", "modulations", "units"]:
-            traces = recording.TraceSet & getattr(self, f"{attr}_key")
+            traces = recording.TraceSet & getattr(self, f"training_{attr}")
             traces = traces.fetch1("members")
             sizes.append(traces)
 
-        return sizes
+        return tuple(sizes)
 
     @rowproperty
     def timing(self):
         from foundation.utility.resample import Rate, Offset
 
-        return (Rate & self.key).link.period, (Offset & self.key).link.offset
+        # sampling period
+        period = (Rate & self.key).link.period
+
+        # response offset
+        offset = (Offset & self.key).link.offset
+
+        return period, offset
+
+    @rowmethod
+    def trials(self, training=None):
+        from foundation.recording.trial import Trial, TrialSet
+
+        if training is None:
+            # all scan trials
+            key = merge(self.key, recording.ScanRecording)
+            trials = Trial & (TrialSet & key).members
+
+        elif training:
+            # training trials
+            key = merge(self.key, recording.ScanTrials)
+            trials = Trial & (TrialSet & key).members
+
+        else:
+            # non-training trials
+            key = merge(self.key, recording.ScanRecording)
+            trials = Trial & (TrialSet & key).members
+
+            key = merge(self.key, recording.ScanTrials)
+            trials = trials - (TrialSet & key).members
+
+        return trials
+
+    @rowproperty
+    def trainset(self):
+        from foundation.recording.compute_trace import StandardizedTraces
+        from fnn.data import NpyFile, Dataset
+
+        # data keys
+        key_s = self.training_stimuli
+        key_p = self.training_perspectives
+        key_m = self.training_modulations
+        key_u = self.training_units
+
+        # data transforms
+        transform_p = (StandardizedTraces & key_p).transform
+        transform_m = (StandardizedTraces & key_m).transform
+        transform_u = (StandardizedTraces & key_u).transform
+
+        # data lists
+        stimuli, perspectives, modulations, units = [], [], [], []
+
+        # training trials
+        trials = merge(
+            self.trials(training=True),
+            recording.TrialBounds,
+            recording.TrialSamples,
+            recording.TrialVideo,
+            stimulus.Video,
+        )
+        trials, index, samples = trials.fetch("KEY", "trial_id", "samples", order_by="start")
+
+        # load trials
+        for trial in tqdm(trials, desc="Trials"):
+
+            # stimuli
+            video, imap = (stimulus.ResizedVideo * recording.ResampledTrial & trial & key_s).fetch1("video", "index")
+            trial_stimuli = NpyFile(video, indexmap=np.load(imap), dtype=np.uint8)
+
+            # perspectives
+            traces = (recording.ResampledTraces & trial & key_p).fetch1("traces")
+            trial_perspectives = NpyFile(traces, transform=transform_p, dtype=np.float32)
+
+            # modulations
+            traces = (recording.ResampledTraces & trial & key_m).fetch1("traces")
+            trial_modulations = NpyFile(traces, transform=transform_m, dtype=np.float32)
+
+            # units
+            traces = (recording.ResampledTraces & trial & key_u).fetch1("traces")
+            trial_units = NpyFile(traces, transform=transform_u, dtype=np.float32)
+
+            # append
+            stimuli.append(trial_stimuli)
+            perspectives.append(trial_perspectives)
+            modulations.append(trial_modulations)
+            units.append(trial_units)
+
+        # training dataset
+        data = {
+            "samples": samples,
+            "stimuli": stimuli,
+            "perspectives": perspectives,
+            "modulations": modulations,
+            "units": units,
+        }
+        return Dataset(data, index=pd.Index(index, name="trial_id"))
