@@ -194,14 +194,6 @@ class MonitorRetina(_Perspective):
             nonlinear=nonlinear,
         )
 
-        # m = (Monitor & self).link.nn
-        # l = (Luminance & self).link.nn
-        # r = (Retina & self).link.nn
-        # h, w, f, n = self.fetch1("height", "width", "features", "nonlinear")
-        # f = list(map(int, f.split(",")))
-
-        # return MonitorRetina(monitor=m, luminance=l, retina=r, height=h, width=w, features=f, nonlinear=n)
-
 
 # -- Perspective --
 
