@@ -75,9 +75,9 @@ class NetworkData:
         video_id : str
             key (foundation.stimulus.video.Video)
         perspectives : bool
-            include perspectives
+            True (return trial perspectives) | False (return None)
         modulations : bool
-            include modulations
+            True (return trial modulations) | False (return None)
         training : bool | None
             True (training trials) | False (non-training trials) | None (all trials)
 
@@ -86,9 +86,9 @@ class NetworkData:
         Iterable[3D array -- [height, width, channels], dtype=uint8]
             video frames
         None | Iterable[2D array -- [trials, perspectives], dtype=float-like]
-            recorded trial perspectives
+            trial perspectives
         None | Iterable[2D array -- [trials, modulations], dtype=float-like]
-            recorded trial modulations
+            trial modulations
         None | List[str]
             list of trial_ids/keys (foundation.recording.trial.Trial)
         """
