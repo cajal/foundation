@@ -83,14 +83,14 @@ class NetworkData:
 
         Returns
         -------
-        Iterable[3D array -- [height, width, channels], dtype=uint8]
-            video frames
-        None | Iterable[2D array -- [trials, perspectives], dtype=float-like]
-            trial perspectives
-        None | Iterable[2D array -- [trials, modulations], dtype=float-like]
-            trial modulations
+        Iterable[3D array]
+            video frames -- [height, width, channels] x samples --- dtype=uint8
+        None | Iterable[2D array]
+            trial perspectives -- [trials, perspectives] x samples -- dtype=float-like
+        None | Iterable[2D array]
+            trial modulations -- [trials, modulations] x samples -- dtype=float-like
         None | List[str]
-            list of trial_ids/keys (foundation.recording.trial.Trial)
+            list of trial_ids -- key (foundation.recording.trial.Trial)
         """
         raise NotImplementedError()
 
