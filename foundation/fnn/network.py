@@ -21,7 +21,7 @@ class _Network:
         Returns
         -------
         foundation.fnn.compute_data.NetworkData (row)
-            network input
+            network data
         """
         raise NotImplementedError()
 
@@ -54,7 +54,7 @@ class VisualNetwork(_Network):
 
     @rowproperty
     def data(self):
-        return (Data & self).link.network_data
+        return (Data & self).link.data
 
     @rowproperty
     def module(self):

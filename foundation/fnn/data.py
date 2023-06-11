@@ -43,22 +43,12 @@ class _Data:
     """Data"""
 
     @rowproperty
-    def network_data(self):
+    def data(self):
         """
         Returns
         -------
         foundation.fnn.compute_data.NetworkData (row)
-            network input
-        """
-        raise NotImplementedError()
-
-    @rowproperty
-    def network_input(self):
-        """
-        Returns
-        -------
-        foundation.fnn.compute_input.NetworkInput (row)
-            network input
+            network data
         """
         raise NotImplementedError()
 
@@ -81,14 +71,8 @@ class VisualScan(_Data):
     """
 
     @rowproperty
-    def network_data(self):
+    def data(self):
         from foundation.fnn.compute_data import VisualScan
-
-        return VisualScan & self
-
-    @rowproperty
-    def network_input(self):
-        from foundation.fnn.compute_input import VisualScan
 
         return VisualScan & self
 
@@ -100,4 +84,4 @@ class VisualScan(_Data):
 class Data:
     links = [VisualScan]
     name = "data"
-    comment = "fnn data"
+    comment = "network data"
