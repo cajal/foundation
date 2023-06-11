@@ -53,21 +53,21 @@ class Monitor:
     name = "monitor"
 
 
-# ----------------------------- Luminance -----------------------------
+# ----------------------------- Pixel Intensity -----------------------------
 
-# -- Luminance Base --
+# -- Pixel Intensity Base --
 
 
-class _Luminance:
-    """Luminance"""
+class _Pixel:
+    """Pixel Intensity"""
 
     @rowproperty
     def nn(self):
         """
         Returns
         -------
-        fnn.model.luminances.Luminance
-            luminance component
+        fnn.model.pixels.Pixel
+            pixel intensity
         """
         raise NotImplementedError()
 
@@ -75,30 +75,25 @@ class _Luminance:
 # -- Luminance Types --
 
 
-@schema.lookup
-class Power(_Luminance):
-    definition = """
-    power           : decimal(6, 4)     # luminance power
-    scale           : decimal(6, 4)     # luminance scale
-    offset          : decimal(6, 4)     # luminance offset
-    """
+@schema.method
+class Raw(_Pixel):
+    name = "raw"
+    comment = "raw pixel intensity"
 
     @rowproperty
     def nn(self):
-        from fnn.model.luminances import Power
+        from fnn.model.pixels import Raw
 
-        p, s, o = map(float, self.fetch1("power", "scale", "offset"))
-
-        return Power(power=p, scale=s, offset=o)
+        return Raw()
 
 
-# -- Luminance --
+# -- Pixel Intensity --
 
 
 @schema.link
-class Luminance:
-    links = [Power]
-    name = "luminance"
+class Pixel:
+    links = [Raw]
+    name = "pixel"
 
 
 # ----------------------------- Retina -----------------------------
@@ -171,8 +166,9 @@ class _Perspective:
 class MonitorRetina(_Perspective):
     definition = """
     -> Monitor
-    -> Luminance
+    -> Pixel.proj(monitor_pixel_id="pixel_id")
     -> Retina
+    -> Pixel.proj(retina_pixel_id="pixel_id")
     height          : int unsigned  # retina height
     width           : int unsigned  # retina width
     features        : varchar(128)  # mlp features (csv)
@@ -183,13 +179,28 @@ class MonitorRetina(_Perspective):
     def nn(self):
         from fnn.model.perspectives import MonitorRetina
 
-        m = (Monitor & self).link.nn
-        l = (Luminance & self).link.nn
-        r = (Retina & self).link.nn
-        h, w, f, n = self.fetch1("height", "width", "features", "nonlinear")
-        f = list(map(int, f.split(",")))
+        monitor_key = self.proj(pixel_id="monitor_pixel_id")
+        retina_key = self.proj(pixel_id="retina_pixel_id")
+        height, width, features, nonlinear = self.fetch1("height", "width", "features", "nonlinear")
 
-        return MonitorRetina(monitor=m, luminance=l, retina=r, height=h, width=w, features=f, nonlinear=n)
+        return MonitorRetina(
+            monitor=(Monitor & self).link.nn,
+            monitor_pixel=(Pixel & monitor_key).link.nn,
+            retina=(Retina & self).link.nn,
+            retina_pixel=(Pixel & retina_key).link.nn,
+            height=height,
+            width=width,
+            features=features.split(","),
+            nonlinear=nonlinear,
+        )
+
+        # m = (Monitor & self).link.nn
+        # l = (Luminance & self).link.nn
+        # r = (Retina & self).link.nn
+        # h, w, f, n = self.fetch1("height", "width", "features", "nonlinear")
+        # f = list(map(int, f.split(",")))
+
+        # return MonitorRetina(monitor=m, luminance=l, retina=r, height=h, width=w, features=f, nonlinear=n)
 
 
 # -- Perspective --
