@@ -29,10 +29,10 @@ class _TrainNetwork:
         from foundation.fnn.network import Network
         from foundation.fnn.model import Model
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
-        from foundation.fnn.cache import NetworkModelInfo, NetworkModelCheckpoint
+        from foundation.fnn.cache import NetworkInfo, NetworkCheckpoint
 
         network_id = self.key.fetch1("network_id")
-        checkpoint = NetworkModelCheckpoint & {"model_id": model_id} & "rank >= 0" & f"rank < {size}"
+        checkpoint = NetworkCheckpoint & {"model_id": model_id} & "rank >= 0" & f"rank < {size}"
         init = not checkpoint and cycle == 0
         cuda = device("cuda", current_device())
 
@@ -78,14 +78,14 @@ class _TrainNetwork:
         for epoch, info in optimizer.optimize(
             loader=loader, objective=objective, parameters=params, groups=groups, seed=seed
         ):
-            NetworkModelInfo.fill(
+            NetworkInfo.fill(
                 model_id=model_id,
                 network_id=network_id,
                 rank=rank,
                 epoch=epoch,
                 info=info,
             )
-            NetworkModelCheckpoint.fill(
+            NetworkCheckpoint.fill(
                 model_id=model_id,
                 network_id=network_id,
                 rank=rank,
@@ -143,7 +143,7 @@ class TrainNetworkSet:
         from torch.multiprocessing import spawn
         from foundation.fnn.train import Scheduler
         from foundation.fnn.network import NetworkSet
-        from foundation.fnn.cache import NetworkModelCheckpoint as Checkpoint
+        from foundation.fnn.cache import NetworkCheckpoint as Checkpoint
 
         nets = merge((NetworkSet & self.key).members * self.key, fnn.Model.NetworkSetModel)
         nets = nets.fetch("network_id", "model_id", as_dict=True, order_by="network_id")
@@ -213,7 +213,7 @@ class TrainNetwork:
         from torch.cuda import device_count
         from torch.multiprocessing import spawn
         from foundation.fnn.train import Scheduler
-        from foundation.fnn.cache import NetworkModelCheckpoint as Checkpoint
+        from foundation.fnn.cache import NetworkCheckpoint as Checkpoint
 
         key = merge(self.key, fnn.Model.NetworkModel)
         size, model_id = key.fetch1("instances", "model_id")

@@ -58,12 +58,12 @@ class Instance(NetworkModel):
         from foundation.fnn.network import Network
         from foundation.fnn.model import Model
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
-        from foundation.fnn.cache import NetworkModelInfo, NetworkModelCheckpoint, NetworkModelDone
+        from foundation.fnn.cache import NetworkInfo, NetworkCheckpoint, NetworkDone
 
         # model id, cycle, checkpoint
         key = merge(self.key, fnn.Model.Instance)
         model_id, cycle, groups = key.fetch1("model_id", "cycle", "parallel")
-        checkpoint = NetworkModelCheckpoint & {"rank": rank, "network_id": network_id, "model_id": model_id}
+        checkpoint = NetworkCheckpoint & {"rank": rank, "network_id": network_id, "model_id": model_id}
         initialize = (cycle == 0) and (not checkpoint)
 
         # network module
@@ -118,7 +118,7 @@ class Instance(NetworkModel):
         for epoch, info in optimizer.optimize(loader=loader, objective=objective, parameters=params, groups=groups):
 
             # log epoch info
-            NetworkModelInfo.fill(
+            NetworkInfo.fill(
                 model_id=model_id,
                 network_id=network_id,
                 rank=rank,
@@ -127,7 +127,7 @@ class Instance(NetworkModel):
             )
 
             # save checkpoint
-            NetworkModelCheckpoint.fill(
+            NetworkCheckpoint.fill(
                 model_id=model_id,
                 network_id=network_id,
                 rank=rank,
@@ -137,7 +137,7 @@ class Instance(NetworkModel):
 
         # register done
         key = {"rank": rank, "network_id": network_id, "model_id": model_id, "epoch": epoch}
-        NetworkModelDone.insert1(key)
+        NetworkDone.insert1(key)
 
     @staticmethod
     def _fn(rank, size, model_id, network_id, port=23456, backend="nccl"):
@@ -183,7 +183,7 @@ class Instance(NetworkModel):
         from random import randint
         from torch.cuda import device_count
         from torch.multiprocessing import spawn
-        from foundation.fnn.cache import NetworkModelCheckpoint, NetworkModelDone
+        from foundation.fnn.cache import NetworkCheckpoint, NetworkDone
 
         # tcp port
         port = randint(10000, 60000)
@@ -195,7 +195,7 @@ class Instance(NetworkModel):
         assert device_count() >= size, "Insufficient cuda devices"
 
         # verify checkpoints
-        checkpoint = NetworkModelCheckpoint & {"model_id": model_id, "network_id": network_id}
+        checkpoint = NetworkCheckpoint & {"model_id": model_id, "network_id": network_id}
         if checkpoint:
             ranks, epochs = checkpoint.fetch("rank", "epoch", order_by="rank")
             assert np.array_equal(ranks, np.arange(size)), "Invalid checkpoint ranks"
@@ -213,7 +213,7 @@ class Instance(NetworkModel):
         conn.connect()
 
         # trained keys
-        done = NetworkModelDone & {"model_id": model_id, "network_id": network_id}
+        done = NetworkDone & {"model_id": model_id, "network_id": network_id}
         done = done.fetch(as_dict=True, order_by="rank")
 
         # verify keys
@@ -221,6 +221,6 @@ class Instance(NetworkModel):
         assert np.unique([_["epoch"] for _ in done]).size == 1, "Invalid done epochs"
 
         # trained network parameters
-        params = (NetworkModelCheckpoint & done[0]).load()["state_dict"]
+        params = (NetworkCheckpoint & done[0]).load()["state_dict"]
 
         yield network_id, params

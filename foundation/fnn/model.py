@@ -64,7 +64,8 @@ class NetworkModel:
     -> Network
     -> Model
     ---
-    parameters      : longblob      # parameter state dict
+    parameters                              : longblob      # parameter state dict
+    network_model_ts = CURRENT_TIMESTAMP    : timestamp     # automatic timestamp
     """
 
     @property
@@ -90,12 +91,24 @@ class NetworkModel:
 
     @rowmethod
     def parameters(self, device="cpu"):
+        """
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            pytorch state dict
+        """
         from foundation.utils.torch import load_from_array
 
         return load_from_array(self.fetch1("parameters"), map_location=device)
 
     @rowproperty
     def model(self):
+        """
+        Returns
+        -------
+        fnn.networks.Network
+            trained network module
+        """
         from foundation.utils.torch import cuda_enabled
 
         module = (Network & self).link.module.freeze()

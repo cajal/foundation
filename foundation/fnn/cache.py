@@ -8,14 +8,15 @@ from foundation.schemas import fnn as schema
 
 
 @schema.lookup
-class NetworkModelInfo:
+class NetworkInfo:
     definition = """
     -> Network
     -> Model
-    rank        : int unsigned      # training rank
-    epoch       : int unsigned      # training epoch
+    rank                                    : int unsigned  # training rank
+    epoch                                   : int unsigned  # training epoch
     ---
-    info        : longblob          # training info
+    info                                    : longblob      # training info
+    network_info_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
     """
 
     @classmethod
@@ -39,18 +40,19 @@ class NetworkModelInfo:
 
     def df(self, device="cpu"):
         keys = tqdm(self.fetch("KEY", order_by=self.primary_key))
-        return pd.DataFrame([dict(k, **(NetworkModelInfo & k).load(device=device)) for k in keys])
+        return pd.DataFrame([dict(k, **(NetworkInfo & k).load(device=device)) for k in keys])
 
 
 @schema.lookup
-class NetworkModelCheckpoint:
+class NetworkCheckpoint:
     definition = """
     -> Network
     -> Model
-    rank        : int unsigned      # training rank
+    rank                                        : int unsigned  # training rank
     ---
-    epoch       : int unsigned      # training epoch
-    checkpoint  : longblob          # training checkpoint
+    epoch                                       : int unsigned  # training epoch
+    checkpoint                                  : longblob      # training checkpoint
+    network_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp     # automatic timestamp
     """
 
     @classmethod
@@ -74,11 +76,12 @@ class NetworkModelCheckpoint:
 
 
 @schema.lookup
-class NetworkModelDone:
+class NetworkDone:
     definition = """
     -> Network
     -> Model
-    rank        : int unsigned      # training rank
+    rank                                    : int unsigned  # training rank
     ---
-    epoch       : int unsigned      # training epoch
+    epoch                                   : int unsigned  # training epoch
+    network_done_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
     """
