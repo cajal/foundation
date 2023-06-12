@@ -104,7 +104,8 @@ class Instance(NetworkModel):
         objective._init(module=module)
 
         # training dataset
-        dataset = (Network & self.key).link.data.trainset
+        network = Network & {"network_id": network_id}
+        dataset = network.link.data.trainset
 
         # data loader
         loader = (Loader & self.key).link.loader
