@@ -138,7 +138,7 @@ class _ScanTraces:
                 trials = (TrialSet & trials).members
 
                 # trace summary stats
-                summaries = (Standardize & key).link.summary_keys.proj()
+                summaries = (Standardize & key).link.summaries.proj()
                 TraceSummary.populate(traces, trials, summaries, key, display_progress=True, reserve_jobs=True)
 
                 # resampled trace

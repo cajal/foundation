@@ -29,10 +29,10 @@ class _TrainNetwork:
         from foundation.fnn.network import Network
         from foundation.fnn.model import Model
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
-        from foundation.fnn.cache import ModelNetworkInfo, ModelNetworkCheckpoint
+        from foundation.fnn.cache import NetworkModelInfo, NetworkModelCheckpoint
 
         network_id = self.key.fetch1("network_id")
-        checkpoint = ModelNetworkCheckpoint & {"model_id": model_id} & "rank >= 0" & f"rank < {size}"
+        checkpoint = NetworkModelCheckpoint & {"model_id": model_id} & "rank >= 0" & f"rank < {size}"
         init = not checkpoint and cycle == 0
         cuda = device("cuda", current_device())
 
@@ -78,14 +78,14 @@ class _TrainNetwork:
         for epoch, info in optimizer.optimize(
             loader=loader, objective=objective, parameters=params, groups=groups, seed=seed
         ):
-            ModelNetworkInfo.fill(
+            NetworkModelInfo.fill(
                 model_id=model_id,
                 network_id=network_id,
                 rank=rank,
                 epoch=epoch,
                 info=info,
             )
-            ModelNetworkCheckpoint.fill(
+            NetworkModelCheckpoint.fill(
                 model_id=model_id,
                 network_id=network_id,
                 rank=rank,
@@ -143,12 +143,12 @@ class TrainNetworkSet:
         from torch.multiprocessing import spawn
         from foundation.fnn.train import Scheduler
         from foundation.fnn.network import NetworkSet
-        from foundation.fnn.cache import ModelNetworkCheckpoint as Checkpoint
+        from foundation.fnn.cache import NetworkModelCheckpoint as Checkpoint
 
         nets = merge((NetworkSet & self.key).members * self.key, fnn.Model.NetworkSetModel)
         nets = nets.fetch("network_id", "model_id", as_dict=True, order_by="network_id")
 
-        keys = nets * self.key.fetch1("instances")
+        keys = nets * self.key.fetch1("instances") # WRONG: use np.repeat instead
         size = len(keys)
         assert device_count() >= size
 
@@ -213,7 +213,7 @@ class TrainNetwork:
         from torch.cuda import device_count
         from torch.multiprocessing import spawn
         from foundation.fnn.train import Scheduler
-        from foundation.fnn.cache import ModelNetworkCheckpoint as Checkpoint
+        from foundation.fnn.cache import NetworkModelCheckpoint as Checkpoint
 
         key = merge(self.key, fnn.Model.NetworkModel)
         size, model_id = key.fetch1("instances", "model_id")

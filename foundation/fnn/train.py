@@ -240,7 +240,9 @@ class Initial(_State):
 
     @rowproperty
     def state(self):
-        raise NotImplementedError()
+        from foundation.fnn.compute_state import Initial
+
+        return Initial & self
 
 
 # -- State --

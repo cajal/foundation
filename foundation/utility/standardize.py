@@ -14,12 +14,12 @@ class _Standardize:
     """Standardize using Summary statistics"""
 
     @rowproperty
-    def summary_keys(self):
+    def summaries(self):
         """
         Returns
         -------
         foundation.utility.stat.Summary
-            tuples
+            rows
         """
         raise NotImplementedError()
 
@@ -53,7 +53,7 @@ class Affine(_Standardize):
     """
 
     @rowproperty
-    def summary_keys(self):
+    def summaries(self):
         return Summary & [dict(summary_id=v) for v in self.fetch1().values()]
 
     @rowmethod
@@ -71,7 +71,7 @@ class Scale(_Standardize):
     """
 
     @rowproperty
-    def summary_keys(self):
+    def summaries(self):
         return Summary & self
 
     @rowmethod

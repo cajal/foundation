@@ -12,27 +12,15 @@ from foundation.schemas import fnn as schema
 class _Model:
     """Model"""
 
-    # @rowproperty
-    # def networks(self):
-    #     """
-    #     Yields
-    #     ------
-    #     str
-    #         network_id
-    #     dict
-    #         parameter state dict
-    #     """
-    #     raise NotImplementedError()
-
-    # @rowproperty
-    # def previous_networks(self):
-    #     """
-    #     Returns
-    #     -------
-    #     foundation.fnn.ModelNetwork | None
-    #         tuple(s) | None
-    #     """
-    #     raise NotImplementedError()
+    @rowproperty
+    def model(self):
+        """
+        Returns
+        -------
+        foundation.fnn.compute_model.NetworkModel (row)
+            network model
+        """
+        raise NotImplementedError()
 
 
 # -- Model Types --
@@ -49,36 +37,6 @@ class Instance(_Model):
     parallel        : int unsigned      # parallel groups
     cycle           : int unsigned      # training cycle
     """
-
-
-# @schema.lookup
-# class NetworkModel(_Model):
-#     definition = """
-#     -> Network
-#     -> State
-#     -> Loader
-#     -> Objective
-#     -> Optimizer
-#     -> Scheduler
-#     cycle           : int unsigned      # training cycle
-#     seed            : int unsigned      # seed for optimization
-#     instances       : int unsigned      # parallel training instances
-#     """
-
-#     @rowproperty
-#     def networks(self):
-#         from foundation.fnn.compute_model import TrainNetwork
-
-#         yield (TrainNetwork & self).train()
-
-#     @rowproperty
-#     def previous_networks(self):
-#         key = self.fetch1("KEY")
-#         if key["cycle"] == 0:
-#             return
-#         else:
-#             key["cycle"] -= 1
-#             return ModelNetwork & (Model.NetworkModel & key).fetch1("KEY")
 
 
 # -- Model --
@@ -105,18 +63,23 @@ class NetworkModel:
 
     @property
     def key_source(self):
-        raise NotImplementedError()
+        keys = [
+            Model.Instance,
+        ]
+        return (Network * Model).proj() & keys
 
     def make(self, key):
         from foundation.utils.torch import save_to_array
 
-        for network_id, state_dict in (Model & key).link.networks:
+        # network trainer
+        trainer = (Model & key).link.train(network_id=key["network_id"])
 
-            _key = dict(
-                key,
-                network_id=network_id,
-                parameters=save_to_array(state_dict),
-            )
+        for network_id, state_dict in trainer:
+
+            # network parameters
+            _key = dict(key, network_id=network_id, parameters=save_to_array(state_dict))
+
+            # insert
             self.insert1(_key)
 
     @rowmethod

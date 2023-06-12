@@ -62,7 +62,7 @@ class NetworkData:
 
         Returns
         -------
-        foundation.recording.trial.Trial (tuples)
+        foundation.recording.trial.Trial (rows)
             recording trials
         """
         raise NotImplementedError()

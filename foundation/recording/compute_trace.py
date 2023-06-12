@@ -22,7 +22,7 @@ class Trace:
         """
         Returns
         -------
-        foundation.recording.Trial (tuples)
+        foundation.recording.Trial (rows)
             valid trials
         """
         from foundation.recording.trial import Trial, TrialSet
@@ -47,7 +47,7 @@ class Traces:
         """
         Returns
         -------
-        foundation.recording.Trial (tuples)
+        foundation.recording.Trial (rows)
             valid trials
         """
         from foundation.recording.trace import TraceSet
@@ -284,7 +284,7 @@ class StandardizedTrace:
         stand = (Standardize & self.key).link
 
         # stat keys
-        stat_keys = stand.summary_keys
+        stat_keys = stand.summaries
 
         # homogeneous mask
         hom = merge(self.key, recording.TraceHomogeneous)
@@ -334,7 +334,7 @@ class StandardizedTraces:
 
         # trace and stat keys
         trace_keys = (TraceSet & self.key).members
-        stat_keys = stand.summary_keys
+        stat_keys = stand.summaries
 
         # homogeneous mask
         hom = merge(trace_keys, recording.TraceHomogeneous)
