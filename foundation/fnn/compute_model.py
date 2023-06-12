@@ -1,3 +1,4 @@
+import numpy as np
 from djutils import keys, merge, rowmethod
 from foundation.utils import logger
 from foundation.virtual import fnn
@@ -191,9 +192,14 @@ class Instance(NetworkModel):
         size, model_id = merge(self.key, fnn.Model.Instance).fetch1("parallel", "model_id")
 
         # verify cuda devices
-        assert device_count() >= size
+        assert device_count() >= size, "Insufficient cuda devices"
 
-        # TODO: assert checkpoints valid
+        # verify checkpoints
+        checkpoint = NetworkModelCheckpoint & {"model_id": model_id, "network_id": network_id}
+        if checkpoint:
+            ranks, epochs = checkpoint.fetch("rank", "epoch", order_by="rank")
+            assert np.array_equal(ranks, np.arange(size)), "Invalid checkpoint ranks"
+            assert np.unique(epochs).size == 1, "Invalid checkpoint epochs"
 
         # train with multiprocessing
         conn = self.key.connection
@@ -207,15 +213,14 @@ class Instance(NetworkModel):
         conn.connect()
 
         # trained keys
-        key = {"model_id": model_id, "network_id": network_id}
-        done = NetworkModelDone & key & f"rank >= 0 and rank < {size}"
+        done = NetworkModelDone & {"model_id": model_id, "network_id": network_id}
         done = done.fetch(as_dict=True, order_by="rank")
 
         # verify keys
-        assert len(done) == size
-        assert len({_["epoch"] for _ in done}) == 1
+        assert np.array_equal([_["rank"] for _ in done], np.arange(size)), "Invalid done ranks"
+        assert np.unique([_["epoch"] for _ in done]).size == 1, "Invalid done epochs"
 
-        # trained parameters
+        # trained network parameters
         params = (NetworkModelCheckpoint & done[0]).load()["state_dict"]
 
         yield network_id, params
