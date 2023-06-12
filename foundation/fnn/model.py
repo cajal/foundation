@@ -38,6 +38,12 @@ class Instance(_Model):
     cycle           : int unsigned      # training cycle
     """
 
+    @rowproperty
+    def model(self):
+        from foundation.fnn.compute_model import Instance
+
+        return Instance & self
+
 
 # -- Model --
 
@@ -72,7 +78,7 @@ class NetworkModel:
         from foundation.utils.torch import save_to_array
 
         # network trainer
-        trainer = (Model & key).link.train(network_id=key["network_id"])
+        trainer = (Model & key).link.model.train(network_id=key["network_id"])
 
         for network_id, state_dict in trainer:
 
