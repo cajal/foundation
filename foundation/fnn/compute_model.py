@@ -72,17 +72,31 @@ class Instance(NetworkModel):
 
         if checkpoint:
             logger.info("Reloading from previous checkpoint")
+            prev = checkpoint.load(device=cuda)
 
-            params = checkpoint.load(device=cuda)["state_dict"]
-            module.load_state_dict(params)
+            # reload parameters
+            module.load_state_dict(prev["state_dict"])
 
-        elif cycle > 0:
-            logger.info("Reloading from previous cycle")
+            # optimizer
+            optimizer = prev["optimizer"]
 
-            key = merge(self.key.proj(cycle="cycle - 1"), fnn.Instance, fnn.Model.Instance)
-            network = NetworkModel & {"network_id": network_id, "model_id": key.fetch("model_id")}
-            params = network.parameters(device="cuda")
-            module.load_state_dict(param)
+        else:
+            if cycle > 0:
+                logger.info("Reloading from previous cycle")
+                key = merge(self.key.proj(cycle="cycle - 1"), fnn.Instance, fnn.Model.Instance)
+                network = NetworkModel & {"network_id": network_id, "model_id": key.fetch("model_id")}
+                params = network.parameters(device="cuda")
+
+                # reload parameters
+                module.load_state_dict(params)
+
+            # scheduler
+            scheduler = (Scheduler & self.key).link.scheduler
+            scheduler._init(epoch=0, cycle=cycle)
+
+            # optimizer
+            optimizer = (Optimizer & self.key).link.optimizer
+            optimizer._init(scheduler=scheduler)
 
         # training objective
         objective = (Objective & self.key).link.objective
