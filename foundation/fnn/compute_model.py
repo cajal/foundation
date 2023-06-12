@@ -131,8 +131,7 @@ class Instance(NetworkModel):
                 network_id=network_id,
                 rank=rank,
                 epoch=epoch,
-                optimizer=optimizer,
-                state_dict=module.state_dict(),
+                checkpoint={"optimizer": optimizer, "state_dict": module.state_dict()},
             )
 
         # register done

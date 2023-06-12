@@ -54,7 +54,7 @@ class NetworkModelCheckpoint:
     """
 
     @classmethod
-    def fill(cls, model_id, network_id, rank, epoch, optimizer, state_dict):
+    def fill(cls, model_id, network_id, rank, epoch, checkpoint):
         from foundation.utils.torch import save_to_array
 
         key = dict(
@@ -62,7 +62,7 @@ class NetworkModelCheckpoint:
             network_id=network_id,
             rank=rank,
             epoch=epoch,
-            checkpoint=save_to_array({"optimizer": optimizer, "state_dict": state_dict}),
+            checkpoint=save_to_array(checkpoint),
         )
         cls.insert1(key, replace=True)
 
