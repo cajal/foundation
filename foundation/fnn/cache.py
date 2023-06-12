@@ -20,7 +20,21 @@ class NetworkInfo:
     """
 
     @classmethod
-    def fill(cls, model_id, network_id, rank, epoch, info):
+    def fill(cls, network_id, model_id, rank, epoch, info):
+        """
+        Parameters
+        ----------
+        network_id : str
+            key (foundation.fnn.network.Network)
+        model_id : str
+            key (foundation.fnn.model.Model)
+        rank : int
+            training rank
+        epoch : int
+            training epoch
+        info : dict
+            training info
+        """
         from foundation.utils.torch import save_to_array
 
         key = dict(
@@ -34,11 +48,23 @@ class NetworkInfo:
 
     @rowmethod
     def load(self, device="cpu"):
+        """
+        Returns
+        -------
+        dict
+            training info
+        """
         from foundation.utils.torch import load_from_array
 
         return load_from_array(self.fetch1("info"), map_location=device)
 
     def df(self, device="cpu"):
+        """
+        Returns
+        -------
+        pandas.DataFrame
+            training info dataframe
+        """
         keys = tqdm(self.fetch("KEY", order_by=self.primary_key))
         return pd.DataFrame([dict(k, **(NetworkInfo & k).load(device=device)) for k in keys])
 
@@ -56,7 +82,21 @@ class NetworkCheckpoint:
     """
 
     @classmethod
-    def fill(cls, model_id, network_id, rank, epoch, checkpoint):
+    def fill(cls, network_id, model_id, rank, epoch, checkpoint):
+        """
+        Parameters
+        ----------
+        network_id : str
+            key (foundation.fnn.network.Network)
+        model_id : str
+            key (foundation.fnn.model.Model)
+        rank : int
+            training rank
+        epoch : int
+            training epoch
+        checkpoint : serializable object
+            training checkpoint
+        """
         from foundation.utils.torch import save_to_array
 
         key = dict(
@@ -70,6 +110,12 @@ class NetworkCheckpoint:
 
     @rowmethod
     def load(self, device="cpu"):
+        """
+        Returns
+        -------
+        deserialized object
+            training checkpoint
+        """
         from foundation.utils.torch import load_from_array
 
         return load_from_array(self.fetch1("checkpoint"), map_location=device)

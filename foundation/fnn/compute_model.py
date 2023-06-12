@@ -119,8 +119,8 @@ class Instance(NetworkModel):
 
             # log epoch info
             NetworkInfo.fill(
-                model_id=model_id,
                 network_id=network_id,
+                model_id=model_id,
                 rank=rank,
                 epoch=epoch,
                 info=info,
@@ -128,8 +128,8 @@ class Instance(NetworkModel):
 
             # save checkpoint
             NetworkCheckpoint.fill(
-                model_id=model_id,
                 network_id=network_id,
+                model_id=model_id,
                 rank=rank,
                 epoch=epoch,
                 checkpoint={"optimizer": optimizer, "state_dict": module.state_dict()},
