@@ -45,12 +45,26 @@ class Instance(_Model):
         return Instance & self
 
 
+@schema.lookup
+class NetworkSetInstance(_Model):
+    definition = """
+    -> NetworkSet
+    -> Instance
+    """
+
+    @rowproperty
+    def model(self):
+        from foundation.fnn.compute_model import NetworkSetInstance
+
+        return NetworkSetInstance & self
+
+
 # -- Model --
 
 
 @schema.link
 class Model:
-    links = [Instance]
+    links = [Instance, NetworkSetInstance]
     name = "model"
     comment = "neural network model"
 
@@ -72,6 +86,7 @@ class NetworkModel:
     def key_source(self):
         keys = [
             Model.Instance,
+            Model.NetworkSetInstance * NetworkSet.Member & {"networkset_index": 0},
         ]
         return (Network * Model).proj() & keys
 
@@ -99,6 +114,7 @@ class NetworkModel:
         """
         from foundation.utils.torch import load_from_array
 
+        # module parameters, mapped to specified device
         return load_from_array(self.fetch1("parameters"), map_location=device)
 
     @rowproperty
@@ -111,11 +127,15 @@ class NetworkModel:
         """
         from foundation.utils.torch import cuda_enabled
 
+        # frozen module
         module = (Network & self).link.module.freeze()
 
+        # module parameters
         device = "cuda" if cuda_enabled() else "cpu"
         module = module.to(device=device)
         params = self.parameters(device=device)
 
+        # load parameters to module
         module.load_state_dict(params)
+
         return module
