@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from datajoint import U
 from djutils import keys, merge, rowproperty, rowmethod, cache_rowproperty
-from foundation.utils import logger, tqdm
+from foundation.utils import logger, tqdm, disable_tqdm
 from foundation.virtual import utility, stimulus, recording, fnn
 
 
@@ -256,3 +256,61 @@ class VisualScan(NetworkData):
             "units": units,
         }
         return Dataset(data, index=pd.Index(index, name="trial_id"))
+
+    @rowmethod
+    def visual_inputs(self, video_id, perspectives=True, modulations=True, training=None):
+        from foundation.utils.resample import flip_index, truncate
+        from foundation.utility.resample import Rate
+        from foundation.stimulus.compute_video import ResizedVideo
+        from foundation.recording.compute_trace import StandardizedTraces, ResampledTraces
+
+        # resized video
+        key = fnn.Spec.VideoSpec & self.key.proj(spec_id="stimuli_id")
+        video = (ResizedVideo & key & {"video_id": video_id}).video
+
+        # resampled video
+        time_scale = merge(self.key, recording.ScanVideoTimeScale).fetch1("time_scale")
+        period = (Rate & self.key).link.period
+        index = flip_index(video.times * time_scale, period)
+        video = video.array[index]
+
+        # neither perspectives nor modulations requested
+        if not perspectives and not modulations:
+            return video, None, None, None
+
+        # video trials
+        trials = merge(self.trials(training=training), recording.TrialVideo, recording.TrialBounds)
+        trials = (trials & {"video_id": video_id}).fetch("trial_id", order_by="start").tolist()
+
+        # no trials
+        if not trials:
+            return video, None, None, None
+
+        # perspectives and modulations
+        perspectives_modulations = []
+
+        for key, requested, desc in [
+            [self.training_perspectives, perspectives, "Perspectives"],
+            [self.training_modulations, modulations, "Modulations"],
+        ]:
+            if requested:
+                # transform and resampler
+                transform = (StandardizedTraces & key).transform
+                resampler = ResampledTraces & key
+
+                # resample and transform traces
+                traces = (resampler.trial(trial_id=trial) for trial in tqdm(trials, desc=desc))
+                with cache_rowproperty(), disable_tqdm():
+                    traces = np.stack(truncate(*map(transform, traces), tolerance=1), axis=1)
+
+                # verify length
+                assert len(traces) == len(video)
+
+                # append traces
+                perspectives_modulations.append(traces)
+
+            else:
+                # append none
+                perspectives_modulations.append(None)
+
+        return video, *perspectives_modulations, trials
