@@ -1,55 +1,51 @@
 from djutils import merge
 from foundation.virtual import recording, fnn
-from foundation.function.response import TrialResponse, FnnTrialResponse, Response, ResponseSet
+from foundation.function.response import (
+    TrialResponse,
+    TrialPerspectives,
+    TrialModulations,
+    FnnTrialResponse,
+    Response,
+    ResponseSet,
+)
 from foundation.schemas import function as schema
 
 
 @schema.computed
-class VisualScanFnnTrialResponse:
+class FnnVisualScanTrialResponse:
     definition = """
-    -> fnn.VisualScanResponse
-    -> recording.TrialFilterSet
-    perspective                 : bool          # use recording perspective
-    modulation                  : bool          # use recording modulation
+    -> fnn.NetworkModel             # network model
+    -> recording.TrialFilterSet     # trial filter
+    -> TrialPerspectives            # trial perspectives
+    -> TrialModulations             # trial modulations
+    -> fnn.VisualScanUnit           # scan unit
     ---
-    -> ResponseSet
+    -> ResponseSet                  # model/recording response pair
     """
 
     def make(self, key):
         # unit key
         unit_key = merge(
-            fnn.VisualScanResponse & key,
+            fnn.VisualScanUnit & key,
             recording.ScanUnit,
             recording.Trace.ScanUnit,
             recording.ScanTrials,
         )
-        unit_key = (unit_key * fnn.VisualScanModel).proj(..., spec_id="units_id")
+        unit_key = (unit_key * fnn.VisualScanNetwork).proj(..., spec_id="units_id")
         unit_key = (unit_key * fnn.Spec.TraceSpec).fetch1()
         unit_key.update(key)
 
-        # insert
+        # insert responses
         TrialResponse.insert1(unit_key, ignore_extra_fields=True, skip_duplicates=True)
+        FnnTrialResponse.insert1(unit_key, ignore_extra_fields=True, skip_duplicates=True)
 
-        # fnn keys
-        keys = []
-        for perspective in [True, False]:
-            for modulation in [True, False]:
-                key = dict(unit_key, perspective=perspective, modulation=modulation)
-                keys.append(key)
-
-                # insert
-                FnnTrialResponse.insert1(key, ignore_extra_fields=True, skip_duplicates=True)
-
-        # fill response
+        # fill responses
         Response.fill()
 
-        # response pairs
-        for key in keys:
-            pair = [
-                (Response.TrialResponse & unit_key).fetch1("KEY"),
-                (Response.FnnTrialResponse & key).fetch1("KEY"),
-            ]
-            pair = ResponseSet.fill(pair, prompt=False, silent=True)
+        # response pair
+        pair = [Response.TrialResponse, Response.FnnTrialResponse]
+        pair = [(table & unit_key).fetch1("KEY") for table in pair]
+        pair = ResponseSet.fill(pair, prompt=False, silent=True)
 
-            # insert
-            self.insert1(dict(key, **pair), ignore_extra_fields=True)
+        # insert key
+        self.insert1(dict(key, **pair), ignore_extra_fields=True)

@@ -68,18 +68,16 @@ class NetworkData:
         raise NotImplementedError()
 
     @rowmethod
-    def visual_inputs(self, video_id, perspectives=True, modulations=True, trainset=None):
+    def visual_inputs(self, video_id, trial_perspectives=True, trial_modulations=True):
         """
         Parameters
         ----------
         video_id : str
             key (foundation.stimulus.video.Video)
-        perspectives : bool
+        trial_perspectives : bool
             True (return trial perspectives) | False (return None)
-        modulations : bool
+        trial_modulations : bool
             True (return trial modulations) | False (return None)
-        trainset : bool | None
-            True (trainset trials) | False (testset trials) | None (all trials)
 
         Returns
         -------
@@ -258,7 +256,7 @@ class VisualScan(NetworkData):
         return Dataset(data, index=pd.Index(index, name="trial_id"))
 
     @rowmethod
-    def visual_inputs(self, video_id, perspectives=True, modulations=True, trainset=None):
+    def visual_inputs(self, video_id, trial_perspectives=True, trial_modulations=True):
         from foundation.utils.resample import flip_index, truncate
         from foundation.utility.resample import Rate
         from foundation.stimulus.compute_video import ResizedVideo
@@ -275,11 +273,11 @@ class VisualScan(NetworkData):
         video = video.array[index]
 
         # neither perspectives nor modulations requested
-        if not perspectives and not modulations:
+        if not trial_perspectives and not trial_modulations:
             return video, None, None, None
 
         # video trials
-        trials = merge(self.trials(trainset=trainset), recording.TrialVideo, recording.TrialBounds)
+        trials = merge(self.trials(), recording.TrialVideo, recording.TrialBounds)
         trials = (trials & {"video_id": video_id}).fetch("trial_id", order_by="start").tolist()
 
         # no trials
@@ -290,8 +288,8 @@ class VisualScan(NetworkData):
         perspectives_modulations = []
 
         for key, requested, desc in [
-            [self.key_perspectives, perspectives, "Perspectives"],
-            [self.key_modulations, modulations, "Modulations"],
+            [self.key_perspectives, trial_perspectives, "Perspectives"],
+            [self.key_modulations, trial_modulations, "Modulations"],
         ]:
             if requested:
                 # transform and resampler

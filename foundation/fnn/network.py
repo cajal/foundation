@@ -101,6 +101,24 @@ class NetworkSet:
 
 
 @schema.computed
+class NetworkResponseIndex:
+    definition = """
+    -> Network
+    response_index              : int unsigned      # network response index
+    """
+
+    def make(self, key):
+        # response size
+        _, _, _, size = (Network & key).link.data.sizes
+
+        # response indexes
+        keys = [dict(key, response_index=i) for i in range(size)]
+
+        # insert
+        self.insert(keys)
+
+
+@schema.computed
 class ParallelNetworkSet:
     definition = """
     -> NetworkSet

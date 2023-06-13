@@ -12,8 +12,8 @@ class Trace:
     def key_list(self):
         return [
             stimulus.Video,  # visual stimulus
-            recording.TrialFilterSet,  # recording trial filter
             recording.Trace,  # recording trace
+            recording.TrialFilterSet,  # recording trial filter
             recording.TrialSet,  # standardization trial set
             utility.Standardize,  # standardization method
             utility.Resample,  # resampling method

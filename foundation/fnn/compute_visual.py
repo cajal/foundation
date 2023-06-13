@@ -13,9 +13,8 @@ class NetworkModel:
         return [
             stimulus.Video,  # visual stimulus
             fnn.NetworkModel,  # network model
-            utility.Bool.proj(perspectives="bool"),  # True (trial perspectives)| False (default perspective)
-            utility.Bool.proj(modulations="bool"),  # True (trial modulations) | False (default modulation)
-            utility.Bool.proj(trainset="bool"),  # True (trainset trials) | False (testset trials)
+            utility.Bool.proj(trial_perspectives="bool"),  # True (trial perspectives)| False (default perspective)
+            utility.Bool.proj(trial_modulations="bool"),  # True (trial modulations) | False (default modulation)
         ]
 
     @rowproperty
@@ -35,14 +34,13 @@ class NetworkModel:
         model = (NetworkModel & self.key).model
 
         # model inputs
-        video_id, perspectives, modulations, trainset = self.key.fetch1(
-            "video_id", "perspectives", "modulations", "trainset"
+        video_id, trial_perspectives, trial_modulations = self.key.fetch1(
+            "video_id", "trial_perspectives", "trial_modulations"
         )
         stimuli, perspectives, modulations, trial_ids = (Network & self.key).link.data.visual_inputs(
             video_id=video_id,
-            perspectives=perspectives,
-            modulations=modulations,
-            trainset=trainset,
+            trial_perspectives=trial_perspectives,
+            trial_modulations=trial_modulations,
         )
 
         # generate responses

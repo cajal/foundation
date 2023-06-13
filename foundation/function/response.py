@@ -29,13 +29,13 @@ class _Response:
 @schema.lookup
 class TrialResponse(_Response):
     definition = """
-    -> recording.Trace
-    -> recording.TrialFilterSet
-    -> recording.TrialSet
-    -> utility.Standardize
-    -> utility.Resample
-    -> utility.Offset
-    -> utility.Rate
+    -> recording.Trace              # response trace
+    -> recording.TrialFilterSet     # trial filter
+    -> recording.TrialSet           # standardization trial set
+    -> utility.Standardize          # standardization method
+    -> utility.Resample             # resampling method
+    -> utility.Offset               # resampling offset
+    -> utility.Rate                 # resampling rate
     """
 
     @rowproperty
@@ -46,13 +46,27 @@ class TrialResponse(_Response):
 
 
 @schema.lookup
+class TrialPerspectives:
+    definition = """
+    trial_perspectives  : bool      # trial perspectives
+    """
+
+
+@schema.lookup
+class TrialModulations:
+    definition = """
+    trial_modulations   : bool      # trial modulations
+    """
+
+
+@schema.lookup
 class FnnTrialResponse(_Response):
     definition = """
-    -> fnn.ModelNetwork
-    -> recording.TrialFilterSet
-    response_index              : int unsigned  # response index
-    perspective                 : bool          # use recording perspective
-    modulation                  : bool          # use recording modulation
+    -> fnn.NetworkModel             # network model
+    -> recording.TrialFilterSet     # trial filter
+    -> TrialPerspectives            # trial perspectives
+    -> TrialModulations             # trial modulations
+    -> fnn.NetworkResponseIndex     # network response index
     """
 
     @rowproperty

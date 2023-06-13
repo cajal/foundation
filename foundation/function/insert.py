@@ -9,22 +9,23 @@ class FnnVisualScanCCNorm:
     @property
     def key_list(self):
         return [
-            fnn.VisualScanModel,
+            fnn.NetworkModel,
+            fnn.VisualScaNetwork,
             recording.TrialFilterSet,
+            utility.Bool.proj(perspectives="bool"),
+            utility.Bool.proj(modulations="bool"),
             stimulus.VideoSet,
-            utility.Bool.proj(perspective="bool"),
-            utility.Bool.proj(modulation="bool"),
             utility.Burnin,
         ]
 
     def fill(self, cuda=True):
         from contextlib import nullcontext
         from foundation.utils.torch import use_cuda
-        from foundation.function.scan import VisualScanFnnTrialResponse
+        from foundation.function.scan import FnnVisualScanTrialResponse
         from foundation.function.response import Response, ResponseSet, VisualResponseMeasure, VisualResponseCorrelation
 
         # scan response
-        VisualScanFnnTrialResponse.populate(self.key, display_progress=True, reserve_jobs=True)
+        FnnVisualScanTrialResponse.populate(self.key, display_progress=True, reserve_jobs=True)
 
         # scan response keys
         keys = fnn.VisualScanModel.proj() * recording.TrialFilterSet.proj() & self.key

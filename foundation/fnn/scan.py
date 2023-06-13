@@ -1,12 +1,12 @@
 from djutils import merge
 from foundation.virtual.bridge import pipe_fuse
-from foundation.fnn.network import Network
+from foundation.fnn.network import Network, NetworkResponseIndex
 from foundation.fnn.data import Data, VisualScan
 from foundation.schemas import fnn as schema
 
 
 @schema.computed
-class VisualScaNetwork:
+class VisualScanNetwork:
     definition = """
     -> Network
     ---
@@ -28,15 +28,15 @@ class VisualScaNetwork:
 @schema.computed
 class VisualScanUnit:
     definition = """
-    -> VisualScaNetwork
-    -> pipe_fuse.ScanSet.Unit
+    -> VisualScanNetwork
+    -> NetworkResponseIndex
     ---
-    response_index              : int unsigned      # network response index
+    -> pipe_fuse.ScanSet.Unit
     """
 
     @property
     def key_source(self):
-        return VisualScaNetwork.proj()
+        return VisualScanNetwork.proj()
 
     def make(self, key):
         from foundation.recording.scan import ScanUnits
@@ -49,7 +49,7 @@ class VisualScanUnit:
         units = merge(units, Trace.ScanUnit)
 
         # unit keys
-        keys = (VisualScaNetwork & key).proj() * units.proj(..., response_index="traceset_index")
+        keys = (VisualScanNetwork & key).proj() * units.proj(..., response_index="traceset_index")
 
         # insert
         self.insert(keys, ignore_extra_fields=True)
