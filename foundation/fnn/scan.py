@@ -1,41 +1,42 @@
-from djutils import merge, rowproperty
+from djutils import merge
 from foundation.virtual.bridge import pipe_fuse
-from foundation.fnn.model import ModelNetwork
 from foundation.fnn.network import Network
 from foundation.fnn.data import Data, VisualScan
 from foundation.schemas import fnn as schema
 
 
 @schema.computed
-class VisualScanModel:
+class VisualScaNetwork:
     definition = """
-    -> ModelNetwork
+    -> Network
     ---
     -> VisualScan
     """
 
     @property
     def key_source(self):
-        keys = ModelNetwork & (Network.VisualNetwork & Data.VisualScan)
-        return keys.proj()
+        return (Network.VisualNetwork & Data.VisualScan).proj()
 
     def make(self, key):
         # scan data
-        data = (Network & key).link.data
-        data = data.link.fetch1()
+        data = (Network & key).link.data.key.fetch1()
 
         # insert
         self.insert1(dict(key, **data))
 
 
 @schema.computed
-class VisualScanResponse:
+class VisualScanUnit:
     definition = """
-    -> VisualScanModel
-    response_index              : int unsigned      # network response index
-    ---
+    -> VisualScaNetwork
     -> pipe_fuse.ScanSet.Unit
+    ---
+    response_index              : int unsigned      # network response index
     """
+
+    @property
+    def key_source(self):
+        return VisualScaNetwork.proj()
 
     def make(self, key):
         from foundation.recording.scan import ScanUnits
@@ -43,12 +44,12 @@ class VisualScanResponse:
 
         # scan units
         units = (Network & key).link.data
-        units = ScanUnits & units.link
+        units = ScanUnits & units.key
         units = (TraceSet & units).members
         units = merge(units, Trace.ScanUnit)
 
         # unit keys
-        keys = (VisualScanModel & key).proj() * units.proj(..., response_index="traceset_index")
+        keys = (VisualScaNetwork & key).proj() * units.proj(..., response_index="traceset_index")
 
         # insert
         self.insert(keys, ignore_extra_fields=True)
