@@ -90,7 +90,7 @@ class NetworkData:
         None | Iterable[2D array]
             trial modulations -- [trials, modulations] x samples -- dtype=float-like
         None | List[str]
-            list of trial_ids -- key (foundation.recording.trial.Trial)
+            list of trial_ids -- key (foundation.recording.trial.Trial), ordered by trial start
         """
         raise NotImplementedError()
 

@@ -11,8 +11,8 @@ class NetworkModel:
     @property
     def key_list(self):
         return [
-            stimulus.Video,
-            fnn.NetworkModel,
+            stimulus.Video,  # visual stimulus
+            fnn.NetworkModel,  # network model
             utility.Bool.proj(perspectives="bool"),  # True (trial perspectives)| False (default perspective)
             utility.Bool.proj(modulations="bool"),  # True (trial modulations) | False (default modulation)
             utility.Bool.proj(trainset="bool"),  # True (trainset trials) | False (testset trials)
@@ -26,7 +26,7 @@ class NetworkModel:
         2D array | 3D array
             [samples, units] | [samples, trials, units] -- dtype=float-like
         None | List[str]
-            None | list of trial_ids -- key (foundation.recording.trial.Trial)
+            None | list of trial_ids -- key (foundation.recording.trial.Trial), ordered by trial start
         """
         from foundation.fnn.network import Network
         from foundation.fnn.model import NetworkModel

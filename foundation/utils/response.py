@@ -18,7 +18,7 @@ class Trials(pd.Series):
             trial responses
         index : Sequence[str] | None
             trial identifiers. optional if len(data) == 1
-        tolerance : 1
+        tolerance : int
             response length mismatch tolerance
         """
         # truncate trial responses to the same length
