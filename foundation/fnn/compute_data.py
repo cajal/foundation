@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 from datajoint import U
 from djutils import keys, merge, rowproperty, rowmethod, cache_rowproperty
-from foundation.utils import logger, tqdm, disable_tqdm
-from foundation.virtual import utility, stimulus, recording, fnn
+from foundation.utils import tqdm, disable_tqdm
+from foundation.virtual import stimulus, recording, fnn
 
 
 # ----------------------------- Network Data -----------------------------
@@ -53,12 +53,12 @@ class NetworkData:
         raise NotImplementedError()
 
     @rowmethod
-    def trials(self, training=None):
+    def trials(self, trainset=None):
         """
         Parameters
         ----------
-        training : bool | None
-            True (training trials) | False (non-training trials) | None (all trials)
+        trainset : bool | None
+            True (trainset trials) | False (testset trials) | None (all trials)
 
         Returns
         -------
@@ -68,7 +68,7 @@ class NetworkData:
         raise NotImplementedError()
 
     @rowmethod
-    def visual_inputs(self, video_id, perspectives=True, modulations=True, training=None):
+    def visual_inputs(self, video_id, perspectives=True, modulations=True, trainset=None):
         """
         Parameters
         ----------
@@ -78,8 +78,8 @@ class NetworkData:
             True (return trial perspectives) | False (return None)
         modulations : bool
             True (return trial modulations) | False (return None)
-        training : bool | None
-            True (training trials) | False (non-training trials) | None (all trials)
+        trainset : bool | None
+            True (trainset trials) | False (testset trials) | None (all trials)
 
         Returns
         -------
@@ -109,14 +109,14 @@ class VisualScan(NetworkData):
         ]
 
     @rowproperty
-    def training_stimuli(self):
+    def key_stimuli(self):
         return merge(
             self.key.proj(spec_id="stimuli_id"),
             fnn.Spec.VideoSpec,
         ).fetch1()
 
     @rowproperty
-    def training_perspectives(self):
+    def key_perspectives(self):
         return merge(
             self.key.proj(spec_id="perspectives_id"),
             fnn.Spec.TraceSpec,
@@ -125,7 +125,7 @@ class VisualScan(NetworkData):
         ).fetch1()
 
     @rowproperty
-    def training_modulations(self):
+    def key_modulations(self):
         return merge(
             self.key.proj(spec_id="modulations_id"),
             fnn.Spec.TraceSpec,
@@ -134,7 +134,7 @@ class VisualScan(NetworkData):
         ).fetch1()
 
     @rowproperty
-    def training_units(self):
+    def key_units(self):
         return merge(
             self.key.proj(spec_id="units_id"),
             fnn.Spec.TraceSpec,
@@ -145,13 +145,13 @@ class VisualScan(NetworkData):
     @rowproperty
     def sizes(self):
         # number of stimulus channels
-        stimuli = merge(self.trials(training=True), recording.TrialVideo, stimulus.VideoInfo)
+        stimuli = merge(self.trials(trainset=True), recording.TrialVideo, stimulus.VideoInfo)
         stimuli = (U("channels") & stimuli).fetch1("channels")
         sizes = [stimuli]
 
         # number of perspective, modulation, and unit traces
         for attr in ["perspectives", "modulations", "units"]:
-            traces = recording.TraceSet & getattr(self, f"training_{attr}")
+            traces = recording.TraceSet & getattr(self, f"key_{attr}")
             traces = traces.fetch1("members")
             sizes.append(traces)
 
@@ -170,21 +170,21 @@ class VisualScan(NetworkData):
         return period, offset
 
     @rowmethod
-    def trials(self, training=None):
+    def trials(self, trainset=None):
         from foundation.recording.trial import Trial, TrialSet
 
-        if training is None:
+        if trainset is None:
             # all scan trials
             key = merge(self.key, recording.ScanRecording)
             trials = Trial & (TrialSet & key).members
 
-        elif training:
-            # training trials
+        elif trainset:
+            # trainset trials
             key = merge(self.key, recording.ScanTrials)
             trials = Trial & (TrialSet & key).members
 
         else:
-            # non-training trials
+            # testset trials
             key = merge(self.key, recording.ScanRecording)
             trials = Trial & (TrialSet & key).members
 
@@ -199,10 +199,10 @@ class VisualScan(NetworkData):
         from fnn.data import NpyFile, Dataset
 
         # data keys
-        key_s = self.training_stimuli
-        key_p = self.training_perspectives
-        key_m = self.training_modulations
-        key_u = self.training_units
+        key_s = self.key_stimuli
+        key_p = self.key_perspectives
+        key_m = self.key_modulations
+        key_u = self.key_units
 
         # data transforms
         transform_p = (StandardizedTraces & key_p).transform
@@ -212,9 +212,9 @@ class VisualScan(NetworkData):
         # data lists
         stimuli, perspectives, modulations, units = [], [], [], []
 
-        # training trials
+        # trainset trials
         trials = merge(
-            self.trials(training=True),
+            self.trials(trainset=True),
             recording.TrialBounds,
             recording.TrialSamples,
             recording.TrialVideo,
@@ -258,7 +258,7 @@ class VisualScan(NetworkData):
         return Dataset(data, index=pd.Index(index, name="trial_id"))
 
     @rowmethod
-    def visual_inputs(self, video_id, perspectives=True, modulations=True, training=None):
+    def visual_inputs(self, video_id, perspectives=True, modulations=True, trainset=None):
         from foundation.utils.resample import flip_index, truncate
         from foundation.utility.resample import Rate
         from foundation.stimulus.compute_video import ResizedVideo
@@ -279,7 +279,7 @@ class VisualScan(NetworkData):
             return video, None, None, None
 
         # video trials
-        trials = merge(self.trials(training=training), recording.TrialVideo, recording.TrialBounds)
+        trials = merge(self.trials(trainset=trainset), recording.TrialVideo, recording.TrialBounds)
         trials = (trials & {"video_id": video_id}).fetch("trial_id", order_by="start").tolist()
 
         # no trials
@@ -290,8 +290,8 @@ class VisualScan(NetworkData):
         perspectives_modulations = []
 
         for key, requested, desc in [
-            [self.training_perspectives, perspectives, "Perspectives"],
-            [self.training_modulations, modulations, "Modulations"],
+            [self.key_perspectives, perspectives, "Perspectives"],
+            [self.key_modulations, modulations, "Modulations"],
         ]:
             if requested:
                 # transform and resampler
