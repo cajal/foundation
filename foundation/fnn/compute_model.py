@@ -59,7 +59,7 @@ class _Instance(NetworkModel):
         from torch import device
         from torch.cuda import current_device
         from foundation.fnn.network import Network
-        from foundation.fnn.model import Model
+        from foundation.fnn.model import Model, NetworkModel
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
         from foundation.fnn.cache import NetworkInfo, NetworkCheckpoint, NetworkDone
 
