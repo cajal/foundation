@@ -97,7 +97,7 @@ class _Instance(NetworkModel):
 
                 # load previous cycle
                 network = NetworkModel & {"network_id": network_id, "model_id": _model_id}
-                params = network.parameters(device="cuda")
+                params = network.parameters(device=cuda)
 
                 # reload parameters
                 module.load_state_dict(params)
