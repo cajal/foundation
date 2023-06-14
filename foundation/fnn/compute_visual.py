@@ -34,10 +34,12 @@ class NetworkModelTrial:
         # load model
         model = (NetworkModel & self.key).model
 
-        # model inputs
+        # input arguments
         video_id, trial_perspectives, trial_modulations, trial_filterset_id = self.key.fetch1(
             "video_id", "trial_perspectives", "trial_modulations", "trial_filterset_id"
         )
+
+        # visual inputs, trial_ids
         stimuli, perspectives, modulations, trial_ids = (Network & self.key).link.data.visual_inputs(
             video_id=video_id,
             trial_perspectives=trial_perspectives,
@@ -45,7 +47,7 @@ class NetworkModelTrial:
             trial_filterset_id=trial_filterset_id,
         )
 
-        # generate responses
+        # visual responses
         responses = model.generate_responses(
             stimuli=stimuli,
             perspectives=perspectives,
