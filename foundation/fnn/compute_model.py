@@ -153,7 +153,7 @@ class _Instance(NetworkModel):
 
 
 @keys
-class Instance(_Instance, NetworkModel):
+class Instance(_Instance):
     """Network Instance"""
 
     @property
@@ -254,7 +254,7 @@ class Instance(_Instance, NetworkModel):
 
 
 @keys
-class NetworkSetInstance(_Instance, NetworkModel):
+class NetworkSetInstance(_Instance):
     """Network Set Instance"""
 
     @property
