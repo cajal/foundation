@@ -43,8 +43,12 @@ class Instance(NetworkModel):
             fnn.Instance,
         ]
 
+    @property
+    def model_type(self):
+        return fnn.Model.Instance
+
     @rowmethod
-    def _train(self, rank, network_id, model_type):
+    def _train(self, rank, network_id):
         """
         Parameters
         ----------
@@ -52,8 +56,6 @@ class Instance(NetworkModel):
             distributed rank
         network_id : str
             key (foundation.fnn.network.Network)
-        model_type : foundation.fnn.Model.*
-            model part table
         """
         from torch import device
         from torch.cuda import current_device
@@ -63,7 +65,7 @@ class Instance(NetworkModel):
         from foundation.fnn.cache import NetworkInfo, NetworkCheckpoint, NetworkDone
 
         # model id, cycle, checkpoint
-        key = merge(self.key, model_type)
+        key = merge(self.key, self.model_type)
         model_id, cycle, groups = key.fetch1("model_id", "cycle", "parallel")
         checkpoint = NetworkCheckpoint & {"rank": rank, "network_id": network_id, "model_id": model_id}
         initialize = (cycle == 0) and (not checkpoint)
@@ -75,6 +77,8 @@ class Instance(NetworkModel):
 
         if checkpoint:
             logger.info("Reloading from previous checkpoint")
+
+            # load checkpoint
             prev = checkpoint.load(device=cuda)
 
             # reload parameters
@@ -86,8 +90,13 @@ class Instance(NetworkModel):
         else:
             if cycle > 0:
                 logger.info("Reloading from previous cycle")
-                key = self.key.proj(cycle="cycle - 1").fetch1()
-                _model_id = (model_type & key).fetch1("model_id")
+
+                # previous model id
+                key = self.key.fetch1()
+                key["cycle"] -= 1
+                _model_id = (self.model_type & key).fetch1("model_id")
+
+                # load previous cycle
                 network = NetworkModel & {"network_id": network_id, "model_id": _model_id}
                 params = network.parameters(device="cuda")
 
@@ -180,11 +189,7 @@ class Instance(NetworkModel):
             trainer = Instance & key
 
             # train network
-            trainer._train(
-                rank=rank,
-                network_id=network_id,
-                model_type=fnn.Model.Instance,
-            )
+            trainer._train(rank=rank, network_id=network_id)
 
     @rowmethod
     def train(self, network_id):
@@ -235,7 +240,7 @@ class Instance(NetworkModel):
 
 
 @keys
-class NetworkSetInstance(NetworkModel):
+class NetworkSetInstance(Instance):
     """Network Set Instance"""
 
     @property
@@ -244,6 +249,10 @@ class NetworkSetInstance(NetworkModel):
             fnn.ParallelNetworkSet,
             fnn.NetworkSetInstance,
         ]
+
+    @property
+    def model_type(self):
+        return fnn.Model.NetworkSetInstance
 
     @staticmethod
     def _fn(rank, size, model_id, network_ids, port=23456, backend="nccl"):
@@ -279,14 +288,10 @@ class NetworkSetInstance(NetworkModel):
 
             # network instance trainer
             key = fnn.Model.NetworkSetInstance & {"model_id": model_id}
-            trainer = Instance & key
+            trainer = NetworkSetInstance & key
 
             # train network
-            trainer._train(
-                rank=rank,
-                network_id=network_ids[rank],
-                model_type=fnn.Model.NetworkSetInstance,
-            )
+            trainer._train(rank=rank, network_id=network_ids[rank])
 
     @rowmethod
     def train(self, network_id):
