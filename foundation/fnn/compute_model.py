@@ -33,19 +33,18 @@ class NetworkModel:
 # -- Network Model Types --
 
 
-@keys
-class Instance(NetworkModel):
-    """Network Instance"""
-
-    @property
-    def key_list(self):
-        return [
-            fnn.Instance,
-        ]
+class _Instance(NetworkModel):
+    """Network Instance Base"""
 
     @property
     def model_type(self):
-        return fnn.Model.Instance
+        """
+        Returns
+        -------
+        foundation.fnn.Model.* (Instance|NetworkSetInstance)
+            model part table
+        """
+        raise NotImplementedError()
 
     @rowmethod
     def _train(self, rank, network_id):
@@ -152,6 +151,21 @@ class Instance(NetworkModel):
         key = {"rank": rank, "network_id": network_id, "model_id": model_id, "epoch": epoch}
         NetworkDone.insert1(key)
 
+
+@keys
+class Instance(_Instance, NetworkModel):
+    """Network Instance"""
+
+    @property
+    def key_list(self):
+        return [
+            fnn.Instance,
+        ]
+
+    @property
+    def model_type(self):
+        return fnn.Model.Instance
+
     @staticmethod
     def _fn(rank, size, model_id, network_id, port=23456, backend="nccl"):
         """
@@ -240,7 +254,7 @@ class Instance(NetworkModel):
 
 
 @keys
-class NetworkSetInstance(Instance):
+class NetworkSetInstance(_Instance, NetworkModel):
     """Network Set Instance"""
 
     @property
