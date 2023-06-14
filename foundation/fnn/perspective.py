@@ -158,6 +158,16 @@ class _Perspective:
         """
         raise NotImplementedError()
 
+    @rowproperty
+    def dropout(self):
+        """
+        Returns
+        -------
+        float
+            dropout probability
+        """
+        return 0
+
 
 # -- Perspective Types --
 

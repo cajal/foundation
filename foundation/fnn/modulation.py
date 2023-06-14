@@ -20,6 +20,16 @@ class _Modulation:
         """
         raise NotImplementedError()
 
+    @rowproperty
+    def dropout(self):
+        """
+        Returns
+        -------
+        float
+            dropout probability
+        """
+        return 0
+
 
 # -- Modulation Types --
 

@@ -123,6 +123,16 @@ class _Core:
         """
         raise NotImplementedError()
 
+    @rowproperty
+    def dropout(self):
+        """
+        Returns
+        -------
+        float
+            dropout probability
+        """
+        return 0
+
 
 # -- Core Types --
 
@@ -146,10 +156,22 @@ class FeedforwardRecurrent(_Core):
         )
 
 
+@schema.lookup
+class FeedforwardRecurrentDropout(FeedforwardRecurrent):
+    definition = """
+    -> FeedforwardRecurrent
+    dropout         : decimal(6, 6) # dropout probability
+    """
+
+    @rowproperty
+    def dropout(self):
+        return float(self.fetch1("dropout"))
+
+
 # -- Core --
 
 
 @schema.link
 class Core:
-    links = [FeedforwardRecurrent]
+    links = [FeedforwardRecurrent, FeedforwardRecurrentDropout]
     name = "core"
