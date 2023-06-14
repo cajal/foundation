@@ -90,29 +90,24 @@ class FnnTrialResponse(Response):
 
     @rowmethod
     def visual(self, video_id):
+        from foundation.fnn.compute_visual import NetworkModelTrial
         from foundation.utils.response import Trials
-        from foundation.fnn.compute_output import NetworkOutput
 
-        # fetch attributes
-        filterset, index, perspective, modulation = self.key.fetch1(
-            "trial_filterset_id", "response_index", "perspective", "modulation"
-        )
+        # visual responses
+        responses, trial_ids = (NetworkModelTrial & self.key & {"video_id": video_id}).responses
 
-        # compute output
-        output = NetworkOutput & self.key
-        output = output.visual_recording(
-            video_id=video_id,
-            trial_filterset_id=filterset,
-            perspective=perspective,
-            modulation=modulation,
-        )
+        # response index
+        index = self.key.fetch1("response_index")
 
         # response trials
-        return Trials(data=[o[:, index] for o in output.values], index=output.index)
+        if trial_ids is None:
+            return Trials(data=[responses[:, index]], index=None)
+        else:
+            return Trials(data=responses[:, :, index].T, index=trial_ids)
 
     @rowproperty
     def timing(self):
         from foundation.fnn.network import Network
 
         # response timing
-        return (Network & self.key).link.data.link.timing
+        return (Network & self.key).link.data.timing

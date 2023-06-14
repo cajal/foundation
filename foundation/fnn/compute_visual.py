@@ -1,20 +1,21 @@
 import numpy as np
 from djutils import keys, rowproperty
 from foundation.utils import tqdm
-from foundation.virtual import utility, stimulus, fnn
+from foundation.virtual import utility, stimulus, recording, fnn
 
 
 @keys
-class NetworkModel:
-    """Visual Network Model"""
+class NetworkModelTrial:
+    """Network Model Trial"""
 
     @property
     def key_list(self):
         return [
-            stimulus.Video,  # visual stimulus
-            fnn.NetworkModel,  # network model
-            utility.Bool.proj(trial_perspectives="bool"),  # True (trial perspectives)| False (default perspective)
-            utility.Bool.proj(trial_modulations="bool"),  # True (trial modulations) | False (default modulation)
+            stimulus.Video,
+            fnn.NetworkModel,
+            utility.Bool.proj(trial_perspectives="bool"),
+            utility.Bool.proj(trial_modulations="bool"),
+            recording.TrialFilterSet,
         ]
 
     @rowproperty
@@ -34,13 +35,14 @@ class NetworkModel:
         model = (NetworkModel & self.key).model
 
         # model inputs
-        video_id, trial_perspectives, trial_modulations = self.key.fetch1(
-            "video_id", "trial_perspectives", "trial_modulations"
+        video_id, trial_perspectives, trial_modulations, trial_filterset_id = self.key.fetch1(
+            "video_id", "trial_perspectives", "trial_modulations", "trial_filterset_id"
         )
         stimuli, perspectives, modulations, trial_ids = (Network & self.key).link.data.visual_inputs(
             video_id=video_id,
             trial_perspectives=trial_perspectives,
             trial_modulations=trial_modulations,
+            trial_filterset_id=trial_filterset_id,
         )
 
         # generate responses

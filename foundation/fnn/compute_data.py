@@ -68,7 +68,7 @@ class NetworkData:
         raise NotImplementedError()
 
     @rowmethod
-    def visual_inputs(self, video_id, trial_perspectives=True, trial_modulations=True):
+    def visual_inputs(self, video_id, trial_perspectives=True, trial_modulations=True, trial_filterset_id=None):
         """
         Parameters
         ----------
@@ -78,6 +78,8 @@ class NetworkData:
             True (return trial perspectives) | False (return None)
         trial_modulations : bool
             True (return trial modulations) | False (return None)
+        trial_filterset_id : str | None
+            key (foundation.recording.TrialFilterSet) | None (no trial filter)
 
         Returns
         -------
@@ -256,11 +258,12 @@ class VisualScan(NetworkData):
         return Dataset(data, index=pd.Index(index, name="trial_id"))
 
     @rowmethod
-    def visual_inputs(self, video_id, trial_perspectives=True, trial_modulations=True):
+    def visual_inputs(self, video_id, trial_perspectives=True, trial_modulations=True, trial_filterset_id=None):
         from foundation.utils.resample import flip_index, truncate
         from foundation.utility.resample import Rate
         from foundation.stimulus.compute_video import ResizedVideo
         from foundation.recording.compute_trace import StandardizedTraces, ResampledTraces
+        from foundation.recording.trial import Trial, TrialVideo, TrialBounds, TrialFilterSet
 
         # resized video
         key = fnn.Spec.VideoSpec & self.key.proj(spec_id="stimuli_id")
@@ -276,9 +279,16 @@ class VisualScan(NetworkData):
         if not trial_perspectives and not trial_modulations:
             return video, None, None, None
 
+        # all trials
+        trials = self.trials()
+
+        # filter trials
+        if trial_filterset_id is not None:
+            trials = (TrialFilterSet & {"trial_filterset_id": trial_filterset_id}).filter(trials)
+
         # video trials
-        trials = merge(self.trials(), recording.TrialVideo, recording.TrialBounds)
-        trials = (trials & {"video_id": video_id}).fetch("trial_id", order_by="start").tolist()
+        trials = merge(trials, TrialVideo, TrialBounds) & {"video_id": video_id}
+        trials = trials.fetch("trial_id", order_by="start").tolist()
 
         # no trials
         if not trials:

@@ -73,9 +73,6 @@ class Trials(pd.Series):
         return [*self.index, self.iloc[0].size] == [*other.index, other.iloc[0].size]
 
 
-# -- Response Trial Functions --
-
-
 def concatenate(*trials, burnin=0):
     """
     Parameters
@@ -155,7 +152,7 @@ class CCMax(Measure):
         return np.sqrt(SP / y_m_v)
 
 
-# ---------------------------- Response Correlations ----------------------------
+# ---------------------------- Response Correlation ----------------------------
 
 # -- Response Correlation Base --
 
