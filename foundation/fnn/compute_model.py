@@ -75,7 +75,7 @@ class _Instance(NetworkModel):
         module = module.to(device=cuda)
 
         if checkpoint:
-            logger.info("Reloading from previous checkpoint")
+            logger.info("Reloading from checkpoint")
 
             # load checkpoint
             prev = checkpoint.load(device=cuda)
