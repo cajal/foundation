@@ -1,5 +1,5 @@
 from djutils import keys, merge, cache_rowproperty
-from foundation.virtual import utility, stimulus, scan, recording, fnn
+from foundation.virtual import utility, stimulus, scan, recording, fnn, function
 
 
 @keys
@@ -10,10 +10,10 @@ class FnnVisualScanCCNorm:
     def key_list(self):
         return [
             fnn.NetworkModel,
-            fnn.VisualScaNetwork,
+            fnn.VisualScanNetwork,
             recording.TrialFilterSet,
-            utility.Bool.proj(perspectives="bool"),
-            utility.Bool.proj(modulations="bool"),
+            function.TrialPerspectives,
+            function.TrialModulations,
             stimulus.VideoSet,
             utility.Burnin,
         ]
@@ -25,18 +25,19 @@ class FnnVisualScanCCNorm:
         from foundation.function.response import Response, ResponseSet, VisualResponseMeasure, VisualResponseCorrelation
 
         # scan response
-        FnnVisualScanTrialResponse.populate(self.key, display_progress=True, reserve_jobs=True)
+        FnnVisualScanTrialResponse.populate(self.key, display_progress=True, reserve_jobs=True, limit=100)
 
-        # scan response keys
-        keys = fnn.VisualScanModel.proj() * recording.TrialFilterSet.proj() & self.key
-        for key in keys:
+        for key in self.key:
+            # populate with caching and cuda
             with cache_rowproperty(), use_cuda() if cuda else nullcontext():
-                # populate with caching and cuda
+
+                # response key
                 key = merge(
-                    fnn.VisualScanModel.proj() & key,
-                    fnn.VisualScanResponse,
-                    VisualScanFnnTrialResponse & self.key,
+                    fnn.VisualScanNetwork.proj() & key,
+                    fnn.VisualScanUnit,
+                    FnnVisualScanTrialResponse & self.key,
                 )
+
                 # cc_abs
                 VisualResponseCorrelation.populate(
                     self.key,
@@ -45,6 +46,7 @@ class FnnVisualScanCCNorm:
                     display_progress=True,
                     reserve_jobs=True,
                 )
+
                 # cc_max
                 VisualResponseMeasure.populate(
                     self.key,

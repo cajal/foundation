@@ -158,26 +158,36 @@ class VisualResponseCorrelation:
 
         # videos
         videos = (VideoSet & key).members.fetch("video_id", order_by="video_id")
-        videos_x = tqdm(videos, desc="Videos -- X")
-        videos_y = tqdm(videos, desc="Videos -- Y")
+        videos = tqdm(videos, desc="Videos")
 
-        # responses
-        responses = (ResponseSet & key).members
-        responses = responses.fetch("response_id", order_by="response_id", as_dict=True)
+        # response pair
+        key_x, key_y = (ResponseSet & key).members.fetch("response_id", order_by="response_id", as_dict=True)
+        response_x = (Response & key_x).link.response
+        response_y = (Response & key_y).link.response
+        x = []
+        y = []
 
-        # video responses
-        xy = []
+        # compute response set
         with disable_tqdm():
-            for videos, response in zip([videos_x, videos_y], responses):
-                response = (Response & response).link.response
-                response = concatenate(
-                    *(response.visual(video_id=v) for v in videos),
-                    burnin=key["burnin"],
-                )
-                xy.append(response)
+            for video in videos:
+
+                # video responses
+                _x = response_x.visual(video_id=video)
+                _y = response_y.visual(video_id=video)
+
+                # verify response pair
+                assert _x.matches(_y)
+
+                # append
+                x.append(_x)
+                y.append(_y)
+
+        # concatenate responses
+        x = concatenate(*x, burnin=key["burnin"])
+        y = concatenate(*y, burnin=key["burnin"])
 
         # response correlation
-        correlation = (Correlation & key).link.correlation(*xy)
+        correlation = (Correlation & key).link.correlation(x, y)
 
         # insert
         self.insert1(dict(key, correlation=correlation))
