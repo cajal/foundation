@@ -86,8 +86,9 @@ class Instance(NetworkModel):
         else:
             if cycle > 0:
                 logger.info("Reloading from previous cycle")
-                key = merge(self.key.proj(cycle="cycle - 1"), fnn.Instance, model_type)
-                network = NetworkModel & {"network_id": network_id, "model_id": key.fetch("model_id")}
+                key = self.key.proj(cycle="cycle - 1").fetch1()
+                _model_id = (model_type & key).fetch1("model_id")
+                network = NetworkModel & {"network_id": network_id, "model_id": _model_id}
                 params = network.parameters(device="cuda")
 
                 # reload parameters
