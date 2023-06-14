@@ -44,7 +44,7 @@ class Instance(NetworkModel):
         ]
 
     @rowmethod
-    def _train(self, rank, network_id):
+    def _train(self, rank, network_id, model_type):
         """
         Parameters
         ----------
@@ -52,6 +52,8 @@ class Instance(NetworkModel):
             distributed rank
         network_id : str
             key (foundation.fnn.network.Network)
+        model_type : foundation.fnn.Model.*
+            model part table
         """
         from torch import device
         from torch.cuda import current_device
@@ -61,7 +63,7 @@ class Instance(NetworkModel):
         from foundation.fnn.cache import NetworkInfo, NetworkCheckpoint, NetworkDone
 
         # model id, cycle, checkpoint
-        key = merge(self.key, fnn.Model.Instance)
+        key = merge(self.key, model_type)
         model_id, cycle, groups = key.fetch1("model_id", "cycle", "parallel")
         checkpoint = NetworkCheckpoint & {"rank": rank, "network_id": network_id, "model_id": model_id}
         initialize = (cycle == 0) and (not checkpoint)
@@ -84,7 +86,7 @@ class Instance(NetworkModel):
         else:
             if cycle > 0:
                 logger.info("Reloading from previous cycle")
-                key = merge(self.key.proj(cycle="cycle - 1"), fnn.Instance, fnn.Model.Instance)
+                key = merge(self.key.proj(cycle="cycle - 1"), fnn.Instance, model_type)
                 network = NetworkModel & {"network_id": network_id, "model_id": key.fetch("model_id")}
                 params = network.parameters(device="cuda")
 
@@ -177,7 +179,11 @@ class Instance(NetworkModel):
             trainer = Instance & key
 
             # train network
-            trainer._train(rank=rank, network_id=network_id)
+            trainer._train(
+                rank=rank,
+                network_id=network_id,
+                model_type=fnn.Model.Instance,
+            )
 
     @rowmethod
     def train(self, network_id):
@@ -275,7 +281,11 @@ class NetworkSetInstance(NetworkModel):
             trainer = Instance & key
 
             # train network
-            trainer._train(rank=rank, network_id=network_ids[rank])
+            trainer._train(
+                rank=rank,
+                network_id=network_ids[rank],
+                model_type=fnn.Model.NetworkSetInstance,
+            )
 
     @rowmethod
     def train(self, network_id):

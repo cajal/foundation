@@ -55,15 +55,27 @@ class TrialResponse(Response):
 
     @rowmethod
     def visual(self, video_id):
-        from foundation.recording.compute_trace import VisualTrace
+        from foundation.recording.compute_visual import Trace
+        from foundation.utils.response import Trials
 
-        return (VisualTrace & self.key & {"video_id": video_id}).response
+        # visual responses
+        responses, trial_ids = (Trace & self.key & {"video_id": video_id}).responses
+
+        # response trials
+        return Trials(data=responses.T, index=trial_ids)
 
     @rowproperty
     def timing(self):
         from foundation.utility.resample import Rate, Offset
 
-        return (Rate & self.key).link.period, (Offset & self.key).link.offset
+        # sampling period
+        period = (Rate & self.key).link.period
+
+        # response offset
+        offset = (Offset & self.key).link.offset
+
+        # response timing
+        return period, offset
 
 
 @keys
@@ -102,4 +114,5 @@ class FnnTrialResponse(Response):
     def timing(self):
         from foundation.fnn.network import Network
 
+        # response timing
         return (Network & self.key).link.data.link.timing
