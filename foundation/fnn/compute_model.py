@@ -56,8 +56,6 @@ class _Instance(NetworkModel):
         network_id : str
             key (foundation.fnn.network.Network)
         """
-        from torch import device
-        from torch.cuda import current_device
         from foundation.fnn.network import Network
         from foundation.fnn.model import Model, NetworkModel
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
@@ -71,14 +69,13 @@ class _Instance(NetworkModel):
 
         # network module
         module = (State & self.key).link.state.build(network_id=network_id, initialize=initialize)
-        cuda = device("cuda", current_device())
-        module = module.to(device=cuda)
+        module = module.to(device="cuda")
 
         if checkpoint:
             logger.info("Reloading from checkpoint")
 
             # load checkpoint
-            prev = checkpoint.load(device=cuda)
+            prev = checkpoint.load(device="cuda")
 
             # reload parameters
             module.load_state_dict(prev["state_dict"])
@@ -97,7 +94,7 @@ class _Instance(NetworkModel):
 
                 # load previous cycle
                 network = NetworkModel & {"network_id": network_id, "model_id": _model_id}
-                params = network.parameters(device=cuda)
+                params = network.parameters(device="cuda")
 
                 # reload parameters
                 module.load_state_dict(params)
