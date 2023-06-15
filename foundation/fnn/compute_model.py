@@ -113,7 +113,7 @@ class _Instance(NetworkModel):
 
         # training dataset
         network = Network & {"network_id": network_id}
-        dataset = network.link.data.trainset
+        dataset = network.link.data.dataset
 
         # data loader
         loader = (Loader & self.key).link.loader
