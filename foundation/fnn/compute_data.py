@@ -173,7 +173,7 @@ class VisualScan(NetworkData):
 
         # data tiers
         training_tier, validation_tier = self.key.fetch1("training_tier", "validation_tier")
-        tier_keys = [{"tier_index": index} for index in ["training_tier", "validation_tier"]]
+        tier_keys = [{"tier_index": index} for index in [training_tier, validation_tier]]
 
         # trials
         trials = merge(
