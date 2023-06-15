@@ -20,16 +20,6 @@ class _Modulation:
         """
         raise NotImplementedError()
 
-    @rowproperty
-    def dropout(self):
-        """
-        Returns
-        -------
-        float
-            dropout probability
-        """
-        return 0
-
 
 # -- Modulation Types --
 
@@ -38,13 +28,14 @@ class _Modulation:
 class Lstm(_Modulation):
     definition = """
     features        : int unsigned      # lstm features
+    drop            : decimal(6, 6)     # dropout probability
     """
 
     @rowproperty
     def nn(self):
         from fnn.model.modulations import Lstm
 
-        return Lstm(features=self.fetch1("features"))
+        return Lstm(**self.fetch1("KEY"))
 
 
 # -- Modulation --

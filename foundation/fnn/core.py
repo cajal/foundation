@@ -32,14 +32,15 @@ class SpatialTemporalResidual(_Feedforward):
     spatial_strides : varchar(128)  # layer spatial strides (csv)
     temporal_sizes  : varchar(128)  # layer temporal sizes (csv)
     nonlinear       : varchar(128)  # nonlinearity
+    drop            : decimal(6, 6) # dropout probability
     """
 
     @rowproperty
     def nn(self):
         from fnn.model.feedforwards import SpatialTemporalResidual
 
-        channels, spatial_sizes, spatial_strides, temporal_sizes, nonlinear = self.fetch1(
-            "channels", "spatial_sizes", "spatial_strides", "temporal_sizes", "nonlinear"
+        channels, spatial_sizes, spatial_strides, temporal_sizes, nonlinear, drop = self.fetch1(
+            "channels", "spatial_sizes", "spatial_strides", "temporal_sizes", "nonlinear", "drop"
         )
         return SpatialTemporalResidual(
             channels=channels.split(","),
@@ -47,6 +48,7 @@ class SpatialTemporalResidual(_Feedforward):
             spatial_strides=spatial_strides.split(","),
             temporal_sizes=temporal_sizes.split(","),
             nonlinear=nonlinear,
+            drop=drop,
         )
 
 
@@ -87,6 +89,7 @@ class Rvt(_Recurrent):
     channels        : int unsigned  # channels per stream
     groups          : int unsigned  # groups per stream
     kernel_size     : int unsigned  # kernel size
+    drop            : decimal(6, 6) # dropout probability
     """
 
     @rowproperty
@@ -123,16 +126,6 @@ class _Core:
         """
         raise NotImplementedError()
 
-    @rowproperty
-    def dropout(self):
-        """
-        Returns
-        -------
-        float
-            dropout probability
-        """
-        return 0
-
 
 # -- Core Types --
 
@@ -156,22 +149,10 @@ class FeedforwardRecurrent(_Core):
         )
 
 
-@schema.lookup
-class FeedforwardRecurrentDropout(FeedforwardRecurrent):
-    definition = """
-    -> FeedforwardRecurrent
-    dropout         : decimal(6, 6) # dropout probability
-    """
-
-    @rowproperty
-    def dropout(self):
-        return float(self.fetch1("dropout"))
-
-
 # -- Core --
 
 
 @schema.link
 class Core:
-    links = [FeedforwardRecurrent, FeedforwardRecurrentDropout]
+    links = [FeedforwardRecurrent]
     name = "core"

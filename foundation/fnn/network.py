@@ -61,20 +61,13 @@ class VisualNetwork(_Network):
     def module(self):
         from fnn.model.networks import Visual
 
-        core = (Core & self).link
-        perspective = (Perspective & self).link
-        modulation = (Modulation & self).link
-        readout = (Readout & self).link
-        reduce = (Reduce & self).link
-        unit = (Unit & self).link
-
         module = Visual(
-            core=core.nn,
-            perspective=perspective.nn,
-            modulation=modulation.nn,
-            readout=readout.nn,
-            reduce=reduce.nn,
-            unit=unit.nn,
+            core=(Core & self).link.nn,
+            perspective=(Perspective & self).link.nn,
+            modulation=(Modulation & self).link.nn,
+            readout=(Readout & self).link.nn,
+            reduce=(Reduce & self).link.nn,
+            unit=(Unit & self).link.nn,
         )
 
         stimuli, perspectives, modulations, units = self.data.sizes
@@ -85,11 +78,6 @@ class VisualNetwork(_Network):
             units=units,
             streams=self.fetch1("streams"),
         )
-
-        module.core.dropout(p=core.dropout)
-        module.perspective.dropout(p=perspective.dropout)
-        module.modulation.dropout(p=modulation.dropout)
-        module.readout.dropout(p=readout.dropout)
 
         return module
 
