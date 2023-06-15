@@ -184,7 +184,9 @@ class VisualScan(NetworkData):
             recording.TrialVideo,
             stimulus.Video,
         )
-        trials, ids, tiers, samples = trials.fetch("KEY", "trial_id", "tier_index", "samples", order_by="start")
+        trials, ids, tiers, samples = trials.fetch(
+            "KEY", "trial_id", "tier_index", "samples", order_by="start", limit=10
+        )  # TODO
 
         # load trials
         for trial in tqdm(trials, desc="Trials"):
