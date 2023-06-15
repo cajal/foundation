@@ -26,20 +26,19 @@ class _Loader:
 
 
 @schema.lookup
-class RandomBatches(_Loader):
+class Batches(_Loader):
     definition = """
     sample_size     : int unsigned  # samples in a datapoint
     batch_size      : int unsigned  # datapoints in a batch
-    epoch_size      : int unsigned  # batches in an epoch
-    train_fraction  : decimal(6, 6) # training fraction
-    seed            : int unsigned  # seed for train/val splitting
+    training_size   : int unsigned  # training batches in an epoch
+    validation_size : int unsigned  # validation batches in an epoch
     """
 
     @rowproperty
     def loader(self):
-        from fnn.train.loaders import RandomBatches
+        from fnn.train.loaders import Batches
 
-        return RandomBatches(**self.fetch1())
+        return Batches(**self.fetch1())
 
 
 # -- Loader --
@@ -47,7 +46,7 @@ class RandomBatches(_Loader):
 
 @schema.link
 class Loader:
-    links = [RandomBatches]
+    links = [Batches]
     name = "loader"
     comment = "data loader"
 
