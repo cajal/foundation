@@ -10,19 +10,20 @@ from foundation.schemas import fnn as schema
 
 
 @schema.lookup
-class VideoSpec:
+class VisualSpec:
     definition = """
-    -> utility.Resize
     -> utility.Resolution
-    """
-
-
-@schema.lookup
-class TraceSpec:
-    definition = """
-    -> utility.Standardize
-    -> utility.Resample
-    -> utility.Offset
+    -> utility.Resize
+    -> utility.Rate
+    -> utility.Resample.proj(perspective_resample_id="resample_id")
+    -> utility.Resample.proj(modulation_resample_id="resample_id")
+    -> utility.Resample.proj(unit_resample_id="resample_id")
+    -> utility.Offset.proj(perspective_offset_id="offset_id")
+    -> utility.Offset.proj(modulation_offset_id="offset_id")
+    -> utility.Offset.proj(unit_offset_id="offset_id")
+    -> utility.Standardize.proj(perspective_standardize_id="standardize_id")
+    -> utility.Standardize.proj(modulation_standardize_id="standardize_id")
+    -> utility.Standardize.proj(unit_standardize_id="standardize_id")
     """
 
 
@@ -31,7 +32,7 @@ class TraceSpec:
 
 @schema.link
 class Spec:
-    links = [VideoSpec, TraceSpec]
+    links = [VisualSpec]
     name = "spec"
     comment = "data specification"
 
@@ -59,15 +60,14 @@ class _Data:
 @schema.lookup
 class VisualScan(_Data):
     definition = """
+    -> Spec.VisualSpec
     -> recording.ScanVisualPerspectives
     -> recording.ScanVisualModulations
     -> recording.ScanUnits
     -> recording.ScanTrials
-    -> Spec.VideoSpec.proj(stimuli_id="spec_id")
-    -> Spec.TraceSpec.proj(perspectives_id="spec_id")
-    -> Spec.TraceSpec.proj(modulations_id="spec_id")
-    -> Spec.TraceSpec.proj(units_id="spec_id")
-    -> utility.Rate
+    -> recording.Tier
+    training_tier       : int unsigned  # training tier index
+    validation_tier     : int unsigned  # validation tier index
     """
 
     @rowproperty

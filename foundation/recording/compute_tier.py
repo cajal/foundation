@@ -12,7 +12,7 @@ class Tier:
     """Trial Tier"""
 
     @rowmethod
-    def tiers(self, trials):
+    def split(self, trials):
         """
         Parameters
         ----------
@@ -41,7 +41,7 @@ class RandomSplit:
         ]
 
     @rowmethod
-    def tiers(self, trials):
+    def split(self, trials):
         # ordered trial ids
         trial_ids = trials.fetch("trial_id", order_by="trial_id")
 

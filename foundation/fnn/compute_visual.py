@@ -21,12 +21,12 @@ class NetworkModelTrial:
     @rowproperty
     def responses(self):
         """
-        Returns
+        Returns (trials exist)
         -------
-        2D array | 3D array
-            [samples, units] | [samples, trials, units] -- dtype=float-like
-        None | List[str]
-            None | list of trial_ids -- key (foundation.recording.trial.Trial), ordered by trial start
+        3D array
+            [samples, trials, units] -- dtype=float-like
+        List[str] | None
+            list of trial_ids -- key (foundation.recording.trial.Trial)
         """
         from foundation.fnn.network import Network
         from foundation.fnn.model import NetworkModel
@@ -46,6 +46,7 @@ class NetworkModelTrial:
             trial_modulations=trial_modulations,
             trial_filterset_id=trial_filterset_id,
         )
+        assert trial_ids, "No trials found"
 
         # visual responses
         responses = model.generate_responses(

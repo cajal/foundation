@@ -17,7 +17,7 @@ class _Tier:
         Returns
         -------
         foundation.recording.compute_tier.Tier (row)
-            trial tier computer
+            trial tier
         """
         raise NotImplementedError()
 
@@ -71,7 +71,7 @@ class TrialTier:
         trials = Trial & (TrialSet & key).members
 
         # trial tiers
-        tiers = (Tier & key).link.tier.tiers(trials=trials)
+        tiers = (Tier & key).link.tier.split(trials=trials)
 
         for index, trials in enumerate(tiers):
 
