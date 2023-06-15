@@ -49,7 +49,13 @@ class Instance(_Model):
 class NetworkSetInstance(_Model):
     definition = """
     -> NetworkSet
-    -> Instance
+    -> State
+    -> Loader
+    -> Objective
+    -> Optimizer
+    -> Scheduler
+    parallel        : int unsigned      # parallel groups
+    cycle           : int unsigned      # training cycle
     """
 
     @rowproperty
