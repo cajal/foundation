@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from datajoint import U
 from djutils import keys, merge, rowproperty, rowmethod, cache_rowproperty
 from foundation.utils import tqdm, disable_tqdm
 from foundation.virtual import stimulus, recording, fnn
@@ -123,8 +124,8 @@ class VisualScan(NetworkData):
     @rowproperty
     def sizes(self):
         # stimuli
-        channels = merge(self.trials, recording.TrialVideo, stimulus.VideoInfo).fetch("channels")
-        sizes = list(set(channels))
+        videos = merge(self.trials, recording.TrialVideo, stimulus.VideoInfo)
+        sizes = [(U("channels") & videos).fetch1("channels")]
 
         # perspectives
         sizes += [(recording.TraceSet & self.key_perspective).fetch1("members")]

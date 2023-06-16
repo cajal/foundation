@@ -192,7 +192,7 @@ class MonitorRetina(_Perspective):
 
         monitor_key = self.proj(pixel_id="monitor_pixel_id")
         retina_key = self.proj(pixel_id="retina_pixel_id")
-        height, width, features, nonlinear = self.fetch1("height", "width", "features", "nonlinear")
+        height, width, features, nonlinear, drop = self.fetch1("height", "width", "features", "nonlinear", "drop")
 
         return MonitorRetina(
             monitor=(Monitor & self).link.nn,
@@ -203,6 +203,7 @@ class MonitorRetina(_Perspective):
             width=width,
             features=features.split(","),
             nonlinear=nonlinear,
+            drop=drop,
         )
 
 
