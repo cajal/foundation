@@ -224,68 +224,73 @@ class VisualScan(NetworkData):
         data = pd.DataFrame(data, index=pd.Index(ids, name="trial_id"))
         return Dataset(data)
 
-    # @rowmethod
-    # def visual_inputs(self, video_id, trial_perspectives=True, trial_modulations=True, trial_filterset_id=None):
-    #     from foundation.utils.resample import flip_index, truncate
-    #     from foundation.utility.resample import Rate
-    #     from foundation.stimulus.compute_video import ResizedVideo
-    #     from foundation.recording.compute_trace import StandardizedTraces, ResampledTraces
-    #     from foundation.recording.trial import Trial, TrialVideo, TrialBounds, TrialFilterSet
+    @rowmethod
+    def visual_inputs(self, video_id, trial_perspectives=True, trial_modulations=True, trial_filterset_id=None):
+        from foundation.utils.resample import flip_index, truncate
+        from foundation.utility.resample import Rate
+        from foundation.stimulus.compute_video import ResizedVideo
+        from foundation.recording.compute_trace import StandardizedTraces, ResampledTraces
+        from foundation.recording.trial import Trial, TrialVideo, TrialBounds, TrialFilterSet
 
-    #     # resized video
-    #     key = fnn.Spec.VideoSpec & self.key.proj(spec_id="stimuli_id")
-    #     video = (ResizedVideo & key & {"video_id": video_id}).video
+        # data keys
+        key_v = self.key_video
+        key_p = self.key_perspective
+        key_m = self.key_modulation
 
-    #     # resampled video
-    #     time_scale = merge(self.key, recording.ScanVideoTimeScale).fetch1("time_scale")
-    #     period = (Rate & self.key).link.period
-    #     index = flip_index(video.times * time_scale, period)
-    #     video = video.array[index]
+        # resized video
+        key = self.key_video
+        video = (ResizedVideo & key_v & {"video_id": video_id}).video
 
-    #     # neither perspectives nor modulations requested
-    #     if not trial_perspectives and not trial_modulations:
-    #         return video, None, None, None
+        # resampled video
+        time_scale = (recording.ScanVideoTimeScale & self.key).fetch1("time_scale")
+        period = (Rate & key_v).link.period
+        index = flip_index(video.times * time_scale, period)
+        video = video.array[index]
 
-    #     # all trials
-    #     trials = self.trials()
+        # neither perspectives nor modulations requested
+        if not trial_perspectives and not trial_modulations:
+            return video, None, None, None
 
-    #     # filter trials
-    #     if trial_filterset_id is not None:
-    #         trials = (TrialFilterSet & {"trial_filterset_id": trial_filterset_id}).filter(trials)
+        # all trials
+        trials = self.trials
 
-    #     # video trials
-    #     trials = merge(trials, TrialVideo, TrialBounds) & {"video_id": video_id}
-    #     trials = trials.fetch("trial_id", order_by="start").tolist()
+        # filtered trials
+        if trial_filterset_id is not None:
+            trials = (TrialFilterSet & {"trial_filterset_id": trial_filterset_id}).filter(trials)
 
-    #     # no trials
-    #     if not trials:
-    #         return video, None, None, None
+        # video trials
+        trials = merge(trials, TrialVideo, TrialBounds) & {"video_id": video_id}
+        trials = trials.fetch("trial_id", order_by="start").tolist()
 
-    #     # perspectives and modulations
-    #     perspectives_modulations = []
+        # no trials
+        if not trials:
+            return video, None, None, None
 
-    #     for key, requested, desc in [
-    #         [self.key_perspectives, trial_perspectives, "Perspectives"],
-    #         [self.key_modulations, trial_modulations, "Modulations"],
-    #     ]:
-    #         if requested:
-    #             # transform and resampler
-    #             transform = (StandardizedTraces & key).transform
-    #             resampler = ResampledTraces & key
+        # perspectives and modulations
+        perspectives_modulations = []
 
-    #             # resample and transform traces
-    #             traces = (resampler.trial(trial_id=trial) for trial in tqdm(trials, desc=desc))
-    #             with cache_rowproperty(), disable_tqdm():
-    #                 traces = np.stack(truncate(*map(transform, traces), tolerance=1), axis=1)
+        for key, requested, desc in [
+            [key_p, trial_perspectives, "Perspectives"],
+            [key_m, trial_modulations, "Modulations"],
+        ]:
+            if requested:
+                # transform and resampler
+                transform = (StandardizedTraces & key).transform
+                resampler = ResampledTraces & key
 
-    #             # verify length
-    #             assert len(traces) == len(video)
+                # resample and transform traces
+                traces = (resampler.trial(trial_id=trial) for trial in tqdm(trials, desc=desc))
+                with cache_rowproperty(), disable_tqdm():
+                    traces = np.stack(truncate(*map(transform, traces), tolerance=1), axis=1)
 
-    #             # append traces
-    #             perspectives_modulations.append(traces)
+                # verify length
+                assert len(traces) == len(video)
 
-    #         else:
-    #             # append none
-    #             perspectives_modulations.append(None)
+                # append traces
+                perspectives_modulations.append(traces)
 
-    #     return video, *perspectives_modulations, trials
+            else:
+                # append none
+                perspectives_modulations.append(None)
+
+        return video, *perspectives_modulations, trials
