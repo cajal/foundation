@@ -179,10 +179,11 @@ class MonitorRetina(_Perspective):
     -> Pixel.proj(monitor_pixel_id="pixel_id")
     -> Retina
     -> Pixel.proj(retina_pixel_id="pixel_id")
-    height          : int unsigned  # retina height
-    width           : int unsigned  # retina width
-    features        : varchar(128)  # mlp features (csv)
-    nonlinear       : varchar(128)  # nonlinearity
+    height          : int unsigned      # retina height
+    width           : int unsigned      # retina width
+    features        : varchar(128)      # mlp features (csv)
+    nonlinear       : varchar(128)      # nonlinearity
+    drop            : decimal(6, 6)     # dropout probability
     """
 
     @rowproperty
