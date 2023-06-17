@@ -25,7 +25,7 @@ class FnnVisualScanCCNorm:
         from foundation.function.response import Response, ResponseSet, VisualResponseMeasure, VisualResponseCorrelation
 
         # scan response
-        FnnVisualScanTrialResponse.populate(self.key, display_progress=True, reserve_jobs=True, limit=100)
+        FnnVisualScanTrialResponse.populate(self.key, display_progress=True, reserve_jobs=True)
 
         for key in self.key:
             # populate with caching and cuda

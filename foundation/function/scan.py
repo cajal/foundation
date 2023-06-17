@@ -30,9 +30,18 @@ class FnnVisualScanTrialResponse:
             recording.ScanUnit,
             recording.Trace.ScanUnit,
             recording.ScanTrials,
+            recording.TrialSet,
+            fnn.VisualScanNetwork,
+            fnn.VisualScan,
+            fnn.Spec.VisualSpec,
+            fnn.VisualSpec,
         )
-        unit_key = (unit_key * fnn.VisualScanNetwork).proj(..., spec_id="units_id")
-        unit_key = (unit_key * fnn.Spec.TraceSpec).fetch1()
+        unit_key = unit_key.proj(
+            resample_id="unit_resample_id",
+            offset_id="unit_offset_id",
+            standardize_id="unit_standardize_id",
+        )
+        unit_key = unit_key.fetch1()
         unit_key.update(key)
 
         # insert responses
