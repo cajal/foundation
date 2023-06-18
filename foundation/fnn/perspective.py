@@ -183,7 +183,7 @@ class MonitorRetina(_Perspective):
     width           : int unsigned      # retina width
     features        : varchar(128)      # mlp features (csv)
     nonlinear       : varchar(128)      # nonlinearity
-    drop            : decimal(6, 6)     # dropout probability
+    dropout         : decimal(6, 6)     # dropout probability
     """
 
     @rowproperty
@@ -192,7 +192,7 @@ class MonitorRetina(_Perspective):
 
         monitor_key = self.proj(pixel_id="monitor_pixel_id")
         retina_key = self.proj(pixel_id="retina_pixel_id")
-        height, width, features, nonlinear, drop = self.fetch1("height", "width", "features", "nonlinear", "drop")
+        height, width, features, nonlinear, dropout = self.fetch1("height", "width", "features", "nonlinear", "dropout")
 
         return MonitorRetina(
             monitor=(Monitor & self).link.nn,
@@ -203,7 +203,7 @@ class MonitorRetina(_Perspective):
             width=width,
             features=features.split(","),
             nonlinear=nonlinear,
-            drop=drop,
+            dropout=dropout,
         )
 
 

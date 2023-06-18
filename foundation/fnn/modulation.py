@@ -28,7 +28,7 @@ class _Modulation:
 class Lstm(_Modulation):
     definition = """
     features        : int unsigned      # lstm features
-    drop            : decimal(6, 6)     # dropout probability
+    dropout         : decimal(6, 6)     # dropout probability
     """
 
     @rowproperty
