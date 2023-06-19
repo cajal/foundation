@@ -257,7 +257,7 @@ class NetworkSetInstance(_Instance):
     @property
     def key_list(self):
         return [
-            fnn.ParallelNetworkSet,
+            fnn.NetworkSetCore,
             fnn.NetworkSetInstance,
         ]
 
