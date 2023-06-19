@@ -89,7 +89,6 @@ class Rvt(_Recurrent):
     channels        : int unsigned  # channels per stream
     groups          : int unsigned  # groups per stream
     kernel_size     : int unsigned  # kernel size
-    dynamic_size    : int unsigned  # dynamic size
     dropout         : decimal(6, 6) # dropout probability
     """
 
