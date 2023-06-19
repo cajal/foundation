@@ -25,57 +25,31 @@ class _Feedforward:
 
 
 @schema.lookup
-class SpatialTemporalResidual(_Feedforward):
+class Dense(_Feedforward):
     definition = """
-    channels        : varchar(128)  # layer channels (csv)
-    spatial_sizes   : varchar(128)  # layer spatial sizes (csv)
-    spatial_strides : varchar(128)  # layer spatial strides (csv)
-    temporal_sizes  : varchar(128)  # layer temporal sizes (csv)
+    pre_channels    : int unsigned  # pre channels
+    pre_kernel      : int unsigned  # pre kernel size
+    pre_stride      : int unsigned  # pre stride
+    block_channels  : varchar(128)  # block channels per stream (csv)
+    block_groups    : varchar(128)  # block groups per stream (csv)
+    block_layers    : varchar(128)  # block layers (csv)
+    block_kernels   : varchar(128)  # block kernel sizes (csv)
+    block_dynamics  : varchar(128)  # block dynamic sizes (csv)
+    pool_sizes      : varchar(128)  # pooling sizes (csv)
     nonlinear       : varchar(128)  # nonlinearity
     dropout         : decimal(6, 6) # dropout probability
     """
 
     @rowproperty
     def nn(self):
-        from fnn.model.feedforwards import SpatialTemporalResidual
+        from fnn.model.feedforwards import Dense
 
-        channels, spatial_sizes, spatial_strides, temporal_sizes, nonlinear, dropout = self.fetch1(
-            "channels", "spatial_sizes", "spatial_strides", "temporal_sizes", "nonlinear", "dropout"
-        )
-        return SpatialTemporalResidual(
-            channels=channels.split(","),
-            spatial_sizes=spatial_sizes.split(","),
-            spatial_strides=spatial_strides.split(","),
-            temporal_sizes=temporal_sizes.split(","),
-            nonlinear=nonlinear,
-            dropout=dropout,
-        )
+        kwargs = self.fetch1("KEY")
+        for k, v in kwargs.items():
+            if k.startswith("block_") or k.startswith("pool_"):
+                kwargs[k] = v.split(",")
 
-
-@schema.lookup
-class SpatialResidual(_Feedforward):
-    definition = """
-    channels        : varchar(128)  # layer channels (csv)
-    kernel_sizes    : varchar(128)  # layer spatial sizes (csv)
-    strides         : varchar(128)  # layer spatial strides (csv)
-    nonlinear       : varchar(128)  # nonlinearity
-    dropout         : decimal(6, 6) # dropout probability
-    """
-
-    @rowproperty
-    def nn(self):
-        from fnn.model.feedforwards import SpatialResidual
-
-        channels, kernel_sizes, strides, nonlinear, dropout = self.fetch1(
-            "channels", "kernel_sizes", "strides", "nonlinear", "dropout"
-        )
-        return SpatialResidual(
-            channels=channels.split(","),
-            kernel_sizes=kernel_sizes.split(","),
-            strides=strides.split(","),
-            nonlinear=nonlinear,
-            dropout=dropout,
-        )
+        return Dense(**kwargs)
 
 
 # -- Feedforward --
@@ -83,7 +57,7 @@ class SpatialResidual(_Feedforward):
 
 @schema.link
 class Feedforward:
-    links = [SpatialTemporalResidual, SpatialResidual]
+    links = [Dense]
     name = "feedforward"
 
 
@@ -115,6 +89,7 @@ class Rvt(_Recurrent):
     channels        : int unsigned  # channels per stream
     groups          : int unsigned  # groups per stream
     kernel_size     : int unsigned  # kernel size
+    dynamic_size    : int unsigned  # dynamic size
     dropout         : decimal(6, 6) # dropout probability
     """
 
@@ -161,7 +136,6 @@ class FeedforwardRecurrent(_Core):
     definition = """
     -> Feedforward
     -> Recurrent
-    channels        : int unsigned  # channels per stream
     """
 
     @rowproperty
@@ -171,7 +145,6 @@ class FeedforwardRecurrent(_Core):
         return FeedforwardRecurrent(
             feedforward=(Feedforward & self).link.nn,
             recurrent=(Recurrent() & self).link.nn,
-            channels=self.fetch1("channels"),
         )
 
 
