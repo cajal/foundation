@@ -52,12 +52,38 @@ class SpatialTemporalResidual(_Feedforward):
         )
 
 
+@schema.lookup
+class SpatialResidual(_Feedforward):
+    definition = """
+    channels        : varchar(128)  # layer channels (csv)
+    kernel_sizes    : varchar(128)  # layer spatial sizes (csv)
+    strides         : varchar(128)  # layer spatial strides (csv)
+    nonlinear       : varchar(128)  # nonlinearity
+    dropout         : decimal(6, 6) # dropout probability
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.feedforwards import SpatialResidual
+
+        channels, kernel_sizes, strides, nonlinear, dropout = self.fetch1(
+            "channels", "kernel_sizes", "strides", "nonlinear", "dropout"
+        )
+        return SpatialResidual(
+            channels=channels.split(","),
+            kernel_sizes=kernel_sizes.split(","),
+            strides=strides.split(","),
+            nonlinear=nonlinear,
+            dropout=dropout,
+        )
+
+
 # -- Feedforward --
 
 
 @schema.link
 class Feedforward:
-    links = [SpatialTemporalResidual]
+    links = [SpatialTemporalResidual, SpatialResidual]
     name = "feedforward"
 
 
