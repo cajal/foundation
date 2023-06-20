@@ -87,12 +87,25 @@ class Raw(_Pixel):
         return Raw()
 
 
+@schema.lookup
+class Linear(_Pixel):
+    definition = """
+    scale               : decimal(6, 4)     # pixel intensity scale
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.pixels import Linear
+
+        return Linear(**self.fetch1())
+
+
 # -- Pixel Intensity --
 
 
 @schema.link
 class Pixel:
-    links = [Raw]
+    links = [Raw, Linear]
     name = "pixel"
 
 
