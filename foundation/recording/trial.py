@@ -15,12 +15,12 @@ class _Trial:
     """Recording Trial"""
 
     @rowproperty
-    def flips(self):
+    def flip_times(self):
         """
         Returns
         -------
         1D array
-            stimulus flip times
+            flip times of stimulus frames
         """
         raise NotImplementedError()
 
@@ -30,7 +30,7 @@ class _Trial:
         Returns
         -------
         str
-            video_id (foundation.stimulus.video.Video)
+            key (foundation.stimulus.video.Video)
         """
         raise NotImplementedError()
 
@@ -45,7 +45,7 @@ class ScanTrial(_Trial):
     """
 
     @rowproperty
-    def flips(self):
+    def flip_times(self):
         return (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
 
     @rowproperty
@@ -89,7 +89,7 @@ class TrialBounds:
 
     def make(self, key):
         # trial flip times
-        flips = (Trial & key).link.flips
+        flips = (Trial & key).link.flip_times
 
         # verify flip times
         assert np.isfinite(flips).all()

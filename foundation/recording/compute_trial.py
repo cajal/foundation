@@ -49,7 +49,7 @@ class ResampledTrial:
         from foundation.recording.trial import Trial
 
         # trial flip times
-        flips = (Trial & self.key).link.flips
+        flips = (Trial & self.key).link.flip_times
 
         # resampling period
         period = (Rate & self.key).link.period

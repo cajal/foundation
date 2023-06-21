@@ -25,6 +25,20 @@ class Video:
         """
         raise NotImplementedError()
 
+    @rowproperty
+    def directions(self):
+        """
+        Yields
+        ------
+        float
+            direction -- degrees [0, 360)
+        float
+            onset of direction (seconds relative to first video frame)
+        float
+            offset of direction (seconds relative to first video frame)
+        """
+        raise NotImplementedError()
+
 
 # -- Video Types --
 
@@ -79,6 +93,21 @@ class Monet2(Video):
         frames, fps = (pipe_stim.Monet2 & self.key).fetch1("movie", "fps")
         frames = np.einsum("H W C T -> T H W C", frames)
         return video.Video.fromarray(frames, period=1 / float(fps))
+
+    @rowproperty
+    def directions(self):
+        directions, onsets, duration, n_dirs, frac = (pipe_stim.Monet2 & self.key).fetch1(
+            "directions", "onsets", "duration", "n_dirs", "ori_fraction", squeeze=True
+        )
+        assert len(directions) == len(onsets) == n_dirs
+
+        # 0 degree is right, 90 is up
+        directions = (90 - directions) % 360
+
+        # direction offsets
+        offsets = onsets + float(duration) / n_dirs * frac
+
+        yield from zip(directions, onsets, offsets)
 
 
 @keys
