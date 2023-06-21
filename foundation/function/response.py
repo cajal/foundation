@@ -85,8 +85,8 @@ class ResponseSet:
 @schema.computed
 class VisualResponseMeasure:
     definition = """
-    -> stimulus.VideoSet
     -> Response
+    -> stimulus.VideoSet
     -> utility.Measure
     -> utility.Burnin
     ---
@@ -120,8 +120,8 @@ class VisualResponseMeasure:
 @schema.computed
 class VisualResponseCorrelation:
     definition = """
-    -> stimulus.VideoSet
     -> ResponseSet
+    -> stimulus.VideoSet
     -> utility.Correlation
     -> utility.Burnin
     ---
