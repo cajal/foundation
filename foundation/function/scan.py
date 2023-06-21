@@ -1,24 +1,17 @@
 from djutils import merge
-from foundation.virtual import recording, fnn
-from foundation.function.response import (
-    TrialResponse,
-    TrialPerspectives,
-    TrialModulations,
-    FnnTrialResponse,
-    Response,
-    ResponseSet,
-)
+from foundation.virtual import utility, recording, fnn
+from foundation.function.response import TrialResponse, FnnTrialResponse, Response, ResponseSet
 from foundation.schemas import function as schema
 
 
 @schema.computed
 class FnnVisualScanTrialResponse:
     definition = """
-    -> fnn.NetworkModel             # network model
-    -> recording.TrialFilterSet     # trial filter
-    -> TrialPerspectives            # trial perspectives
-    -> TrialModulations             # trial modulations
-    -> fnn.VisualScanUnit           # scan unit
+    -> fnn.NetworkModel
+    -> recording.TrialFilterSet
+    -> utility.Bool.proj(trial_perspectives="bool")
+    -> utility.Bool.proj(trial_modulations="bool")
+    -> fnn.VisualScanUnit
     ---
     -> ResponseSet                  # model/recording response pair
     """

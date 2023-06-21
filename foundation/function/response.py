@@ -46,27 +46,13 @@ class TrialResponse(_Response):
 
 
 @schema.lookup
-class TrialPerspectives:
-    definition = """
-    trial_perspectives  : bool      # trial perspectives
-    """
-
-
-@schema.lookup
-class TrialModulations:
-    definition = """
-    trial_modulations   : bool      # trial modulations
-    """
-
-
-@schema.lookup
 class FnnTrialResponse(_Response):
     definition = """
-    -> fnn.NetworkModel             # network model
-    -> recording.TrialFilterSet     # trial filter
-    -> TrialPerspectives            # trial perspectives
-    -> TrialModulations             # trial modulations
-    -> fnn.NetworkResponseIndex     # network response index
+    -> fnn.NetworkModel                 # network model
+    -> recording.TrialFilterSet         # trial filter
+    trial_perspectives  : bool          # trial perspectives
+    trial_modulations   : bool          # trial modulations
+    response_index      : int unsigned  # network response index
     """
 
     @rowproperty
