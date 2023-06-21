@@ -44,13 +44,13 @@ class Response:
 
 
 @keys
-class TrialResponse(Response):
+class RecordingResponse(Response):
     """Recording Trial Response"""
 
     @property
     def key_list(self):
         return [
-            function.TrialResponse,
+            function.RecordingResponse,
         ]
 
     @rowmethod
@@ -79,13 +79,13 @@ class TrialResponse(Response):
 
 
 @keys
-class FnnTrialResponse(Response):
+class FnnRecordingResponse(Response):
     """Fnn Recording Trial Response"""
 
     @property
     def key_list(self):
         return [
-            function.FnnTrialResponse,
+            function.FnnRecordingResponse,
         ]
 
     @rowmethod

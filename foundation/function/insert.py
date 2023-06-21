@@ -3,8 +3,8 @@ from foundation.virtual import utility, stimulus, scan, recording, fnn, function
 
 
 @keys
-class FnnVisualScanCCNorm:
-    """Fnn Visual Scan -- Normalized Signal Correlation"""
+class VisualScanFnnCCNorm:
+    """Visual Scan Fnn -- Normalized Signal Correlation"""
 
     @property
     def key_list(self):
@@ -21,11 +21,11 @@ class FnnVisualScanCCNorm:
     def fill(self, cuda=True):
         from contextlib import nullcontext
         from foundation.utils.torch import use_cuda
-        from foundation.function.scan import FnnVisualScanTrialResponse
+        from foundation.function.scan import VisualScanFnnRecordingResponse
         from foundation.function.response import Response, ResponseSet, VisualResponseMeasure, VisualResponseCorrelation
 
         # scan response
-        FnnVisualScanTrialResponse.populate(self.key, display_progress=True, reserve_jobs=True)
+        VisualScanFnnRecordingResponse.populate(self.key, display_progress=True, reserve_jobs=True, limit=10)
 
         for key in self.key:
             # populate with caching and cuda
@@ -35,7 +35,7 @@ class FnnVisualScanCCNorm:
                 key = merge(
                     fnn.VisualScanNetwork.proj() & key,
                     fnn.VisualScanUnit,
-                    FnnVisualScanTrialResponse & self.key,
+                    VisualScanFnnRecordingResponse & self.key,
                 )
 
                 # cc_abs
@@ -50,7 +50,7 @@ class FnnVisualScanCCNorm:
                 # cc_max
                 VisualResponseMeasure.populate(
                     self.key,
-                    key * ResponseSet.Member & Response.TrialResponse,
+                    key * ResponseSet.Member & Response.RecordingResponse,
                     utility.Measure.CCMax,
                     display_progress=True,
                     reserve_jobs=True,

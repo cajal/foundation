@@ -27,7 +27,7 @@ class _Response:
 
 
 @schema.lookup
-class TrialResponse(_Response):
+class RecordingResponse(_Response):
     definition = """
     -> recording.Trace              # response trace
     -> recording.TrialFilterSet     # trial filter
@@ -40,13 +40,13 @@ class TrialResponse(_Response):
 
     @rowproperty
     def response(self):
-        from foundation.function.compute_response import TrialResponse
+        from foundation.function.compute_response import RecordingResponse
 
-        return TrialResponse & self
+        return RecordingResponse & self
 
 
 @schema.lookup
-class FnnTrialResponse(_Response):
+class FnnRecordingResponse(_Response):
     definition = """
     -> fnn.NetworkModel                 # network model
     -> recording.TrialFilterSet         # trial filter
@@ -57,9 +57,9 @@ class FnnTrialResponse(_Response):
 
     @rowproperty
     def response(self):
-        from foundation.function.compute_response import FnnTrialResponse
+        from foundation.function.compute_response import FnnRecordingResponse
 
-        return FnnTrialResponse & self
+        return FnnRecordingResponse & self
 
 
 # -- Response --
@@ -67,7 +67,7 @@ class FnnTrialResponse(_Response):
 
 @schema.link
 class Response:
-    links = [TrialResponse, FnnTrialResponse]
+    links = [RecordingResponse, FnnRecordingResponse]
     name = "response"
     comment = "functional response"
 

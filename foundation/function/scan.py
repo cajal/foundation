@@ -1,11 +1,11 @@
 from djutils import merge
 from foundation.virtual import utility, recording, fnn
-from foundation.function.response import TrialResponse, FnnTrialResponse, Response, ResponseSet
+from foundation.function.response import RecordingResponse, FnnRecordingResponse, Response, ResponseSet
 from foundation.schemas import function as schema
 
 
 @schema.computed
-class FnnVisualScanTrialResponse:
+class VisualScanFnnRecordingResponse:
     definition = """
     -> fnn.NetworkModel
     -> recording.TrialFilterSet
@@ -38,14 +38,14 @@ class FnnVisualScanTrialResponse:
         unit_key.update(key)
 
         # insert responses
-        TrialResponse.insert1(unit_key, ignore_extra_fields=True, skip_duplicates=True)
-        FnnTrialResponse.insert1(unit_key, ignore_extra_fields=True, skip_duplicates=True)
+        RecordingResponse.insert1(unit_key, ignore_extra_fields=True, skip_duplicates=True)
+        FnnRecordingResponse.insert1(unit_key, ignore_extra_fields=True, skip_duplicates=True)
 
         # fill responses
         Response.fill()
 
         # response pair
-        pair = [Response.TrialResponse, Response.FnnTrialResponse]
+        pair = [Response.RecordingResponse, Response.FnnRecordingResponse]
         pair = [(table & unit_key).fetch1("KEY") for table in pair]
         pair = ResponseSet.fill(pair, prompt=False, silent=True)
 
