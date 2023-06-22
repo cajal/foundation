@@ -5,6 +5,14 @@ from foundation.schemas import function as schema
 
 # ----------------------------- Direction -----------------------------
 
+
+# @schema.lookup
+# class DirectionPrecision:
+#     definition = """
+#     precision   :
+#     """
+
+
 # -- Direction Base --
 
 

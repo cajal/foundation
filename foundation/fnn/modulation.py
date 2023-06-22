@@ -25,17 +25,18 @@ class _Modulation:
 
 
 @schema.lookup
-class Lstm(_Modulation):
+class LnLstm(_Modulation):
     definition = """
-    features        : int unsigned      # lstm features
+    features        : int unsigned      # feature size
+    nonlinear       : varchar(128)      # nonlinearity
     dropout         : decimal(6, 6)     # dropout probability
     """
 
     @rowproperty
     def nn(self):
-        from fnn.model.modulations import Lstm
+        from fnn.model.modulations import LnLstm
 
-        return Lstm(**self.fetch1("KEY"))
+        return LnLstm(**self.fetch1("KEY"))
 
 
 # -- Modulation --
@@ -43,5 +44,5 @@ class Lstm(_Modulation):
 
 @schema.link
 class Modulation:
-    links = [Lstm]
+    links = [LnLstm]
     name = "modulation"

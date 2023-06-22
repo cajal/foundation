@@ -33,9 +33,9 @@ class Dense(_Feedforward):
     block_channels  : varchar(128)  # block channels per stream (csv)
     block_groups    : varchar(128)  # block groups per stream (csv)
     block_layers    : varchar(128)  # block layers (csv)
+    block_pools     : varchar(128)  # block pool sizes (csv)
     block_kernels   : varchar(128)  # block kernel sizes (csv)
     block_dynamics  : varchar(128)  # block dynamic sizes (csv)
-    pool_sizes      : varchar(128)  # pooling sizes (csv)
     nonlinear       : varchar(128)  # nonlinearity
     dropout         : decimal(6, 6) # dropout probability
     """
@@ -46,7 +46,7 @@ class Dense(_Feedforward):
 
         kwargs = self.fetch1("KEY")
         for k, v in kwargs.items():
-            if k.startswith("block_") or k.startswith("pool_"):
+            if k.startswith("block_"):
                 kwargs[k] = v.split(",")
 
         return Dense(**kwargs)
