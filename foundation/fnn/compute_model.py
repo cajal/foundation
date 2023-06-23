@@ -332,7 +332,7 @@ class NetworkSetInstance(_Instance):
         # verify checkpoints
         checkpoint = NetworkCheckpoint & {"model_id": model_id}
         if checkpoint:
-            network_ids, ranks, epochs = checkpoint.fetch("network_id" "rank", "epoch", order_by="rank")
+            network_ids, ranks, epochs = checkpoint.fetch("network_id", "rank", "epoch", order_by="rank")
             assert np.array_equal(network_ids, parallel_networks), "Invalid checkpoint network_ids"
             assert np.array_equal(ranks, np.arange(size)), "Invalid checkpoint ranks"
             assert np.unique(epochs).size == 1, "Invalid checkpoint epochs"
