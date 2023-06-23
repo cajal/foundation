@@ -75,29 +75,34 @@ class _Pixel:
 # -- Luminance Types --
 
 
-@schema.method
-class Raw(_Pixel):
-    name = "raw"
-    comment = "raw pixel intensity"
-
-    @rowproperty
-    def nn(self):
-        from fnn.model.pixels import Raw
-
-        return Raw()
-
-
 @schema.lookup
-class Linear(_Pixel):
+class StaticPower(_Pixel):
     definition = """
-    scale               : decimal(6, 4)     # pixel intensity scale
+    power               : decimal(6, 4)     # pixel power
+    scale               : decimal(6, 4)     # pixel scale
+    offset              : decimal(6, 4)     # pixel offset
     """
 
     @rowproperty
     def nn(self):
-        from fnn.model.pixels import Linear
+        from fnn.model.pixels import StaticPower
 
-        return Linear(**self.fetch1())
+        return StaticPower(**self.fetch1())
+
+
+@schema.lookup
+class SigmoidPower(_Pixel):
+    definition = """
+    max_power           : decimal(6, 4)     # maximum pixel power
+    init_scale          : decimal(6, 4)     # initial pixel scale
+    init_offset         : decimal(6, 4)     # initial pixel offset
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.pixels import SigmoidPower
+
+        return SigmoidPower(**self.fetch1())
 
 
 # -- Pixel Intensity --
@@ -105,7 +110,7 @@ class Linear(_Pixel):
 
 @schema.link
 class Pixel:
-    links = [Raw, Linear]
+    links = [StaticPower, SigmoidPower]
     name = "pixel"
 
 

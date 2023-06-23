@@ -27,7 +27,6 @@ class _Feedforward:
 @schema.lookup
 class Dense(_Feedforward):
     definition = """
-    pre_channels    : int unsigned  # pre channels
     pre_kernel      : int unsigned  # pre kernel size
     pre_stride      : int unsigned  # pre stride
     block_channels  : varchar(128)  # block channels per stream (csv)
