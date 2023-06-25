@@ -28,15 +28,12 @@ class VisualScanFnnCCNorm:
         VisualScanFnnRecordingResponse.populate(self.key, display_progress=True, reserve_jobs=True)
 
         for key in self.key:
+
             # populate with caching and cuda
             with cache_rowproperty(), use_cuda() if cuda else nullcontext():
 
                 # response key
-                key = merge(
-                    fnn.VisualScanNetwork.proj() & key,
-                    fnn.VisualScanUnit,
-                    VisualScanFnnRecordingResponse & self.key,
-                )
+                key = VisualScanFnnRecordingResponse & key
 
                 # cc_abs
                 VisualResponseCorrelation.populate(
