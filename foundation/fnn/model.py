@@ -34,7 +34,7 @@ class Instance(_Model):
     -> Objective
     -> Optimizer
     -> Scheduler
-    parallel        : int unsigned      # parallel groups
+    parallel        : int unsigned      # parallel group size
     cycle           : int unsigned      # training cycle
     """
 

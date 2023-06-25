@@ -63,7 +63,7 @@ class _Instance(NetworkModel):
 
         # model id, cycle, checkpoint
         key = merge(self.key, self.model_type)
-        model_id, cycle, groups = key.fetch1("model_id", "cycle", "parallel")
+        model_id, cycle, parallel = key.fetch1("model_id", "cycle", "parallel")
         checkpoint = NetworkCheckpoint & {"rank": rank, "network_id": network_id, "model_id": model_id}
         initialize = (cycle == 0) and (not checkpoint)
 
@@ -121,7 +121,7 @@ class _Instance(NetworkModel):
 
         # parameters and parallel groups
         params = module.named_parameters()
-        groups = module.parallel_groups(groups=groups)
+        groups = module.parallel_groups(group_size=parallel)
 
         # train epochs
         for epoch, info in optimizer.optimize(loader=loader, objective=objective, parameters=params, groups=groups):
@@ -212,17 +212,17 @@ class Instance(_Instance):
         # tcp port
         port = randint(10000, 60000)
 
-        # parallel groups, model_id
-        size, model_id = merge(self.key, fnn.Model.Instance).fetch1("parallel", "model_id")
+        # parallel group size, model_id
+        parallel, model_id = merge(self.key, fnn.Model.Instance).fetch1("parallel", "model_id")
 
         # verify cuda devices
-        assert device_count() >= size, "Insufficient cuda devices"
+        assert device_count() >= parallel, "Insufficient cuda devices"
 
         # verify checkpoints
         checkpoint = NetworkCheckpoint & {"model_id": model_id, "network_id": network_id}
         if checkpoint:
             ranks, epochs = checkpoint.fetch("rank", "epoch", order_by="rank")
-            assert np.array_equal(ranks, np.arange(size)), "Invalid checkpoint ranks"
+            assert np.array_equal(ranks, np.arange(parallel)), "Invalid checkpoint ranks"
             assert np.unique(epochs).size == 1, "Invalid checkpoint epochs"
 
         # train with multiprocessing
@@ -230,8 +230,8 @@ class Instance(_Instance):
         conn.close()
         spawn(
             Instance._fn,
-            args=(size, model_id, network_id, port),
-            nprocs=size,
+            args=(parallel, model_id, network_id, port),
+            nprocs=parallel,
             join=True,
         )
         conn.connect()
@@ -241,7 +241,7 @@ class Instance(_Instance):
         done = done.fetch(as_dict=True, order_by="rank")
 
         # verify keys
-        assert np.array_equal([_["rank"] for _ in done], np.arange(size)), "Invalid done ranks"
+        assert np.array_equal([_["rank"] for _ in done], np.arange(parallel)), "Invalid done ranks"
         assert np.unique([_["epoch"] for _ in done]).size == 1, "Invalid done epochs"
 
         # trained network parameters
@@ -319,7 +319,7 @@ class NetworkSetInstance(_Instance):
         networks = (NetworkSet & self.key).members.fetch("network_id", order_by="networkset_index")
         assert network_id in networks, "Invalid network_id"
 
-        # parallel groups, model_id
+        # parallel group size, model_id
         parallel, model_id = merge(self.key, fnn.Model.NetworkSetInstance).fetch1("parallel", "model_id")
 
         # parallel networks
