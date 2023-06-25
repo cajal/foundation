@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
-from datajoint import U
-from djutils import keys, merge, rowproperty, rowmethod, cache_rowproperty
+from djutils import keys, merge, rowproperty, rowmethod, cache_rowproperty, U
 from foundation.utils import tqdm, disable_tqdm
 from foundation.virtual import stimulus, recording, fnn
 

@@ -23,29 +23,3 @@ class VisualScanNetwork:
 
         # insert
         self.insert1(dict(key, **data))
-
-
-@schema.computed
-class VisualScanUnit:
-    definition = """
-    -> VisualScanNetwork
-    response_index      : int unsigned  # network response index
-    ---
-    -> pipe_fuse.ScanSet.Unit
-    """
-
-    def make(self, key):
-        from foundation.recording.scan import ScanUnits
-        from foundation.recording.trace import Trace, TraceSet
-
-        # scan units
-        units = (Network & key).link.data
-        units = ScanUnits & units.key
-        units = (TraceSet & units).members
-        units = merge(units, Trace.ScanUnit)
-
-        # unit keys
-        keys = (VisualScanNetwork & key).proj() * units.proj(..., response_index="traceset_index")
-
-        # insert
-        self.insert(keys, ignore_extra_fields=True)

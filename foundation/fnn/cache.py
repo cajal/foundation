@@ -1,6 +1,5 @@
 import pandas as pd
-from datajoint import U
-from djutils import rowmethod
+from djutils import rowmethod, U
 from foundation.utils import tqdm
 from foundation.fnn.network import Network
 from foundation.fnn.model import Model

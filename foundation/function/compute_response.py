@@ -90,11 +90,11 @@ class FnnRecordingResponse(Response):
 
     @rowmethod
     def visual(self, video_id):
-        from foundation.fnn.compute_visual import NetworkModelTrial
+        from foundation.fnn.compute_visual import NetworkModelRecording
         from foundation.utils.response import Trials
 
         # visual responses
-        responses, trial_ids = (NetworkModelTrial & self.key & {"video_id": video_id}).responses
+        responses, trial_ids = (NetworkModelRecording & self.key & {"video_id": video_id}).responses
 
         # response index
         index = self.key.fetch1("response_index")

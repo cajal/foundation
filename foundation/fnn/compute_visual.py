@@ -5,17 +5,17 @@ from foundation.virtual import utility, stimulus, recording, fnn
 
 
 @keys
-class NetworkModelTrial:
-    """Network Model Trial"""
+class NetworkModelRecording:
+    """Network Model Recording"""
 
     @property
     def key_list(self):
         return [
-            stimulus.Video,
-            fnn.NetworkModel,
-            utility.Bool.proj(trial_perspectives="bool"),
-            utility.Bool.proj(trial_modulations="bool"),
-            recording.TrialFilterSet,
+            stimulus.Video,  # visual stimulus
+            fnn.NetworkModel,  # network model
+            recording.TrialFilterSet,  # recording trial filter
+            utility.Bool.proj(trial_perspectives="bool"),  # recording trial perspectives
+            utility.Bool.proj(trial_modulations="bool"),  # recording trial modulations
         ]
 
     @rowproperty

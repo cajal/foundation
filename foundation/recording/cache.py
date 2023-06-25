@@ -1,7 +1,6 @@
 import os
 import numpy as np
-from datajoint import U
-from djutils import Filepath
+from djutils import Filepath, U
 from operator import add
 from functools import reduce
 from foundation.virtual import utility

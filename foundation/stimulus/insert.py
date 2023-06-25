@@ -1,5 +1,4 @@
-from datajoint import U
-from djutils import keys
+from djutils import keys, U
 from foundation.virtual.bridge import pipe_exp, pipe_stim
 from foundation.virtual import utility
 
