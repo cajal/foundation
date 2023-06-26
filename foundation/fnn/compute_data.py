@@ -52,15 +52,15 @@ class NetworkData:
         raise NotImplementedError()
 
     @rowmethod
-    def visual_inputs(self, video_id, trial_perspectives=True, trial_modulations=True, trial_filterset_id=None):
+    def visual_inputs(self, video_id, trial_perspective=True, trial_modulation=True, trial_filterset_id=None):
         """
         Parameters
         ----------
         video_id : str
             key (foundation.stimulus.video.Video)
-        trial_perspectives : bool
+        trial_perspective : bool
             True (return trial perspectives) | False (return None)
-        trial_modulations : bool
+        trial_modulation : bool
             True (return trial modulations) | False (return None)
         trial_filterset_id : str | None
             key (foundation.recording.TrialFilterSet) | None (no trial filtering beyond video selection)
@@ -224,7 +224,7 @@ class VisualScan(NetworkData):
         return Dataset(data)
 
     @rowmethod
-    def visual_inputs(self, video_id, trial_perspectives=True, trial_modulations=True, trial_filterset_id=None):
+    def visual_inputs(self, video_id, trial_perspective=True, trial_modulation=True, trial_filterset_id=None):
         from foundation.utils.resample import flip_index, truncate
         from foundation.utility.resample import Rate
         from foundation.stimulus.compute_video import ResizedVideo
@@ -247,7 +247,7 @@ class VisualScan(NetworkData):
         video = video.array[index]
 
         # neither perspectives nor modulations requested
-        if not trial_perspectives and not trial_modulations:
+        if not trial_perspective and not trial_modulation:
             return video, None, None, None
 
         # all trials
@@ -269,8 +269,8 @@ class VisualScan(NetworkData):
         perspectives_modulations = []
 
         for key, requested, desc in [
-            [key_p, trial_perspectives, "Perspectives"],
-            [key_m, trial_modulations, "Modulations"],
+            [key_p, trial_perspective, "Perspectives"],
+            [key_m, trial_modulation, "Modulations"],
         ]:
             if requested:
                 # transform and resampler

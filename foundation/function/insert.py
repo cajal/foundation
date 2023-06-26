@@ -12,8 +12,8 @@ class VisualScanFnnCCNorm:
             fnn.NetworkModel,
             fnn.VisualScanNetwork,
             recording.TrialFilterSet,
-            utility.Bool.proj(trial_perspectives="bool"),
-            utility.Bool.proj(trial_modulations="bool"),
+            utility.Bool.proj(trial_perspective="bool"),
+            utility.Bool.proj(trial_modulation="bool"),
             stimulus.VideoSet,
             utility.Burnin,
         ]

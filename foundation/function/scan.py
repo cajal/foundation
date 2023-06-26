@@ -11,8 +11,8 @@ class VisualScanFnnRecordingResponse:
     -> pipe_fuse.ScanSet.Unit                       # scan unit
     -> fnn.NetworkModel                             # network model
     -> recording.TrialFilterSet                     # trial filter
-    -> utility.Bool.proj(trial_perspectives="bool") # trial perspectives
-    -> utility.Bool.proj(trial_modulations="bool")  # trial modulations
+    -> utility.Bool.proj(trial_perspective="bool")  # trial | default perspective
+    -> utility.Bool.proj(trial_modulation="bool")   # trial | default modulation
     ---
     -> ResponseSet                                  # fnn/recording response pair
     """
@@ -29,8 +29,8 @@ class VisualScanFnnRecordingResponse:
         ).proj()
 
         key *= recording.TrialFilterSet.proj()
-        key *= utility.Bool.proj(trial_perspectives="bool")
-        key *= utility.Bool.proj(trial_modulations="bool")
+        key *= utility.Bool.proj(trial_perspective="bool")
+        key *= utility.Bool.proj(trial_modulation="bool")
 
         return U(*self.primary_key) & key
 

@@ -59,7 +59,7 @@ class RecordingResponse(Response):
         from foundation.utils.response import Trials
 
         # visual responses
-        responses, trial_ids = (Trace & self.key & {"video_id": video_id}).responses
+        responses, trial_ids = (Trace & self.key & {"video_id": video_id}).response
 
         # response trials
         return Trials(data=responses.T, index=trial_ids)
@@ -94,7 +94,7 @@ class FnnRecordingResponse(Response):
         from foundation.utils.response import Trials
 
         # visual responses
-        responses, trial_ids = (NetworkModelRecording & self.key & {"video_id": video_id}).responses
+        responses, trial_ids = (NetworkModelRecording & self.key & {"video_id": video_id}).response
 
         # response index
         index = self.key.fetch1("response_index")

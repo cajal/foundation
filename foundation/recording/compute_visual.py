@@ -22,7 +22,7 @@ class Trace:
         ]
 
     @rowproperty
-    def responses(self):
+    def response(self):
         """
         Returns
         -------

@@ -29,7 +29,7 @@ class _Response:
 @schema.lookup
 class RecordingResponse(_Response):
     definition = """
-    -> recording.Trace              # response trace
+    -> recording.Trace              # recorded trace
     -> recording.TrialFilterSet     # trial filter
     -> recording.TrialSet           # standardization trial set
     -> utility.Standardize          # standardization method
@@ -50,8 +50,8 @@ class FnnRecordingResponse(_Response):
     definition = """
     -> fnn.NetworkModel                 # network model
     -> recording.TrialFilterSet         # trial filter
-    trial_perspectives  : bool          # trial perspectives
-    trial_modulations   : bool          # trial modulations
+    trial_perspective   : bool          # trial | default perspective
+    trial_modulation    : bool          # trial | default modulation
     response_index      : int unsigned  # network response index
     """
 

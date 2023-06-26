@@ -13,13 +13,13 @@ class NetworkModelRecording:
         return [
             stimulus.Video,  # visual stimulus
             fnn.NetworkModel,  # network model
-            recording.TrialFilterSet,  # recording trial filter
-            utility.Bool.proj(trial_perspectives="bool"),  # recording trial perspectives
-            utility.Bool.proj(trial_modulations="bool"),  # recording trial modulations
+            recording.TrialFilterSet,  # trial filter
+            utility.Bool.proj(trial_perspective="bool"),  # trial | default perspective
+            utility.Bool.proj(trial_modulation="bool"),  # trial | default modulation
         ]
 
     @rowproperty
-    def responses(self):
+    def response(self):
         """
         Returns (trials exist)
         -------
@@ -35,21 +35,21 @@ class NetworkModelRecording:
         model = (NetworkModel & self.key).model
 
         # input arguments
-        video_id, trial_perspectives, trial_modulations, trial_filterset_id = self.key.fetch1(
-            "video_id", "trial_perspectives", "trial_modulations", "trial_filterset_id"
+        video_id, trial_perspective, trial_modulation, trial_filterset_id = self.key.fetch1(
+            "video_id", "trial_perspective", "trial_modulation", "trial_filterset_id"
         )
 
         # visual inputs, trial_ids
         stimuli, perspectives, modulations, trial_ids = (Network & self.key).link.data.visual_inputs(
             video_id=video_id,
-            trial_perspectives=trial_perspectives,
-            trial_modulations=trial_modulations,
+            trial_perspective=trial_perspective,
+            trial_modulation=trial_modulation,
             trial_filterset_id=trial_filterset_id,
         )
         assert trial_ids, "No trials found"
 
         # visual responses
-        responses = model.generate_responses(
+        responses = model.generate_response(
             stimuli=stimuli,
             perspectives=perspectives,
             modulations=modulations,
