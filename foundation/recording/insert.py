@@ -31,7 +31,6 @@ class Scan:
 
         # scan recording
         ScanRecording.populate(self.key, display_progress=True, reserve_jobs=True)
-        ScanVideoTimeScale.populate(self.key, display_progress=True, reserve_jobs=True)
 
         for key in self.key:
             # trials
@@ -44,6 +43,9 @@ class Scan:
             # compute trials
             TrialBounds.populate(trials, display_progress=True, reserve_jobs=True)
             TrialVideo.populate(trials, display_progress=True, reserve_jobs=True)
+
+        # scan timing
+        ScanVideoTimeScale.populate(self.key, display_progress=True, reserve_jobs=True)
 
         # scan subsets
         for table in [ScanTrials, ScanUnits, ScanVisualPerspectives, ScanVisualModulations]:
