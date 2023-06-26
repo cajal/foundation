@@ -7,7 +7,7 @@ from foundation.schemas import fnn as schema
 # -- Feedforward Base --
 
 
-class _Feedforward:
+class FeedforwardType:
     """Feedforward"""
 
     @rowproperty
@@ -25,7 +25,7 @@ class _Feedforward:
 
 
 @schema.lookup
-class Dense(_Feedforward):
+class Dense(FeedforwardType):
     definition = """
     pre_kernel      : int unsigned  # pre kernel size
     pre_stride      : int unsigned  # pre stride
@@ -65,7 +65,7 @@ class Feedforward:
 # -- Recurrent Base --
 
 
-class _Recurrent:
+class RecurrentType:
     """Recurrent"""
 
     @rowproperty
@@ -83,7 +83,7 @@ class _Recurrent:
 
 
 @schema.lookup
-class Rvt(_Recurrent):
+class Rvt(RecurrentType):
     definition = """
     channels        : int unsigned  # channels per stream
     groups          : int unsigned  # groups per stream
@@ -112,7 +112,7 @@ class Recurrent:
 # -- Core Base --
 
 
-class _Core:
+class CoreType:
     """Core"""
 
     @rowproperty
@@ -130,7 +130,7 @@ class _Core:
 
 
 @schema.lookup
-class FeedforwardRecurrent(_Core):
+class FeedforwardRecurrent(CoreType):
     definition = """
     -> Feedforward
     -> Recurrent

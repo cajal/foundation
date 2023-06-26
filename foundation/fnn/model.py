@@ -9,7 +9,7 @@ from foundation.schemas import fnn as schema
 # -- Model Base --
 
 
-class _Model:
+class ModelType:
     """Model"""
 
     @rowproperty
@@ -27,7 +27,7 @@ class _Model:
 
 
 @schema.lookup
-class Instance(_Model):
+class Instance(ModelType):
     definition = """
     -> State
     -> Loader
@@ -46,7 +46,7 @@ class Instance(_Model):
 
 
 @schema.lookup
-class NetworkSetInstance(_Model):
+class NetworkSetInstance(ModelType):
     definition = """
     -> NetworkSet
     -> State

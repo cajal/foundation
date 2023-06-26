@@ -38,8 +38,10 @@ class Spec:
 
 # ---------------------------- Data ----------------------------
 
+# -- Data Base --
 
-class _Data:
+
+class DataType:
     """Data"""
 
     @rowproperty
@@ -53,11 +55,11 @@ class _Data:
         raise NotImplementedError()
 
 
-# -- Data Set Types --
+# -- Data Types --
 
 
 @schema.lookup
-class VisualScan(_Data):
+class VisualScan(DataType):
     definition = """
     -> Spec.VisualSpec
     -> recording.ScanVisualPerspectives

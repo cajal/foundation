@@ -7,8 +7,8 @@ from foundation.schemas import fnn as schema
 # -- Modulation Base --
 
 
-class _Modulation:
-    """Modulation"""
+class ModulationType:
+    """Modulation Network"""
 
     @rowproperty
     def nn(self):
@@ -25,7 +25,7 @@ class _Modulation:
 
 
 @schema.lookup
-class LnLstm(_Modulation):
+class LnLstm(ModulationType):
     definition = """
     features        : int unsigned      # feature size
     nonlinear       : varchar(128)      # nonlinearity

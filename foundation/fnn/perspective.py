@@ -53,13 +53,13 @@ class Monitor:
     name = "monitor"
 
 
-# ----------------------------- Pixel Intensity -----------------------------
+# ----------------------------- Pixel -----------------------------
 
-# -- Pixel Intensity Base --
+# -- Pixel Base --
 
 
-class _Pixel:
-    """Pixel Intensity"""
+class PixelType:
+    """Pixel"""
 
     @rowproperty
     def nn(self):
@@ -72,11 +72,11 @@ class _Pixel:
         raise NotImplementedError()
 
 
-# -- Luminance Types --
+# -- Pixel Types --
 
 
 @schema.lookup
-class StaticPower(_Pixel):
+class StaticPower(PixelType):
     definition = """
     power               : decimal(6, 4)     # pixel power
     scale               : decimal(6, 4)     # pixel scale
@@ -91,7 +91,7 @@ class StaticPower(_Pixel):
 
 
 @schema.lookup
-class SigmoidPower(_Pixel):
+class SigmoidPower(PixelType):
     definition = """
     max_power           : decimal(6, 4)     # maximum pixel power
     init_scale          : decimal(6, 4)     # initial pixel scale
@@ -105,7 +105,7 @@ class SigmoidPower(_Pixel):
         return SigmoidPower(**self.fetch1())
 
 
-# -- Pixel Intensity --
+# -- Pixel --
 
 
 @schema.link
@@ -119,7 +119,7 @@ class Pixel:
 # -- Retina Base --
 
 
-class _Retina:
+class RetinaType:
     """Retina"""
 
     @rowproperty
@@ -137,7 +137,7 @@ class _Retina:
 
 
 @schema.lookup
-class Angular(_Retina):
+class Angular(RetinaType):
     definition = """
     degrees         : decimal(6, 3)     # maximum visual degrees
     """
@@ -163,7 +163,7 @@ class Retina:
 # -- Perspective Base --
 
 
-class _Perspective:
+class PerspectiveType:
     """Perspective"""
 
     @rowproperty
@@ -191,7 +191,7 @@ class _Perspective:
 
 
 @schema.lookup
-class MonitorRetina(_Perspective):
+class MonitorRetina(PerspectiveType):
     definition = """
     -> Monitor
     -> Pixel.proj(monitor_pixel_id="pixel_id")

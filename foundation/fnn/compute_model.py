@@ -4,12 +4,12 @@ from foundation.utils import logger
 from foundation.virtual import fnn
 
 
-# ----------------------------- Network Model -----------------------------
+# ----------------------------- Model -----------------------------
 
-# -- Network Model Base --
+# -- Model Base --
 
 
-class NetworkModel:
+class ModelType:
     """Network Model"""
 
     @rowmethod
@@ -30,10 +30,10 @@ class NetworkModel:
         raise NotImplementedError()
 
 
-# -- Network Model Types --
+# -- Model Types --
 
 
-class _Instance(NetworkModel):
+class _Instance(ModelType):
     """Network Instance Base"""
 
     @property
@@ -41,7 +41,7 @@ class _Instance(NetworkModel):
         """
         Returns
         -------
-        foundation.fnn.Model.* (Instance|NetworkSetInstance)
+        foundation.fnn.Model.* (Instance | NetworkSetInstance)
             model part table
         """
         raise NotImplementedError()

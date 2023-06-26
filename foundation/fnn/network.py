@@ -7,12 +7,12 @@ from foundation.fnn.data import Data
 from foundation.schemas import fnn as schema
 
 
-# ----------------------------- Neural Network -----------------------------
+# ----------------------------- Network -----------------------------
 
-# -- Neural Network Base --
+# -- Network Base --
 
 
-class _Network:
+class NetworkType:
     """Neural Network"""
 
     @rowproperty
@@ -36,11 +36,11 @@ class _Network:
         raise NotImplementedError()
 
 
-# -- Neural Network Types --
+# -- Network Types --
 
 
 @schema.lookup
-class VisualNetwork(_Network):
+class VisualNetwork(NetworkType):
     definition = """
     -> Core
     -> Perspective
@@ -81,7 +81,7 @@ class VisualNetwork(_Network):
         return module
 
 
-# -- Neural Network --
+# -- Network --
 
 
 @schema.link
@@ -98,7 +98,7 @@ class NetworkSet:
     comment = "neural network set"
 
 
-# -- Computed Neural Network --
+# -- Computed Network --
 
 
 @schema.computed

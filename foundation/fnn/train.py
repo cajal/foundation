@@ -8,7 +8,7 @@ from foundation.schemas import fnn as schema
 # -- Loader Base --
 
 
-class _Loader:
+class LoaderType:
     """Loader"""
 
     @rowproperty
@@ -26,7 +26,7 @@ class _Loader:
 
 
 @schema.lookup
-class Batches(_Loader):
+class Batches(LoaderType):
     definition = """
     sample_size     : int unsigned  # samples in a datapoint
     batch_size      : int unsigned  # datapoints in a batch
@@ -56,7 +56,7 @@ class Loader:
 # -- Objective Base --
 
 
-class _Objective:
+class ObjectiveType:
     """Objective"""
 
     @rowproperty
@@ -74,7 +74,7 @@ class _Objective:
 
 
 @schema.lookup
-class NetworkLoss(_Objective):
+class NetworkLoss(ObjectiveType):
     definition = """
     sample_stream   : bool          # sample stream during training
     burnin_frames   : int unsigned  # initial losses discarded
@@ -102,7 +102,7 @@ class Objective:
 # -- Optimizer Base --
 
 
-class _Optimizer:
+class OptimizerType:
     """Optimizer"""
 
     @rowproperty
@@ -120,7 +120,7 @@ class _Optimizer:
 
 
 @schema.lookup
-class SgdClip(_Optimizer):
+class SgdClip(OptimizerType):
     definition = """
     lr          : decimal(9, 6)     # learning rate
     decay       : decimal(9, 6)     # weight decay
@@ -153,7 +153,7 @@ class Optimizer:
 # -- Scheduler Base --
 
 
-class _Scheduler:
+class SchedulerType:
     """Scheduler"""
 
     @rowproperty
@@ -181,7 +181,7 @@ class _Scheduler:
 
 
 @schema.lookup
-class CosineLr(_Scheduler):
+class CosineLr(SchedulerType):
     definition = """
     cycle_size      : int unsigned  # epochs in a cycle
     burnin_epochs   : int unsigned  # burnin epochs
@@ -214,7 +214,7 @@ class Scheduler:
 # -- State Base --
 
 
-class _State:
+class StateType:
     """State"""
 
     @rowproperty
@@ -232,7 +232,7 @@ class _State:
 
 
 @schema.lookup
-class Initial(_State):
+class Initial(StateType):
     definition = """
     seed            : int unsigned      # seed for initialization
     """

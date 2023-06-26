@@ -7,7 +7,7 @@ from foundation.schemas import fnn as schema
 # -- Position Base --
 
 
-class _Position:
+class PositionType:
     """Position"""
 
     @rowproperty
@@ -25,7 +25,7 @@ class _Position:
 
 
 @schema.lookup
-class Gaussian(_Position):
+class Gaussian(PositionType):
     definition = """
     init_std            : decimal(6, 4)     # initial stddev
     """
@@ -52,7 +52,7 @@ class Position:
 # -- Bound Base --
 
 
-class _Bound:
+class BoundType:
     """Bound"""
 
     @rowproperty
@@ -70,7 +70,7 @@ class _Bound:
 
 
 @schema.method
-class Tanh(_Bound):
+class Tanh(BoundType):
     name = "tanh"
     comment = "tanh bound"
 
@@ -95,7 +95,7 @@ class Bound:
 # -- Feature Base --
 
 
-class _Feature:
+class FeatureType:
     """Feature"""
 
     @rowproperty
@@ -113,7 +113,7 @@ class _Feature:
 
 
 @schema.method
-class Norm(_Feature):
+class Norm(FeatureType):
     name = "norm"
     comment = "normalized feature"
 
@@ -138,7 +138,7 @@ class Feature:
 # -- Readout Base --
 
 
-class _Readout:
+class ReadoutType:
     """Readout"""
 
     @rowproperty
@@ -156,7 +156,7 @@ class _Readout:
 
 
 @schema.lookup
-class PositionFeature(_Readout):
+class PositionFeature(ReadoutType):
     definition = """
     -> Position
     -> Bound
@@ -188,7 +188,7 @@ class Readout:
 # -- Unit Base --
 
 
-class _Unit:
+class UnitType:
     """Unit"""
 
     @rowproperty
@@ -206,7 +206,7 @@ class _Unit:
 
 
 @schema.method
-class Poisson(_Unit):
+class Poisson(UnitType):
     name = "poisson"
     comment = "poisson unit"
 
@@ -231,7 +231,7 @@ class Unit:
 # -- Reduce Base --
 
 
-class _Reduce:
+class ReduceType:
     """Reduce"""
 
     @rowproperty
@@ -249,7 +249,7 @@ class _Reduce:
 
 
 @schema.method
-class Mean(_Reduce):
+class Mean(ReduceType):
     name = "mean"
     comment = "mean reduction"
 

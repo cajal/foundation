@@ -3,12 +3,12 @@ from foundation.utils import logger
 from foundation.virtual import fnn
 
 
-# ----------------------------- Network State -----------------------------
+# ----------------------------- State -----------------------------
 
-# -- Network State Base --
+# -- State Base --
 
 
-class NetworkState:
+class StateType:
     """Network State"""
 
     @rowmethod
@@ -29,11 +29,11 @@ class NetworkState:
         raise NotImplementedError()
 
 
-# -- Network State Types --
+# -- State Types --
 
 
 @keys
-class Initial(NetworkState):
+class Initial(StateType):
     """Initial Network State"""
 
     @property
