@@ -9,7 +9,7 @@ from foundation.virtual import utility, stimulus
 
 # ---------------------------- Video ----------------------------
 
-# -- Video Type Base --
+# -- Video Base --
 
 
 class VideoType:

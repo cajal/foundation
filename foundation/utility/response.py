@@ -14,7 +14,7 @@ class Burnin:
 
 # ---------------------------- Measure ----------------------------
 
-# -- Measure Type Base --
+# -- Measure Base --
 
 
 class MeasureType:
@@ -56,9 +56,9 @@ class Measure:
     comment = "response measure"
 
 
-# ---------------------------- Response Correlation ----------------------------
+# ---------------------------- Correlation ----------------------------
 
-# -- Correlation Type Base --
+# -- Correlation Base --
 
 
 class CorrelationType:

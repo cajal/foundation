@@ -5,7 +5,7 @@ from foundation.schemas import stimulus as schema
 
 # ---------------------------- Video ----------------------------
 
-# -- Video Type Base --
+# -- Video Base --
 
 
 class VideoType:

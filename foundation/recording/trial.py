@@ -6,7 +6,7 @@ from foundation.schemas import recording as schema
 
 # ---------------------------- Trial ----------------------------
 
-# -- Trial Type Base --
+# -- Trial Base --
 
 
 class TrialType:

@@ -5,7 +5,7 @@ from foundation.schemas import utility as schema
 
 # ---------- Summary ----------
 
-# -- Summary Type Base --
+# -- Summary Base --
 
 
 class SummaryType:

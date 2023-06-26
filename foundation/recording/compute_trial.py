@@ -6,7 +6,7 @@ from foundation.virtual import utility, stimulus, recording
 
 # ----------------------------- Trial -----------------------------
 
-# -- Trial Type Base --
+# -- Trial Base --
 
 
 class TrialType:
