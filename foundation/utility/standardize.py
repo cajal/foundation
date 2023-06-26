@@ -6,7 +6,7 @@ from foundation.schemas import utility as schema
 
 # ---------------------------- Standardize ----------------------------
 
-# -- Standardize Base --
+# -- Standardize Type Base --
 
 
 class StandardizeType:
@@ -41,7 +41,7 @@ class StandardizeType:
         raise NotImplementedError()
 
 
-# -- Standardize Base --
+# -- Standardize Types --
 
 
 @schema.lookup

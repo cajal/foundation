@@ -261,7 +261,7 @@ class Resample:
         return y.astype(self.dtype)
 
 
-# ------- Trace Types -------
+# ------- Resample Types -------
 
 
 class Nans(Resample):

@@ -5,7 +5,7 @@ from foundation.schemas import utility as schema
 
 # ---------- Summary ----------
 
-# -- Summary Base --
+# -- Summary Type Base --
 
 
 class SummaryType:
@@ -22,7 +22,7 @@ class SummaryType:
         raise NotImplementedError()
 
 
-# -- Summary Type --
+# -- Summary Types --
 
 
 @schema.method

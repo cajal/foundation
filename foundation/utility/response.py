@@ -2,7 +2,7 @@ from djutils import rowproperty
 from foundation.schemas import utility as schema
 
 
-# ---------------------------- Response Burnin ----------------------------
+# ---------------------------- Burnin ----------------------------
 
 
 @schema.lookup
@@ -12,9 +12,9 @@ class Burnin:
     """
 
 
-# ---------------------------- Response Measure ----------------------------
+# ---------------------------- Measure ----------------------------
 
-# -- Response Measure Base --
+# -- Measure Type Base --
 
 
 class MeasureType:
@@ -31,7 +31,7 @@ class MeasureType:
         raise NotImplementedError()
 
 
-# -- Response Measure Types --
+# -- Measure Types --
 
 
 @schema.method
@@ -46,7 +46,7 @@ class CCMax(MeasureType):
         return CCMax()
 
 
-# -- Response Measure --
+# -- Measure --
 
 
 @schema.link
@@ -58,7 +58,7 @@ class Measure:
 
 # ---------------------------- Response Correlation ----------------------------
 
-# -- Response Correlation Base --
+# -- Correlation Type Base --
 
 
 class CorrelationType:
@@ -75,7 +75,7 @@ class CorrelationType:
         raise NotImplementedError()
 
 
-# -- Response Measure Types --
+# -- Correlation Types --
 
 
 @schema.method
@@ -90,7 +90,7 @@ class CCSignal(CorrelationType):
         return CCSignal()
 
 
-# -- Response Measure --
+# -- Correlation --
 
 
 @schema.link

@@ -4,7 +4,7 @@ from foundation.schemas import utility as schema
 
 # ---------------------------- Rate ----------------------------
 
-# -- Rate Base --
+# -- Rate Type Base --
 
 
 class RateType:
@@ -47,7 +47,7 @@ class Rate:
 
 # ---------------------------- Offset ----------------------------
 
-# -- Offset Base --
+# -- Offset Type Base --
 
 
 class OffsetType:
@@ -90,7 +90,7 @@ class Offset:
 
 # ---------------------------- Resample ----------------------------
 
-# -- Resample Base --
+# -- Resample Type Base --
 
 
 class ResampleType:
