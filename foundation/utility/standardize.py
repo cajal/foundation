@@ -14,12 +14,12 @@ class _Standardize:
     """Standardize using Summary statistics"""
 
     @rowproperty
-    def summaries(self):
+    def summary_ids(self):
         """
         Returns
         -------
-        foundation.utility.stat.Summary
-            rows
+        List[str]
+            list of keys (foundation.utility.stat.Summary)
         """
         raise NotImplementedError()
 
@@ -53,8 +53,8 @@ class Affine(_Standardize):
     """
 
     @rowproperty
-    def summaries(self):
-        return Summary & [dict(summary_id=v) for v in self.fetch1().values()]
+    def summary_ids(self):
+        return list(self.fetch1().values())
 
     @rowmethod
     def standardize(self, homogeneous, **kwargs):
@@ -71,8 +71,8 @@ class Scale(_Standardize):
     """
 
     @rowproperty
-    def summaries(self):
-        return Summary & self
+    def summary_ids(self):
+        return [(Summary & self).fetch1("summary_id")]
 
     @rowmethod
     def standardize(self, homogeneous, **kwargs):

@@ -136,11 +136,14 @@ class ScanTraces:
                 trials = recording.ScanTrials & key
                 trials = (TrialSet & trials).members
 
-                # trace summary stats
-                summaries = (Standardize & key).link.summaries.proj()
-                TraceSummary.populate(traces, trials, summaries, key, display_progress=True, reserve_jobs=True)
+                # stats
+                stats = (Standardize & key).link.summary_ids
+                stats = [{"summary_id": _} for _ in stats]
 
-                # resampled trace
+                # trace summary
+                TraceSummary.populate(traces, trials, stats, key, display_progress=True, reserve_jobs=True)
+
+                # resampled traces
                 ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
 
 

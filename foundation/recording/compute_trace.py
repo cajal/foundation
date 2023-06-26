@@ -377,7 +377,7 @@ class TraceSummary:
         from foundation.recording.trial import TrialSet
 
         # recording trials
-        trial_ids = (TrialSet & self.key).members.fetch("trial_id", order_by="trial_id")
+        trial_ids = (TrialSet & self.key).members.fetch("trial_id", order_by="trialset_index")
 
         # resampled traces
         trials = (ResampledTrace & self.key).trials(trial_ids)
@@ -415,20 +415,18 @@ class StandardizedTrace:
         """
         from foundation.utility.standardize import Standardize
 
-        # standardization link
-        stand = (Standardize & self.key).link
-
-        # stat keys
-        stat_keys = stand.summaries
-
         # homogeneous mask
         hom = merge(self.key, recording.TraceHomogeneous)
         hom = hom.fetch1("homogeneous")
         hom = [hom.astype(bool)]
 
+        # standardization link
+        stand = (Standardize & self.key).link
+
         # summary stats
-        stats = self.key * stat_keys
-        stats = merge(stats, recording.TraceSummary)
+        stat_keys = [{"summary_id": _} for _ in stand.summary_ids]
+        stats = (utility.Summary & stat_keys).proj()
+        stats = merge(self.key * stats, recording.TraceSummary)
 
         # stats dict
         summary_id, summary = stats.fetch("summary_id", "summary")
@@ -464,25 +462,25 @@ class StandardizedTraces:
         from foundation.utility.standardize import Standardize
         from foundation.recording.trace import TraceSet
 
-        # standardization link
-        stand = (Standardize & self.key).link
-
-        # trace and stat keys
-        trace_keys = (TraceSet & self.key).members
-        stat_keys = stand.summaries
+        # traces
+        traces = (TraceSet & self.key).members
 
         # homogeneous mask
-        hom = merge(trace_keys, recording.TraceHomogeneous)
+        hom = merge(traces, recording.TraceHomogeneous)
         hom = hom.fetch("homogeneous", order_by="traceset_index")
         hom = hom.astype(bool)
 
-        # summary stats
-        stats = trace_keys * self.key * stat_keys
-        stats = merge(stats, recording.TraceSummary)
+        # standardization link
+        stand = (Standardize & self.key).link
 
-        # collect stats in dict
+        # summary stats
+        stat_keys = [{"summary_id": _} for _ in stand.summary_ids]
+        stats = (utility.Summary & stat_keys).proj()
+        stats = merge(self.key * traces * stats, recording.TraceSummary)
+
+        # stats dict
         kwargs = dict()
-        for skey in stat_keys.proj():
+        for skey in stat_keys:
             sid = skey["summary_id"]
             kwargs[sid] = (stats & skey).fetch("summary", order_by="traceset_index")
 
