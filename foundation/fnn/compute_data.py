@@ -5,12 +5,12 @@ from foundation.utils import tqdm, disable_tqdm
 from foundation.virtual import stimulus, recording, fnn
 
 
-# ----------------------------- Network Data -----------------------------
+# ----------------------------- Data -----------------------------
 
-# -- Network Data Base --
+# -- Data Base --
 
 
-class NetworkData:
+class DataType:
     """Network Data"""
 
     @rowproperty
@@ -79,11 +79,11 @@ class NetworkData:
         raise NotImplementedError()
 
 
-# -- Network Data Types --
+# -- Data Types --
 
 
 @keys
-class VisualScan(NetworkData):
+class VisualScan(DataType):
     """Visual Scan Data"""
 
     @property

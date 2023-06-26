@@ -40,7 +40,7 @@ class NetworkModelRecording:
         )
 
         # visual inputs, trial_ids
-        stimuli, perspectives, modulations, trial_ids = (Network & self.key).link.data.visual_inputs(
+        stimuli, perspectives, modulations, trial_ids = (Network & self.key).link.compute_data.visual_inputs(
             video_id=video_id,
             trial_perspective=trial_perspective,
             trial_modulation=trial_modulation,

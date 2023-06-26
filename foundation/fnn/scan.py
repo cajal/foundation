@@ -1,5 +1,4 @@
 from djutils import merge
-from foundation.virtual.bridge import pipe_fuse
 from foundation.fnn.network import Network
 from foundation.fnn.data import Data, VisualScan
 from foundation.schemas import fnn as schema
@@ -18,8 +17,10 @@ class VisualScanNetwork:
         return (Network.VisualNetwork & Data.VisualScan).proj()
 
     def make(self, key):
-        # scan data
-        data = (Network & key).link.data.key.fetch1()
+        # scan key
+        net = Network.VisualNetwork & key
+        data = Data.VisualScan & net
+        scan = (VisualScan & data).fetch1()
 
         # insert
-        self.insert1(dict(key, **data))
+        self.insert1(dict(key, **scan))

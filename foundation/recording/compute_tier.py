@@ -8,7 +8,7 @@ from foundation.virtual import recording
 # -- Tier Base --
 
 
-class Tier:
+class TierType:
     """Trial Tier"""
 
     @rowmethod
@@ -31,7 +31,7 @@ class Tier:
 
 
 @keys
-class RandomSplit:
+class RandomSplit(TierType):
     """Random Split"""
 
     @property

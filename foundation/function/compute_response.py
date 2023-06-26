@@ -110,4 +110,4 @@ class FnnRecordingResponse(Response):
         from foundation.fnn.network import Network
 
         # response timing
-        return (Network & self.key).link.data.timing
+        return (Network & self.key).link.compute_data.timing

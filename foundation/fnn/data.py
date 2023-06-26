@@ -43,12 +43,12 @@ class _Data:
     """Data"""
 
     @rowproperty
-    def data(self):
+    def compute(self):
         """
         Returns
         -------
-        foundation.fnn.compute_data.NetworkData (row)
-            network data
+        foundation.fnn.compute_data.DataType (row)
+            compute data
         """
         raise NotImplementedError()
 
@@ -70,7 +70,7 @@ class VisualScan(_Data):
     """
 
     @rowproperty
-    def data(self):
+    def compute(self):
         from foundation.fnn.compute_data import VisualScan
 
         return VisualScan & self

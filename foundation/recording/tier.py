@@ -8,7 +8,7 @@ from foundation.schemas import recording as schema
 # -- Tier Base --
 
 
-class _Tier:
+class TierType:
     """Trial Tier"""
 
     @rowproperty
@@ -26,7 +26,7 @@ class _Tier:
 
 
 @schema.lookup
-class RandomSplit(_Tier):
+class RandomSplit(TierType):
     definition = """
     fraction        : decimal(6, 6)     # split fraction
     seed            : int unsigned      # split seed
