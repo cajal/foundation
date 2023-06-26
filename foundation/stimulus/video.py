@@ -5,10 +5,10 @@ from foundation.schemas import stimulus as schema
 
 # ---------------------------- Video ----------------------------
 
-# -- Video Base --
+# -- Video Type Base --
 
 
-class _Video:
+class VideoType:
     """Video Stimulus"""
 
     @rowproperty
@@ -16,7 +16,7 @@ class _Video:
         """
         Returns
         -------
-        foundation.stimulus.compute_video.Video (row)
+        foundation.stimulus.compute_video.VideoType (row)
             compute video
         """
         raise NotImplementedError()
@@ -26,7 +26,7 @@ class _Video:
 
 
 @schema.lookup
-class Clip(_Video):
+class Clip(VideoType):
     definition = """
     -> pipe_stim.Clip
     """
@@ -39,7 +39,7 @@ class Clip(_Video):
 
 
 @schema.lookup
-class Monet2(_Video):
+class Monet2(VideoType):
     definition = """
     -> pipe_stim.Monet2
     """
@@ -52,7 +52,7 @@ class Monet2(_Video):
 
 
 @schema.lookup
-class Trippy(_Video):
+class Trippy(VideoType):
     definition = """
     -> pipe_stim.Trippy
     """
@@ -65,7 +65,7 @@ class Trippy(_Video):
 
 
 @schema.lookup
-class GaborSequence(_Video):
+class GaborSequence(VideoType):
     definition = """
     -> pipe_stim.GaborSequence
     """
@@ -78,7 +78,7 @@ class GaborSequence(_Video):
 
 
 @schema.lookup
-class DotSequence(_Video):
+class DotSequence(VideoType):
     definition = """
     -> pipe_stim.DotSequence
     """
@@ -91,7 +91,7 @@ class DotSequence(_Video):
 
 
 @schema.lookup
-class RdkSequence(_Video):
+class RdkSequence(VideoType):
     definition = """
     -> pipe_stim.RdkSequence
     """
@@ -104,7 +104,7 @@ class RdkSequence(_Video):
 
 
 @schema.lookup
-class Frame(_Video):
+class Frame(VideoType):
     definition = """
     -> pipe_stim.Frame
     """

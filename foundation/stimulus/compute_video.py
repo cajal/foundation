@@ -9,10 +9,10 @@ from foundation.virtual import utility, stimulus
 
 # ---------------------------- Video ----------------------------
 
-# -- Video Base --
+# -- Video Type Base --
 
 
-class Video:
+class VideoType:
     """Video Stimulus"""
 
     @rowproperty
@@ -44,7 +44,7 @@ class Video:
 
 
 @keys
-class Clip(Video):
+class Clip(VideoType):
     """Clip Video"""
 
     @property
@@ -79,7 +79,7 @@ class Clip(Video):
 
 
 @keys
-class Monet2(Video):
+class Monet2(VideoType):
     """Monet2 Video"""
 
     @property
@@ -111,7 +111,7 @@ class Monet2(Video):
 
 
 @keys
-class Trippy(Video):
+class Trippy(VideoType):
     """Trippy Video"""
 
     @property
@@ -128,7 +128,7 @@ class Trippy(Video):
 
 
 @keys
-class GaborSequence(Video):
+class GaborSequence(VideoType):
     """Gabor Sequence Video"""
 
     @property
@@ -150,7 +150,7 @@ class GaborSequence(Video):
 
 
 @keys
-class DotSequence(Video):
+class DotSequence(VideoType):
     """Dot Sequence Video"""
 
     @property
@@ -176,7 +176,7 @@ class DotSequence(Video):
 
 
 @keys
-class RdkSequence(Video):
+class RdkSequence(VideoType):
     """Rdk Sequence Video"""
 
     @property
@@ -207,7 +207,7 @@ class RdkSequence(Video):
 
 
 @keys
-class Frame(Video):
+class Frame(VideoType):
     """Frame Video"""
 
     @property
