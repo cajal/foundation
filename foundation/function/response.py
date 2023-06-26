@@ -9,11 +9,11 @@ from foundation.schemas import function as schema
 # -- Response Base --
 
 
-class _Response:
+class ResponseType:
     """Functional Response"""
 
     @rowproperty
-    def response(self):
+    def compute(self):
         """
         Returns
         -------
@@ -27,7 +27,7 @@ class _Response:
 
 
 @schema.lookup
-class RecordingResponse(_Response):
+class RecordingResponse(ResponseType):
     definition = """
     -> recording.Trace              # recorded trace
     -> recording.TrialFilterSet     # trial filter
@@ -39,14 +39,14 @@ class RecordingResponse(_Response):
     """
 
     @rowproperty
-    def response(self):
+    def compute(self):
         from foundation.function.compute_response import RecordingResponse
 
         return RecordingResponse & self
 
 
 @schema.lookup
-class FnnRecordingResponse(_Response):
+class FnnRecordingResponse(ResponseType):
     definition = """
     -> fnn.NetworkModel                 # network model
     -> recording.TrialFilterSet         # trial filter
@@ -56,7 +56,7 @@ class FnnRecordingResponse(_Response):
     """
 
     @rowproperty
-    def response(self):
+    def compute(self):
         from foundation.function.compute_response import FnnRecordingResponse
 
         return FnnRecordingResponse & self
@@ -104,11 +104,9 @@ class VisualResponseMeasure:
 
         # video responses
         with disable_tqdm():
-            response = (Response & key).link.response
-            response = concatenate(
-                *(response.visual(video_id=v) for v in videos),
-                burnin=key["burnin"],
-            )
+            compute = (Response & key).link.compute
+            response = (compute.visual(video_id=v) for v in videos)
+            response = concatenate(*response, burnin=key["burnin"])
 
         # response measure
         measure = (Measure & key).link.measure(response)
@@ -148,8 +146,8 @@ class VisualResponseCorrelation:
 
         # response pair
         key_x, key_y = (ResponseSet & key).members.fetch("response_id", order_by="response_id", as_dict=True)
-        response_x = (Response & key_x).link.response
-        response_y = (Response & key_y).link.response
+        compute_x = (Response & key_x).link.compute
+        compute_y = (Response & key_y).link.compute
         x = []
         y = []
 
@@ -158,8 +156,8 @@ class VisualResponseCorrelation:
             for video in videos:
 
                 # video responses
-                _x = response_x.visual(video_id=video)
-                _y = response_y.visual(video_id=video)
+                _x = compute_x.visual(video_id=video)
+                _y = compute_y.visual(video_id=video)
 
                 # verify response pair
                 assert _x.matches(_y)

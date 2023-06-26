@@ -9,7 +9,7 @@ from foundation.virtual import utility, stimulus, recording, function
 # -- Response Base --
 
 
-class Response:
+class ResponseType:
     """Functional Response"""
 
     @rowmethod
@@ -44,7 +44,7 @@ class Response:
 
 
 @keys
-class RecordingResponse(Response):
+class RecordingResponse(ResponseType):
     """Recording Trial Response"""
 
     @property
@@ -79,7 +79,7 @@ class RecordingResponse(Response):
 
 
 @keys
-class FnnRecordingResponse(Response):
+class FnnRecordingResponse(ResponseType):
     """Fnn Recording Trial Response"""
 
     @property

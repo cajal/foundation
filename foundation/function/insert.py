@@ -25,7 +25,7 @@ class VisualScanFnnCCNorm:
         from foundation.function.response import Response, ResponseSet, VisualResponseMeasure, VisualResponseCorrelation
 
         # scan response
-        VisualScanFnnRecordingResponse.populate(self.key, display_progress=True, reserve_jobs=True)
+        VisualScanFnnRecordingResponse.populate(self.key, display_progress=True, reserve_jobs=True, limit=100)
 
         for key in self.key:
 

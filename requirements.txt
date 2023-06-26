@@ -1,1 +1,1 @@
-datajoint>=0.12.9,<0.13.0
+datajoint==0.12.9
