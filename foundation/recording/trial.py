@@ -1,6 +1,4 @@
-import numpy as np
 from djutils import merge, rowproperty, rowmethod
-from foundation.utils.resample import monotonic
 from foundation.virtual import utility, stimulus, scan
 from foundation.virtual.bridge import pipe_stim, pipe_shared
 from foundation.schemas import recording as schema
@@ -8,29 +6,19 @@ from foundation.schemas import recording as schema
 
 # ---------------------------- Trial ----------------------------
 
-# -- Trial Base --
+# -- Trial Type Base --
 
 
-class _Trial:
+class TrialType:
     """Recording Trial"""
 
     @rowproperty
-    def flip_times(self):
+    def compute(self):
         """
         Returns
         -------
-        1D array
-            flip times of stimulus frames
-        """
-        raise NotImplementedError()
-
-    @rowproperty
-    def video_id(self):
-        """
-        Returns
-        -------
-        str
-            key (foundation.stimulus.video.Video)
+        foundation.recording.compute_trial.TrialType (row)
+            compute trial
         """
         raise NotImplementedError()
 
@@ -39,23 +27,16 @@ class _Trial:
 
 
 @schema.lookup
-class ScanTrial(_Trial):
+class ScanTrial(TrialType):
     definition = """
     -> pipe_stim.Trial
     """
 
     @rowproperty
-    def flip_times(self):
-        return (pipe_stim.Trial & self).fetch1("flip_times", squeeze=True)
+    def compute(self):
+        from foundation.recording.compute_trial import ScanTrial
 
-    @rowproperty
-    def video_id(self):
-        from foundation.stimulus.video import Video
-
-        trial = pipe_stim.Trial * pipe_stim.Condition & self
-        stim_type = trial.fetch1("stimulus_type")
-        stim_type = stim_type.split(".")[1]
-        return Video.get(stim_type, trial).fetch1("video_id")
+        return ScanTrial & self
 
 
 # -- Trial --
@@ -79,6 +60,19 @@ class TrialSet:
 
 
 @schema.computed
+class TrialVideo:
+    definition = """
+    -> Trial
+    ---
+    -> stimulus.Video
+    """
+
+    def make(self, key):
+        key["video_id"] = (Trial & key).link.compute.video_id
+        self.insert1(key)
+
+
+@schema.computed
 class TrialBounds:
     definition = """
     -> Trial
@@ -88,16 +82,7 @@ class TrialBounds:
     """
 
     def make(self, key):
-        # trial flip times
-        flips = (Trial & key).link.flip_times
-
-        # verify flip times
-        assert np.isfinite(flips).all()
-        assert monotonic(flips)
-
-        # trial bounds
-        key["start"] = flips[0]
-        key["end"] = flips[-1]
+        key["start"], key["end"] = (Trial & key).link.compute.bounds
         self.insert1(key)
 
 
@@ -117,34 +102,14 @@ class TrialSamples:
         self.insert1(key)
 
 
-@schema.computed
-class TrialVideo:
-    definition = """
-    -> Trial
-    ---
-    -> stimulus.Video
-    """
-
-    def make(self, key):
-        key["video_id"] = (Trial & key).link.video_id
-        self.insert1(key)
-
-
 # ---------------------------- Trial Filter ----------------------------
-
-
-# -- Trial Filter Base --
-
-
-class _TrialFilter:
-    filtertype = Trial
-
 
 # -- Trial Filter Types --
 
 
 @schema.lookupfilter
-class VideoTypeFilter(_TrialFilter):
+class VideoTypeFilter:
+    filtertype = Trial
     definition = """
     video_type      : varchar(128)  # video type
     include         : bool          # include or exclude
@@ -161,7 +126,8 @@ class VideoTypeFilter(_TrialFilter):
 
 
 @schema.lookupfilter
-class VideoSetFilter(_TrialFilter):
+class VideoSetFilter:
+    filtertype = Trial
     definition = """
     -> stimulus.VideoSet
     include         : bool          # include or exclude
@@ -180,7 +146,8 @@ class VideoSetFilter(_TrialFilter):
 
 
 @schema.lookupfilter
-class ScanPupilFilter(_TrialFilter):
+class ScanPupilFilter:
+    filtertype = Trial
     definition = """
     -> pipe_shared.TrackingMethod
     max_nans        : decimal(4, 3) # maximum tolerated fraction of nans

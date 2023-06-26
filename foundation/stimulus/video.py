@@ -1,4 +1,3 @@
-
 from djutils import rowproperty, rowmethod
 from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
 from foundation.schemas import stimulus as schema
@@ -18,7 +17,7 @@ class _Video:
         Returns
         -------
         foundation.stimulus.compute_video.Video (row)
-            video stimulus
+            compute video
         """
         raise NotImplementedError()
 
