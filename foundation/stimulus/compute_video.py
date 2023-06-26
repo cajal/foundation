@@ -33,9 +33,9 @@ class VideoType:
         float
             direction -- degrees [0, 360)
         float
-            onset of direction (seconds relative to first video frame)
+            start time of direction (seconds)
         float
-            offset of direction (seconds relative to first video frame)
+            end time of direction (seconds)
         """
         raise NotImplementedError()
 

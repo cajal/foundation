@@ -165,7 +165,7 @@ def sample_times(start, end, period):
 
 
 class Resample:
-    """Resample Base"""
+    """Resample"""
 
     def __init__(self, times, values, target_period, target_offset=0):
         """
@@ -240,13 +240,14 @@ class Resample:
         Parameters
         ----------
         start : float
-            start time
+            target start time
         end : float
-            end time
+            target end time
 
         Returns
         -------
-        1D array | None
+        1D array
+            target values
         """
         x = sample_times(
             start=self.transform_times(start),
@@ -265,7 +266,7 @@ class Resample:
 
 
 class Nans(Resample):
-    """Trace Nans"""
+    """Detect Nans"""
 
     @property
     def x(self):
@@ -284,7 +285,7 @@ class Nans(Resample):
 
 
 class Hamming(Resample):
-    """Resampling with Hamming filtering"""
+    """Resample with Hamming filtering"""
 
     @property
     def x(self):

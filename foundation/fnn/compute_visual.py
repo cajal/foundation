@@ -21,7 +21,7 @@ class NetworkModelRecording:
     @rowproperty
     def response(self):
         """
-        Returns (trials exist)
+        Returns
         -------
         3D array
             [samples, trials, units] -- dtype=float-like
