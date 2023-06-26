@@ -1,5 +1,4 @@
 from djutils import rowproperty, rowmethod
-from foundation.utils import resample
 from foundation.schemas import utility as schema
 
 
@@ -8,7 +7,7 @@ from foundation.schemas import utility as schema
 # -- Rate Base --
 
 
-class _Rate:
+class RateType:
     """Resampling Rate"""
 
     @rowproperty
@@ -26,7 +25,7 @@ class _Rate:
 
 
 @schema.lookup
-class Hz(_Rate):
+class Hz(RateType):
     definition = """
     hz          : decimal(9, 6)         # samples per second
     """
@@ -51,7 +50,7 @@ class Rate:
 # -- Offset Base --
 
 
-class _Offset:
+class OffsetType:
     """Resampling Offset"""
 
     @rowproperty
@@ -69,7 +68,7 @@ class _Offset:
 
 
 @schema.lookup
-class MsOffset(_Offset):
+class MsOffset(OffsetType):
     definition = """
     ms_offset       : int unsigned      # millisecond offset
     """
@@ -94,8 +93,8 @@ class Offset:
 # -- Resample Base --
 
 
-class _Resample:
-    """Trace Resampling"""
+class ResampleType:
+    """Resampling Method"""
 
     @rowmethod
     def resample(self, times, values, target_period, target_offset):
@@ -123,13 +122,15 @@ class _Resample:
 
 
 @schema.method
-class Hamming(_Resample):
+class Hamming(ResampleType):
     name = "hamming"
     comment = "hamming trace"
 
     @rowmethod
     def resample(self, times, values, target_period, target_offset):
-        return resample.Hamming(
+        from foundation.utils.resample import Hamming
+
+        return Hamming(
             times=times,
             values=values,
             target_period=target_period,
@@ -138,14 +139,16 @@ class Hamming(_Resample):
 
 
 @schema.lookup
-class LowpassHamming(_Resample):
+class LowpassHamming(ResampleType):
     definition = """
     lowpass_hz      : decimal(6, 3)     # lowpass filter rate
     """
 
     @rowmethod
     def resample(self, times, values, target_period, target_offset):
-        return resample.LowpassHamming(
+        from foundation.utils.resample import LowpassHamming
+
+        return LowpassHamming(
             times=times,
             values=values,
             target_period=target_period,

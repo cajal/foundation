@@ -1,5 +1,4 @@
 from djutils import rowproperty
-from foundation.utils import resize
 from foundation.schemas import utility as schema
 
 
@@ -19,8 +18,8 @@ class Resolution:
 # -- Resize Base --
 
 
-class _Resize:
-    """Video Resizing"""
+class ResizeType:
+    """Resizing Method"""
 
     @rowproperty
     def resize(self):
@@ -37,7 +36,7 @@ class _Resize:
 
 
 @schema.lookup
-class PilResize(_Resize):
+class PilResize(ResizeType):
     definition = """
     resample        : varchar(64)   # resampling filter (PIL.Image.Resampling)
     """
@@ -45,9 +44,10 @@ class PilResize(_Resize):
     @rowproperty
     def resize(self):
         from PIL import Image
+        from foundation.utils.resize import PilResize
 
         resample = getattr(Image.Resampling, self.fetch1("resample"))
-        return resize.PilResize(resample)
+        return PilResize(resample)
 
 
 # -- Resize --

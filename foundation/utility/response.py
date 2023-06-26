@@ -1,5 +1,4 @@
 from djutils import rowproperty
-from foundation.utils import response
 from foundation.schemas import utility as schema
 
 
@@ -18,7 +17,7 @@ class Burnin:
 # -- Response Measure Base --
 
 
-class _Measure:
+class MeasureType:
     """Response Measure"""
 
     @rowproperty
@@ -36,13 +35,15 @@ class _Measure:
 
 
 @schema.method
-class CCMax(_Measure):
+class CCMax(MeasureType):
     name = "cc_max"
     comment = "upper bound of signal correlation"
 
     @rowproperty
     def measure(self):
-        return response.CCMax()
+        from foundation.utils.response import CCMax
+
+        return CCMax()
 
 
 # -- Response Measure --
@@ -60,7 +61,7 @@ class Measure:
 # -- Response Correlation Base --
 
 
-class _Correlation:
+class CorrelationType:
     """Response Correlation"""
 
     @rowproperty
@@ -78,13 +79,15 @@ class _Correlation:
 
 
 @schema.method
-class CCSignal(_Correlation):
+class CCSignal(CorrelationType):
     name = "cc_signal"
     comment = "signal correlation"
 
     @rowproperty
     def correlation(self):
-        return response.CCSignal()
+        from foundation.utils.response import CCSignal
+
+        return CCSignal()
 
 
 # -- Response Measure --

@@ -8,7 +8,7 @@ from foundation.schemas import utility as schema
 # -- Summary Base --
 
 
-class _Summary:
+class SummaryType:
     """Summary Statistic"""
 
     @rowproperty
@@ -26,7 +26,7 @@ class _Summary:
 
 
 @schema.method
-class Mean(_Summary):
+class Mean(SummaryType):
     name = "mean"
     comment = "arithmetic mean"
 
@@ -36,7 +36,7 @@ class Mean(_Summary):
 
 
 @schema.lookup
-class Std(_Summary):
+class Std(SummaryType):
     definition = """
     ddof        : int unsigned      # delta degrees of freedom
     """
