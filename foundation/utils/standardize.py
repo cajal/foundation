@@ -11,8 +11,8 @@ class Standardize:
         """
         Parameters
         ----------
-        homogeneous : 1D array -- [N]
-            boolean mask, indicates whether transformation must be homogeneous
+        homogeneous : 1D array
+            [N] -- dtype=bool -- homogeneous | unrestricted transform
         """
         self.homogeneous = np.array(homogeneous, dtype=bool)
         assert self.homogeneous.ndim == 1
@@ -25,14 +25,14 @@ class Standardize:
         Parameters
         ----------
         a : 2D array
-            values to be transformed -- [M, N]
+            [M, N] -- dtype=float -- values to be transformed
         inverse : bool
-            inverse transformation
+            inverse | normal transform
 
         Returns
         -------
         2D array
-            transformed values -- [M, N]
+            [M, N] -- dtype=float -- transformed values
         """
         raise NotImplementedError()
 
@@ -47,12 +47,12 @@ class Affine(Standardize):
         """
         Parameters
         ----------
-        shift : 1D array -- [N]
-            affine shift
-        scale : 1D array -- [N]
-            affine scale
-        homogeneous : 1D array -- [N]
-            boolean mask, indicates whether transformation must be homogeneous
+        shift : 1D array
+            [N] -- dtype=float -- affine shift
+        scale : 1D array
+            [N] -- dtype=float -- affine scale
+        homogeneous : 1D array
+            [N] -- dtype=bool -- homogeneous | unrestricted transform
         """
         super().__init__(homogeneous)
 
@@ -77,10 +77,10 @@ class Scale(Standardize):
         """
         Parameters
         ----------
-        scale : 1D array -- [N]
-            divisive scale
-        homogeneous : 1D array -- [N]
-            boolean mask, indicates whether transformation must be homogeneous
+        scale : 1D array
+            [N] -- dtype=float -- divisive scale
+        homogeneous : 1D array
+            [N] -- dtype=bool -- homogeneous | unrestricted transform
         """
         super().__init__(homogeneous)
 

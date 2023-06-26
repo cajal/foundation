@@ -101,18 +101,17 @@ class ScanTrials:
                 ResizedVideo.populate(videos, key, display_progress=True, reserve_jobs=True)
 
 
-@keys
-class _ScanTraces:
-    """Scan Trace"""
+class ScanTraces:
+    """Scan Traces"""
 
     @property
-    def traces_table(self):
+    def traces(self):
         raise NotImplementedError()
 
     @property
     def key_list(self):
         return [
-            self.traces_table,
+            self.traces,
             recording.ScanTrials,
             utility.Standardize,
             utility.Resample,
@@ -130,7 +129,7 @@ class _ScanTraces:
 
             with cache_rowproperty():
                 # traces
-                traces = self.traces_table & key
+                traces = self.traces & key
                 traces = (TraceSet & traces).members
 
                 # trials
@@ -145,25 +144,28 @@ class _ScanTraces:
                 ResampledTraces.populate(traces, trials, key, display_progress=True, reserve_jobs=True)
 
 
-class ScanUnits(_ScanTraces):
+@keys
+class ScanUnits(ScanTraces):
     """Scan Units"""
 
     @property
-    def traces_table(self):
+    def traces(self):
         return recording.ScanUnits
 
 
-class ScanVisualPerspectives(_ScanTraces):
+@keys
+class ScanVisualPerspectives(ScanTraces):
     """Scan Visual Perspectives"""
 
     @property
-    def traces_table(self):
+    def traces(self):
         return recording.ScanVisualPerspectives
 
 
-class ScanVisualModulations(_ScanTraces):
+@keys
+class ScanVisualModulations(ScanTraces):
     """Scan Visual Modulations"""
 
     @property
-    def traces_table(self):
+    def traces(self):
         return recording.ScanVisualModulations

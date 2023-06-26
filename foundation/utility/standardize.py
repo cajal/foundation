@@ -29,10 +29,10 @@ class _Standardize:
         Parameter
         ---------
         homogeneous : 1D array
-            boolean mask -- whether transformation must be homogeneous -- [size]
+            [size] -- dtype=bool -- homogeneous | any transform
         **kwargs
             key -- summary_id
-            value -- 1D array -- [size]
+            value -- 1D array -- [size] -- dtype=float -- summary statistic
 
         Returns
         -------

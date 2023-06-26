@@ -7,49 +7,19 @@ from foundation.schemas import recording as schema
 
 # ---------------------------- Trace ----------------------------
 
-# -- Trace Base --
+# -- Trace Type Base --
 
 
-class _Trace:
+class TraceType:
     """Recording Trace"""
 
     @rowproperty
-    def trialset_id(self):
+    def compute(self):
         """
         Returns
         -------
-        str
-            trialset_id (foundation.recording.trial.TrialSet)
-        """
-        raise NotImplementedError()
-
-    @rowproperty
-    def times(self):
-        """
-        Returns
-        -------
-        1D array
-            trace times
-        """
-        raise NotImplementedError()
-
-    @rowproperty
-    def values(self):
-        """
-        Returns
-        -------
-        1D array
-            trace values
-        """
-        raise NotImplementedError()
-
-    @rowproperty
-    def homogeneous(self):
-        """
-        Returns
-        -------
-        bool
-            homogeneous transformation
+        foundation.recording.compute_trace.TraceType (row)
+            compute trace
         """
         raise NotImplementedError()
 
@@ -57,18 +27,8 @@ class _Trace:
 # -- Trace Types --
 
 
-class _Scan(_Trace):
-    """Scan Trace"""
-
-    @rowproperty
-    def trialset_id(self):
-        from foundation.recording.scan import ScanRecording
-
-        return merge(self, ScanRecording).fetch1("trialset_id")
-
-
 @schema.lookup
-class ScanUnit(_Scan):
+class ScanUnit(TraceType):
     definition = """
     -> scan.Scan
     -> pipe_fuse.ScanSet.Unit
@@ -76,57 +36,37 @@ class ScanUnit(_Scan):
     """
 
     @rowproperty
-    def times(self):
-        times = (scan.Scan & self).fetch1("scan_times")
-        delay = (resolve_pipe(self).ScanSet.UnitInfo & self).fetch1("ms_delay") / 1000
-        return times + delay
+    def compute(self):
+        from foundation.recording.compute_trace import ScanUnit
 
-    @rowproperty
-    def values(self):
-        return (resolve_pipe(self).Activity.Trace & self).fetch1("trace").clip(0)
-
-    @rowproperty
-    def homogeneous(self):
-        return True
+        return ScanUnit & self
 
 
 @schema.lookup
-class ScanPupil(_Scan):
+class ScanPupil(TraceType):
     definition = """
     -> scan.PupilTrace
     """
 
     @rowproperty
-    def times(self):
-        return (scan.Scan & self).fetch1("eye_times")
+    def compute(self):
+        from foundation.recording.compute_trace import ScanPupil
 
-    @rowproperty
-    def values(self):
-        return (scan.PupilTrace & self).fetch1("pupil_trace")
-
-    @rowproperty
-    def homogeneous(self):
-        return False
+        return ScanPupil & self
 
 
 @schema.lookup
-class ScanTreadmill(_Scan):
+class ScanTreadmill(TraceType):
     definition = """
     -> scan.Scan
     -> pipe_tread.Treadmill
     """
 
     @rowproperty
-    def times(self):
-        return (scan.Scan & self).fetch1("treadmill_times")
+    def compute(self):
+        from foundation.recording.compute_trace import ScanTreadmill
 
-    @rowproperty
-    def values(self):
-        return (pipe_tread.Treadmill & self).fetch1("treadmill_vel")
-
-    @rowproperty
-    def homogeneous(self):
-        return True
+        return ScanTreadmill & self
 
 
 # -- Trace --
@@ -150,19 +90,6 @@ class TraceSet:
 
 
 @schema.computed
-class TraceHomogeneous:
-    definition = """
-    -> Trace
-    ---
-    homogeneous     : bool      # homogeneous tranformation
-    """
-
-    def make(self, key):
-        key["homogeneous"] = (Trace & key).link.homogeneous
-        self.insert1(key)
-
-
-@schema.computed
 class TraceTrials:
     definition = """
     -> Trace
@@ -171,7 +98,20 @@ class TraceTrials:
     """
 
     def make(self, key):
-        key["trialset_id"] = (Trace & key).link.trialset_id
+        key["trialset_id"] = (Trace & key).link.compute.trialset_id
+        self.insert1(key)
+
+
+@schema.computed
+class TraceHomogeneous:
+    definition = """
+    -> Trace
+    ---
+    homogeneous     : bool      # homogeneous | unrestricted transform
+    """
+
+    def make(self, key):
+        key["homogeneous"] = (Trace & key).link.compute.homogeneous
         self.insert1(key)
 
 
@@ -197,18 +137,12 @@ class TraceSummary:
 
 # ---------------------------- Trace Filter ----------------------------
 
-# -- Trace Filter Base --
-
-
-class _TraceFilter:
-    filtertype = Trace
-
-
 # -- Trace Filter Types --
 
 
 @schema.lookupfilter
-class ScanUnitFilter(_TraceFilter):
+class ScanUnitFilter:
+    filtertype = Trace
     definition = """
     -> pipe_shared.ClassificationMethod
     -> pipe_shared.MaskType

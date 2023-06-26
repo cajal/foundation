@@ -234,12 +234,12 @@ class Frame(VideoType):
             return video.Video([image, blank], [0, duration])
 
 
-# -- Transformed Video --
+# ---------------------------- Resizing ----------------------------
 
 
 @keys
 class ResizedVideo:
-    """Resize video"""
+    """Resized Video"""
 
     @property
     def key_list(self):

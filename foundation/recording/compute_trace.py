@@ -1,15 +1,150 @@
 import numpy as np
 from djutils import keys, merge, rowmethod, rowproperty
 from foundation.utils import tqdm
-from foundation.virtual import utility, stimulus, recording
+from foundation.virtual.bridge import pipe_fuse, pipe_shared, pipe_tread, resolve_pipe
+from foundation.virtual import utility, stimulus, scan, recording
 
 
-# ----------------------------- Trace/Traces -----------------------------
+# ----------------------------- Trace -----------------------------
+
+# -- Trace Type Base --
+
+
+class TraceType:
+    """Recording Trace"""
+
+    @rowproperty
+    def trialset_id(self):
+        """
+        Returns
+        -------
+        str
+            trialset_id (foundation.recording.trial.TrialSet)
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def times(self):
+        """
+        Returns
+        -------
+        1D array
+            trace times
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def values(self):
+        """
+        Returns
+        -------
+        1D array
+            trace values
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def homogeneous(self):
+        """
+        Returns
+        -------
+        bool
+            homogeneous | unrestricted transform
+        """
+        raise NotImplementedError()
+
+
+class ScanTraceType(TraceType):
+    """Scan Trace"""
+
+    @rowproperty
+    def trialset_id(self):
+        return merge(self.key, recording.ScanRecording).fetch1("trialset_id")
+
+
+# -- Trace Types --
+
+
+@keys
+class ScanUnit(ScanTraceType):
+    """Scan Unit Trace"""
+
+    @property
+    def key_list(self):
+        return [
+            scan.Scan,
+            pipe_fuse.ScanSet.Unit,
+            pipe_shared.SpikeMethod,
+        ]
+
+    @rowproperty
+    def times(self):
+        times = (scan.Scan & self.key).fetch1("scan_times")
+        delay = (resolve_pipe(self.key).ScanSet.UnitInfo & self.key).fetch1("ms_delay") / 1000
+        return times + delay
+
+    @rowproperty
+    def values(self):
+        return (resolve_pipe(self.key).Activity.Trace & self.key).fetch1("trace").clip(0)
+
+    @rowproperty
+    def homogeneous(self):
+        return True
+
+
+@keys
+class ScanPupil(ScanTraceType):
+    """Scan Pupil Trace"""
+
+    @property
+    def key_list(self):
+        return [
+            scan.PupilTrace,
+        ]
+
+    @rowproperty
+    def times(self):
+        return (scan.Scan & self.key).fetch1("eye_times")
+
+    @rowproperty
+    def values(self):
+        return (scan.PupilTrace & self.key).fetch1("pupil_trace")
+
+    @rowproperty
+    def homogeneous(self):
+        return False
+
+
+@keys
+class ScanTreadmill(ScanTraceType):
+    """Scan Treadmill Trace"""
+
+    @property
+    def key_list(self):
+        return [
+            scan.Scan,
+            pipe_tread.Treadmill,
+        ]
+
+    @rowproperty
+    def times(self):
+        return (scan.Scan & self.key).fetch1("treadmill_times")
+
+    @rowproperty
+    def values(self):
+        return (pipe_tread.Treadmill & self.key).fetch1("treadmill_vel")
+
+    @rowproperty
+    def homogeneous(self):
+        return True
+
+
+# ----------------------------- Query -----------------------------
 
 
 @keys
 class Trace:
-    """Trace"""
+    """Recording Trace"""
 
     @property
     def key_list(self):
@@ -34,7 +169,7 @@ class Trace:
 
 @keys
 class Traces:
-    """Trace Set"""
+    """Recording Trace Set"""
 
     @property
     def key_list(self):
@@ -59,7 +194,7 @@ class Traces:
         return Trial & (TrialSet & key).members
 
 
-# ----------------------------- Resample Trace/Traces -----------------------------
+# ----------------------------- Resampling -----------------------------
 
 
 @keys
@@ -92,7 +227,7 @@ class ResampledTrace:
         resample = (Resample & self.key).link.resample
 
         # trace resampler
-        trace = (Trace & self.key).link
+        trace = (Trace & self.key).link.compute
         return resample(times=trace.times, values=trace.values, target_period=period, target_offset=offset)
 
     @rowmethod
@@ -212,7 +347,7 @@ class ResampledTraces:
         return np.stack([r(start, end) for r in self.resamplers], axis=1)
 
 
-# ----------------------------- Trace Statistics -----------------------------
+# ----------------------------- Statistics -----------------------------
 
 
 @keys
@@ -252,7 +387,7 @@ class TraceSummary:
         return (Summary & self.key).link.summary(trials)
 
 
-# ----------------------------- Standardized Trace/Traces -----------------------------
+# ----------------------------- Standardization -----------------------------
 
 
 @keys
