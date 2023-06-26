@@ -5,7 +5,7 @@ from foundation.virtual import utility
 
 @keys
 class Scan:
-    """Scan stimulus"""
+    """Scan Stimulus"""
 
     @property
     def key_list(self):

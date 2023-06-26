@@ -6,17 +6,10 @@ from foundation.schemas import function as schema
 # ----------------------------- Direction -----------------------------
 
 
-# @schema.lookup
-# class DirectionPrecision:
-#     definition = """
-#     precision   :
-#     """
-
-
 # -- Direction Base --
 
 
-class _Direction:
+class DirectionType:
     """Direction Tuning"""
 
     @rowproperty
@@ -33,19 +26,37 @@ class _Direction:
 # -- Direction Types --
 
 
-@schema.lookup
-class RecordingDirection(_Direction):
-    definition = """
-    -> recording.Trace              # response trace
-    -> recording.TrialFilterSet     # trial filter
-    """
+# @schema.lookup
+# class RecordingDirection(DirectionType):
+#     definition = """
+#     -> recording.Trace              # response trace
+#     -> recording.TrialFilterSet     # trial filter
+#     """
 
 
-# -- Direction --
+# # -- Direction --
 
 
-@schema.link
-class Direction:
-    links = [RecordingDirection]
-    name = "direction"
-    comment = "direction tuning"
+# @schema.link
+# class Direction:
+#     links = [RecordingDirection]
+#     name = "direction"
+#     comment = "direction tuning"
+
+
+# # -- Computed Direction --
+
+
+# @schema.computed
+# class VisualDirectionImpulse:
+#     definition = """
+#     -> Direction
+#     -> stimulus.VideoSet
+#     -> utility.Impulse
+#     ---
+#     degrees         : longblob      # [directions] -- degrees from 0 to 360
+#     activations     : longblob      # [directions] -- activations
+#     """
+
+#     def make(self, key):
+#         pass

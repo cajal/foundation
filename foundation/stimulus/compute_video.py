@@ -31,7 +31,7 @@ class VideoType:
         Yields
         ------
         float
-            direction -- degrees [0, 360)
+            direction -- degrees from 0 to 360
         float
             start time of direction (seconds)
         float
