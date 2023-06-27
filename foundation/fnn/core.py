@@ -85,10 +85,13 @@ class RecurrentType:
 @schema.lookup
 class Rvt(RecurrentType):
     definition = """
-    channels        : int unsigned  # channels per stream
-    groups          : int unsigned  # groups per stream
-    kernel_size     : int unsigned  # kernel size
-    dropout         : decimal(6, 6) # dropout probability
+    recurrent_channels  : int unsigned  # recurrent channels per stream
+    attention_channels  : int unsigned  # attention channels per stream
+    out_channels        : int unsigned  # out channels per stream
+    groups              : int unsigned  # groups per stream
+    heads               : int unsigned  # heads per stream
+    kernel_size         : int unsigned  # kernel size
+    dropout             : decimal(6, 6) # dropout probability
     """
 
     @rowproperty

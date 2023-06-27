@@ -112,16 +112,17 @@ class FeatureType:
 # -- Feature Types --
 
 
-@schema.method
+@schema.lookup
 class Norm(FeatureType):
-    name = "norm"
-    comment = "normalized feature"
+    definition = """
+    groups      : int unsigned  # groups per stream
+    """
 
     @rowproperty
     def nn(self):
         from fnn.model.features import Norm
 
-        return Norm()
+        return Norm(**self.fetch1())
 
 
 # -- Feature --
