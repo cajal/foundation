@@ -1,7 +1,7 @@
 from djutils import U
 from foundation.virtual.bridge import pipe_fuse
 from foundation.virtual import utility, recording, fnn
-from foundation.function.response import RecordingResponse, FnnRecordingResponse, Response, ResponseSet
+from foundation.function.response import TrialResponse, FnnTrialResponse, Response, ResponseSet
 from foundation.schemas import function as schema
 
 
@@ -59,8 +59,8 @@ class VisualScanFnnRecordingResponse:
         unit.update(response_index=unit["traceset_index"], **key)
 
         # insert responses
-        RecordingResponse.insert1(unit, ignore_extra_fields=True, skip_duplicates=True)
-        FnnRecordingResponse.insert1(unit, ignore_extra_fields=True, skip_duplicates=True)
+        TrialResponse.insert1(unit, ignore_extra_fields=True, skip_duplicates=True)
+        FnnTrialResponse.insert1(unit, ignore_extra_fields=True, skip_duplicates=True)
 
         # fill responses
         Response.fill()

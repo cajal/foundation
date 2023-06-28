@@ -1,4 +1,4 @@
-from djutils import rowproperty
+from djutils import rowproperty, cache_rowproperty
 from foundation.utils import tqdm, disable_tqdm
 from foundation.virtual import utility, stimulus, recording, fnn
 from foundation.schemas import function as schema
@@ -27,17 +27,9 @@ class ResponseType:
 
 
 @schema.lookup
-class Recording(ResponseType):
+class TrialResponse(ResponseType):
     definition = """
-    -> recording.Trace              # recorded trace
-    -> recording.TrialFilterSet     # trial filter
-    """
-
-
-@schema.lookup
-class RecordingResponse(ResponseType):
-    definition = """
-    -> recording.Trace                  # recorded trace
+    -> recording.Trace                  # trace
     -> recording.TrialFilterSet         # trial filter
     -> recording.TrialSet               # standardization trial set
     -> utility.Standardize              # standardization method
@@ -54,13 +46,13 @@ class RecordingResponse(ResponseType):
 
 
 @schema.lookup
-class FnnRecordingResponse(ResponseType):
+class FnnTrialResponse(ResponseType):
     definition = """
     -> fnn.NetworkModel                 # network model
     -> recording.TrialFilterSet         # trial filter
     trial_perspective   : bool          # trial | default perspective
     trial_modulation    : bool          # trial | default modulation
-    response_index      : int unsigned  # network response index
+    response_index      : int unsigned  # response index
     """
 
     @rowproperty
@@ -75,7 +67,7 @@ class FnnRecordingResponse(ResponseType):
 
 @schema.link
 class Response:
-    links = [RecordingResponse, FnnRecordingResponse]
+    links = [TrialResponse, FnnTrialResponse]
     name = "response"
     comment = "functional response"
 

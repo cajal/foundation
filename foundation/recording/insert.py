@@ -5,7 +5,7 @@ from foundation.virtual import scan, utility, recording
 
 @keys
 class Scan:
-    """Scan Dataset"""
+    """Scan Recording"""
 
     @property
     def keys(self):

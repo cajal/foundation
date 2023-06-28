@@ -7,7 +7,7 @@ from foundation.schemas import fnn as schema
 # -- Monitor Interface --
 
 
-class _Monitor:
+class MonitorType:
     """Monitor"""
 
     @rowproperty
@@ -25,7 +25,7 @@ class _Monitor:
 
 
 @schema.lookup
-class Plane(_Monitor):
+class Plane(MonitorType):
     definition = """
     init_center_x       : decimal(6, 4)     # initial center x
     init_center_y       : decimal(6, 4)     # initial center y

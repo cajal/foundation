@@ -1,64 +1,124 @@
 import numpy as np
-from djutils import keys, merge, rowproperty, cache_rowproperty
-from foundation.utils import tqdm
+from djutils import keys, merge, rowproperty, cache_rowproperty, MissingError
+from foundation.utils import tqdm, logger
 from foundation.virtual import utility, stimulus, recording
 
 
 @keys
-class Trace:
-    """Visual Trace"""
+class VisualTrials:
+    """Visual Trials"""
 
     @property
     def keys(self):
         return [
-            stimulus.Video,  # visual stimulus
-            recording.Trace,  # recording trace
-            recording.TrialFilterSet,  # recording trial filter
-            recording.TrialSet,  # standardization trial set
-            utility.Standardize,  # standardization method
-            utility.Resample,  # resampling method
-            utility.Offset,  # resampling offset
-            utility.Rate,  # resampling rate
+            recording.TrialSet,
+            recording.TrialFilterSet,
+            stimulus.Video,
         ]
 
     @rowproperty
-    def response(self):
+    def trial_ids(self):
         """
         Returns
         -------
-        2D array
-            [samples, trials] -- dtype=float-like
-        List[str]
-            list of trial_ids -- key (foundation.recording.trial.Trial), ordered by trial start
+        Tuple[str]
+            tuple of keys (foundation.recording.trial.Trial) -- ordered by trial start time
         """
-        from foundation.recording.trial import Trial, TrialSet, TrialFilterSet, TrialVideo, TrialBounds
-        from foundation.recording.compute_trace import ResampledTrace, StandardizedTrace
-        from foundation.utils.resample import truncate
+        from foundation.recording.trial import Trial, TrialSet, TrialVideo, TrialBounds, TrialFilterSet
 
         # all trials
-        key = recording.Trace & {"trace_id": self.key.fetch1("trace_id")}
-        trials = merge(key, recording.TraceTrials)
-        trials = Trial & (TrialSet & trials).members
+        trials = Trial & (TrialSet & self.key).members
 
         # filtered trials
         trials = (TrialFilterSet & self.key).filter(trials)
 
         # video trials
-        trials = merge(trials, TrialVideo) & {"video_id": self.key.fetch1("video_id")}
+        trials = merge(trials, TrialBounds, TrialVideo) & self.key
 
         # trial ids, ordered by trial start
-        trials = merge(trials, TrialBounds).fetch("trial_id", order_by="start").tolist()
-        assert trials, "No trials found"
+        return tuple(trials.fetch("trial_id", order_by="start"))
+
+
+@keys
+class VisualResponse:
+    """Visual Trials"""
+
+    @property
+    def keys(self):
+        return [
+            recording.Trace,
+            recording.TrialFilterSet,
+            stimulus.Video,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
+        ]
+
+    @rowproperty
+    def trials(self):
+        """
+        Returns
+        -------
+        foundation.utils.response.Trials | None
+            visual response trials -- ordered by trial start time
+        """
+        from foundation.recording.compute_trace import ResampledTrace
+        from foundation.utils.response import Trials
+
+        # visual trials
+        key = merge(self.key, recording.TraceTrials)
+        trial_ids = (VisualTrials & key).trial_ids
+
+        if trial_ids:
+            # trial responses
+            responses = (ResampledTrace & self.key).trials(trial_ids)
+            return Trials(responses, index=trial_ids, tolerance=1)
+
+        else:
+            # no trials
+            raise MissingError("No trials found")
+
+
+@keys
+class VisualMeasure:
+    """Visual Measure"""
+
+    @property
+    def keys(self):
+        return [
+            recording.Trace,
+            recording.TrialFilterSet,
+            stimulus.VideoSet,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
+            utility.Measure,
+            utility.Burnin,
+        ]
+
+    @rowproperty
+    def measure(self):
+        """
+        Returns
+        -------
+        float
+            visual response measure
+        """
+        from foundation.stimulus.video import VideoSet
+        from foundation.utility.response import Measure
+        from foundation.utils.response import concatenate
+
+        # videos
+        videos = (VideoSet & self.key).members.fetch("video_id", order_by="video_id", as_dict=True)
+        videos = tqdm(videos, desc="Videos")
+
+        # response burnin
+        burnin = self.key.fetch1("burnin")
 
         # trial responses
-        responses = (ResampledTrace & self.key).trials(trial_ids=trials)
-        responses = tqdm(responses, desc="Responses")
+        with cache_rowproperty():
+            responses = [(VisualResponse & self.key & video).trials for video in videos]
+            responses = concatenate(*responses, burnin=burnin)
 
-        # response tranform
-        transform = (StandardizedTrace & self.key).transform
-
-        # compute and transform responses
-        responses = np.stack(truncate(*map(transform, responses), tolerance=1), axis=1)
-
-        # responses and trial_ids
-        return responses, trials
+        # response measure
+        return (Measure & self.key).link.measure(responses)

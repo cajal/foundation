@@ -13,7 +13,7 @@ class ModelType:
     """Model"""
 
     @rowproperty
-    def model(self):
+    def compute(self):
         """
         Returns
         -------
@@ -39,7 +39,7 @@ class Instance(ModelType):
     """
 
     @rowproperty
-    def model(self):
+    def compute(self):
         from foundation.fnn.compute_model import Instance
 
         return Instance & self
@@ -59,7 +59,7 @@ class NetworkSetInstance(ModelType):
     """
 
     @rowproperty
-    def model(self):
+    def compute(self):
         from foundation.fnn.compute_model import NetworkSetInstance
 
         return NetworkSetInstance & self
@@ -100,7 +100,7 @@ class NetworkModel:
         from foundation.utils.torch import save_to_array
 
         # network trainer
-        trainer = (Model & key).link.model.train(network_id=key["network_id"])
+        trainer = (Model & key).link.compute.train(network_id=key["network_id"])
 
         for network_id, state_dict in trainer:
 
