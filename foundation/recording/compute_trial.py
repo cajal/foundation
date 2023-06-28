@@ -53,7 +53,7 @@ class ScanTrial(TrialType):
     """Scan Trial"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             pipe_stim.Trial,
         ]
@@ -89,7 +89,7 @@ class ResampledTrial:
     """Resample Trial"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             recording.Trial,
             utility.Rate,

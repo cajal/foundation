@@ -37,7 +37,7 @@ class Initial(StateType):
     """Initial Network State"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             fnn.Initial,
         ]
@@ -66,7 +66,7 @@ class Initial(StateType):
 #     """Random Network State"""
 
 #     @property
-#     def key_list(self):
+#     def keys(self):
 #         return [
 #             fnn.NetworkSetCore,
 #         ]

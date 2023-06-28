@@ -9,7 +9,7 @@ class Trace:
     """Visual Trace"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             stimulus.Video,  # visual stimulus
             recording.Trace,  # recording trace

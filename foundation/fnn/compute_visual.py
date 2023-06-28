@@ -9,7 +9,7 @@ class NetworkModelRecording:
     """Network Model Recording"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             stimulus.Video,  # visual stimulus
             fnn.NetworkModel,  # network model

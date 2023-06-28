@@ -154,7 +154,7 @@ class Instance(_Instance):
     """Network Instance"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             fnn.Instance,
         ]
@@ -255,7 +255,7 @@ class NetworkSetInstance(_Instance):
     """Network Set Instance"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             fnn.NetworkSetCore,
             fnn.NetworkSetInstance,

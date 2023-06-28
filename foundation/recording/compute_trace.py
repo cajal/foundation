@@ -70,7 +70,7 @@ class ScanUnit(ScanTraceType):
     """Scan Unit Trace"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             scan.Scan,
             pipe_fuse.ScanSet.Unit,
@@ -97,7 +97,7 @@ class ScanPupil(ScanTraceType):
     """Scan Pupil Trace"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             scan.PupilTrace,
         ]
@@ -120,7 +120,7 @@ class ScanTreadmill(ScanTraceType):
     """Scan Treadmill Trace"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             scan.Scan,
             pipe_tread.Treadmill,
@@ -147,7 +147,7 @@ class Trace:
     """Recording Trace"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             recording.Trace,
         ]
@@ -172,7 +172,7 @@ class Traces:
     """Recording Trace Set"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             recording.TraceSet & "members > 0",
         ]
@@ -202,7 +202,7 @@ class ResampledTrace:
     """Resampled Trace"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             recording.Trace,
             utility.Resample,
@@ -290,7 +290,7 @@ class ResampledTraces:
     """Resampled Trace Set"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             recording.TraceSet,
             utility.Resample,
@@ -355,7 +355,7 @@ class TraceSummary:
     """Trace Summary"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             recording.Trace,
             recording.TrialSet & "members > 0",
@@ -395,7 +395,7 @@ class StandardizedTrace:
     """Standardized Trace"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             recording.Trace,
             recording.TrialSet & "members > 0",
@@ -441,7 +441,7 @@ class StandardizedTraces:
     """Standardized Trace Set"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             recording.TraceSet & "members > 0",
             recording.TrialSet & "members > 0",

@@ -87,7 +87,7 @@ class VisualScan(DataType):
     """Visual Scan Data"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             fnn.VisualScan,
         ]

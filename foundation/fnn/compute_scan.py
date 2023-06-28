@@ -7,7 +7,7 @@ class VisualScanNetwork:
     """Visual Scan Network"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             fnn.VisualScanNetwork,
         ]

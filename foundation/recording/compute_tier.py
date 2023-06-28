@@ -35,7 +35,7 @@ class RandomSplit(TierType):
     """Random Split"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             recording.RandomSplit,
         ]

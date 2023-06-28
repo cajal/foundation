@@ -3,7 +3,7 @@ from scipy.interpolate import interp1d
 from scipy.signal import windows
 
 
-# ------------------------------------ Trace Functions ------------------------------------
+# ------------------------------------ Resampling Utilites ------------------------------------
 
 
 def truncate(*traces, tolerance=1):
@@ -75,7 +75,7 @@ def monotonic(trace):
 
 
 def target_index(time, period):
-    """Target index for the provided time and sampling period
+    """Nearest preceding target index for the provided time and sampling period
 
     Parameters
     ----------
@@ -94,7 +94,7 @@ def target_index(time, period):
 
 
 def flip_index(times, period):
-    """Interpolated flip index for the provided flip times and sampling period
+    """Nearest preceding flip index for the provided flip times and sampling period
 
     Parameters
     ----------
@@ -161,7 +161,7 @@ def sample_times(start, end, period):
     return np.arange(n) * period + start
 
 
-# ------------------------------------ Trace Resampling ------------------------------------
+# ------------------------------------ Resampling Types ------------------------------------
 
 
 class Resample:
@@ -262,9 +262,6 @@ class Resample:
         return y.astype(self.dtype)
 
 
-# ------------------------------------ Resample Types ------------------------------------
-
-
 class Nans(Resample):
     """Detect Nans"""
 
@@ -272,12 +269,15 @@ class Nans(Resample):
     def dtype(self):
         return bool
 
+    @property
+    def y(self):
+        return np.isnan(self.times) | np.isnan(self.values)
+
     def transform_values(self, values, inverse=False):
         if inverse:
             return values > 0
         else:
-            nans = np.isnan(self.times) | np.isnan(values)
-            return nans * 1.0
+            return values * 1.0
 
 
 class Hamming(Resample):

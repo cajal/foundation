@@ -48,7 +48,7 @@ class Clip(VideoType):
     """Clip Video"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             pipe_stim.Clip,
         ]
@@ -83,7 +83,7 @@ class Monet2(VideoType):
     """Monet2 Video"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             pipe_stim.Monet2,
         ]
@@ -115,7 +115,7 @@ class Trippy(VideoType):
     """Trippy Video"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             pipe_stim.Trippy,
         ]
@@ -132,7 +132,7 @@ class GaborSequence(VideoType):
     """Gabor Sequence Video"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             pipe_stim.GaborSequence,
         ]
@@ -154,7 +154,7 @@ class DotSequence(VideoType):
     """Dot Sequence Video"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             pipe_stim.DotSequence,
         ]
@@ -180,7 +180,7 @@ class RdkSequence(VideoType):
     """Rdk Sequence Video"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             pipe_stim.RdkSequence,
         ]
@@ -211,7 +211,7 @@ class Frame(VideoType):
     """Frame Video"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             pipe_stim.Frame,
         ]
@@ -242,7 +242,7 @@ class ResizedVideo:
     """Resized Video"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             stimulus.Video,
             utility.Resize,

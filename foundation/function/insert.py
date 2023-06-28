@@ -7,7 +7,7 @@ class VisualScanFnnCCNorm:
     """Visual Scan Fnn -- Normalized Signal Correlation"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             fnn.NetworkModel,
             fnn.VisualScanNetwork,

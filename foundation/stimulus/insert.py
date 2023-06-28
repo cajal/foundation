@@ -8,7 +8,7 @@ class Scan:
     """Scan Stimulus"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             pipe_exp.Scan,
         ]

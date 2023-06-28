@@ -48,7 +48,7 @@ class RecordingResponse(ResponseType):
     """Recording Trial Response"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             function.RecordingResponse,
         ]
@@ -83,7 +83,7 @@ class FnnRecordingResponse(ResponseType):
     """Fnn Recording Trial Response"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             function.FnnRecordingResponse,
         ]

@@ -8,7 +8,7 @@ class Scan:
     """Scan Dataset"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             scan.Scan,
             pipe_fuse.ScanDone,
@@ -72,7 +72,7 @@ class ScanTrials:
     """Scan Trials"""
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             recording.ScanTrials,
             utility.Rate,
@@ -111,7 +111,7 @@ class ScanTraces:
         raise NotImplementedError()
 
     @property
-    def key_list(self):
+    def keys(self):
         return [
             self.traces,
             recording.ScanTrials,
