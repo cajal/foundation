@@ -1,7 +1,7 @@
 import numpy as np
 
 
-# ------- Standardize Base -------
+# ------- Standardize Interface -------
 
 
 class Standardize:

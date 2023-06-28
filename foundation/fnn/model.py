@@ -6,7 +6,7 @@ from foundation.schemas import fnn as schema
 
 # ----------------------------- Model -----------------------------
 
-# -- Model Base --
+# -- Model Interface --
 
 
 class ModelType:

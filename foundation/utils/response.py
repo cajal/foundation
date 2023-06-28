@@ -99,7 +99,7 @@ def concatenate(*trials, burnin=0):
 
 # ---------------------------- Response Measure ----------------------------
 
-# -- Response Measure Base --
+# -- Response Measure Interface --
 
 
 class Measure:
@@ -154,7 +154,7 @@ class CCMax(Measure):
 
 # ---------------------------- Response Correlation ----------------------------
 
-# -- Response Correlation Base --
+# -- Response Correlation Interface --
 
 
 class Correlation:

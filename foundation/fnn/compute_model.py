@@ -6,7 +6,7 @@ from foundation.virtual import fnn
 
 # ----------------------------- Model -----------------------------
 
-# -- Model Base --
+# -- Model Interface --
 
 
 class ModelType:

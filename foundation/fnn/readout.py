@@ -4,7 +4,7 @@ from foundation.schemas import fnn as schema
 
 # ----------------------------- Position -----------------------------
 
-# -- Position Base --
+# -- Position Interface --
 
 
 class PositionType:
@@ -49,7 +49,7 @@ class Position:
 
 # ----------------------------- Bound -----------------------------
 
-# -- Bound Base --
+# -- Bound Interface --
 
 
 class BoundType:
@@ -92,7 +92,7 @@ class Bound:
 
 # ----------------------------- Feature -----------------------------
 
-# -- Feature Base --
+# -- Feature Interface --
 
 
 class FeatureType:
@@ -136,7 +136,7 @@ class Feature:
 
 # ----------------------------- Readout -----------------------------
 
-# -- Readout Base --
+# -- Readout Interface --
 
 
 class ReadoutType:
@@ -186,7 +186,7 @@ class Readout:
 
 # ----------------------------- Unit -----------------------------
 
-# -- Unit Base --
+# -- Unit Interface --
 
 
 class UnitType:
@@ -229,7 +229,7 @@ class Unit:
 
 # ----------------------------- Reduce -----------------------------
 
-# -- Reduce Base --
+# -- Reduce Interface --
 
 
 class ReduceType:

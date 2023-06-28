@@ -2,7 +2,7 @@ import numpy as np
 from .resample import monotonic
 
 
-# -- Impulse Base --
+# -- Impulse Interface --
 
 
 class Impulse:

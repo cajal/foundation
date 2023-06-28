@@ -7,7 +7,7 @@ from foundation.schemas import recording as schema
 
 # ---------------------------- Trace ----------------------------
 
-# -- Trace Base --
+# -- Trace Interface --
 
 
 class TraceType:

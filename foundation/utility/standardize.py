@@ -6,7 +6,7 @@ from foundation.schemas import utility as schema
 
 # ---------------------------- Standardize ----------------------------
 
-# -- Standardize Base --
+# -- Standardize Interface --
 
 
 class StandardizeType:

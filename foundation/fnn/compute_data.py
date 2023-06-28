@@ -7,7 +7,7 @@ from foundation.virtual import stimulus, recording, fnn
 
 # ----------------------------- Data -----------------------------
 
-# -- Data Base --
+# -- Data Interface --
 
 
 class DataType:

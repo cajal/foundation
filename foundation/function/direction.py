@@ -6,7 +6,7 @@ from foundation.schemas import function as schema
 # ----------------------------- Direction -----------------------------
 
 
-# -- Direction Base --
+# -- Direction Interface --
 
 
 class DirectionType:

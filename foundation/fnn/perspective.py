@@ -4,7 +4,7 @@ from foundation.schemas import fnn as schema
 
 # ----------------------------- Monitor -----------------------------
 
-# -- Monitor Base --
+# -- Monitor Interface --
 
 
 class _Monitor:
@@ -55,7 +55,7 @@ class Monitor:
 
 # ----------------------------- Pixel -----------------------------
 
-# -- Pixel Base --
+# -- Pixel Interface --
 
 
 class PixelType:
@@ -116,7 +116,7 @@ class Pixel:
 
 # ----------------------------- Retina -----------------------------
 
-# -- Retina Base --
+# -- Retina Interface --
 
 
 class RetinaType:
@@ -160,7 +160,7 @@ class Retina:
 
 # ----------------------------- Perspective -----------------------------
 
-# -- Perspective Base --
+# -- Perspective Interface --
 
 
 class PerspectiveType:

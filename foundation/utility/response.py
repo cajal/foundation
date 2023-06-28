@@ -14,7 +14,7 @@ class Burnin:
 
 # ---------------------------- Measure ----------------------------
 
-# -- Measure Base --
+# -- Measure Interface --
 
 
 class MeasureType:
@@ -58,7 +58,7 @@ class Measure:
 
 # ---------------------------- Correlation ----------------------------
 
-# -- Correlation Base --
+# -- Correlation Interface --
 
 
 class CorrelationType:

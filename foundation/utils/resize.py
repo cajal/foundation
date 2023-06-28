@@ -1,7 +1,7 @@
 from PIL import Image
 
 
-# ------- Resize Base -------
+# ------- Resize Interface -------
 
 
 class Resize:

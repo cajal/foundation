@@ -9,7 +9,7 @@ from foundation.schemas import fnn as schema
 
 # ----------------------------- Network -----------------------------
 
-# -- Network Base --
+# -- Network Interface --
 
 
 class NetworkType:

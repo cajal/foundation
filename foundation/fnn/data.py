@@ -38,7 +38,7 @@ class Spec:
 
 # ---------------------------- Data ----------------------------
 
-# -- Data Base --
+# -- Data Interface --
 
 
 class DataType:

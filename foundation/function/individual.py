@@ -6,7 +6,7 @@ from foundation.schemas import function as schema
 
 # ----------------------------- Response -----------------------------
 
-# -- Response Base --
+# -- Response Interface --
 
 
 class ResponseType:
@@ -27,15 +27,23 @@ class ResponseType:
 
 
 @schema.lookup
-class RecordingResponse(ResponseType):
+class Recording(ResponseType):
     definition = """
     -> recording.Trace              # recorded trace
     -> recording.TrialFilterSet     # trial filter
-    -> recording.TrialSet           # standardization trial set
-    -> utility.Standardize          # standardization method
-    -> utility.Resample             # resampling method
-    -> utility.Offset               # resampling offset
-    -> utility.Rate                 # resampling rate
+    """
+
+
+@schema.lookup
+class RecordingResponse(ResponseType):
+    definition = """
+    -> recording.Trace                  # recorded trace
+    -> recording.TrialFilterSet         # trial filter
+    -> recording.TrialSet               # standardization trial set
+    -> utility.Standardize              # standardization method
+    -> utility.Resample                 # resampling method
+    -> utility.Offset                   # resampling offset
+    -> utility.Rate                     # resampling rate
     """
 
     @rowproperty

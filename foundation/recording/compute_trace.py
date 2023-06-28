@@ -7,7 +7,7 @@ from foundation.virtual import utility, stimulus, scan, recording
 
 # ----------------------------- Trace -----------------------------
 
-# -- Trace Base --
+# -- Trace Interface --
 
 
 class TraceType:

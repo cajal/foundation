@@ -4,7 +4,7 @@ from foundation.schemas import utility as schema
 
 # ---------------------------- Impulse ----------------------------
 
-# -- Impulse Base --
+# -- Impulse Interface --
 
 
 class ImpulseType:

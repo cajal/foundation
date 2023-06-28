@@ -5,7 +5,7 @@ from foundation.schemas import fnn as schema
 
 # ----------------------------- Loader -----------------------------
 
-# -- Loader Base --
+# -- Loader Interface --
 
 
 class LoaderType:
@@ -53,7 +53,7 @@ class Loader:
 
 # ----------------------------- Objective -----------------------------
 
-# -- Objective Base --
+# -- Objective Interface --
 
 
 class ObjectiveType:
@@ -99,7 +99,7 @@ class Objective:
 
 # ----------------------------- Optimizer -----------------------------
 
-# -- Optimizer Base --
+# -- Optimizer Interface --
 
 
 class OptimizerType:
@@ -150,7 +150,7 @@ class Optimizer:
 
 # ----------------------------- Scheduler -----------------------------
 
-# -- Scheduler Base --
+# -- Scheduler Interface --
 
 
 class SchedulerType:
@@ -211,7 +211,7 @@ class Scheduler:
 
 # ----------------------------- State -----------------------------
 
-# -- State Base --
+# -- State Interface --
 
 
 class StateType:

@@ -4,7 +4,7 @@ from foundation.schemas import utility as schema
 
 # ---------------------------- Precision ----------------------------
 
-# -- Precision Base --
+# -- Precision Interface --
 
 
 class PrecisionType:

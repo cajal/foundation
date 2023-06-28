@@ -5,7 +5,7 @@ from foundation.virtual import recording
 
 # ----------------------------- Tier -----------------------------
 
-# -- Tier Base --
+# -- Tier Interface --
 
 
 class TierType:

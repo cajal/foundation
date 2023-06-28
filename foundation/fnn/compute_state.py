@@ -5,7 +5,7 @@ from foundation.virtual import fnn
 
 # ----------------------------- State -----------------------------
 
-# -- State Base --
+# -- State Interface --
 
 
 class StateType:

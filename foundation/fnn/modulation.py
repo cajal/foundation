@@ -4,7 +4,7 @@ from foundation.schemas import fnn as schema
 
 # ----------------------------- Modulation -----------------------------
 
-# -- Modulation Base --
+# -- Modulation Interface --
 
 
 class ModulationType:

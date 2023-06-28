@@ -15,7 +15,7 @@ class Resolution:
 
 # ---------------------------- Resize ----------------------------
 
-# -- Resize Base --
+# -- Resize Interface --
 
 
 class ResizeType:

@@ -6,7 +6,7 @@ from foundation.virtual import utility, stimulus, recording, function
 
 # ----------------------------- Response -----------------------------
 
-# -- Response Base --
+# -- Response Interface --
 
 
 class ResponseType:

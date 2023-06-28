@@ -5,7 +5,7 @@ from foundation.schemas import recording as schema
 
 # ----------------------------- Tier -----------------------------
 
-# -- Tier Base --
+# -- Tier Interface --
 
 
 class TierType:

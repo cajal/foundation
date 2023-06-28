@@ -4,7 +4,7 @@ from foundation.schemas import fnn as schema
 
 # ----------------------------- Feedforward -----------------------------
 
-# -- Feedforward Base --
+# -- Feedforward Interface --
 
 
 class FeedforwardType:
@@ -62,7 +62,7 @@ class Feedforward:
 
 # ----------------------------- Recurrent -----------------------------
 
-# -- Recurrent Base --
+# -- Recurrent Interface --
 
 
 class RecurrentType:
@@ -112,7 +112,7 @@ class Recurrent:
 
 # ----------------------------- Core -----------------------------
 
-# -- Core Base --
+# -- Core Interface --
 
 
 class CoreType:
