@@ -3,7 +3,7 @@ from scipy.interpolate import interp1d
 from scipy.signal import windows
 
 
-# ------- Trace Functions -------
+# ------------------------------------ Trace Functions ------------------------------------
 
 
 def truncate(*traces, tolerance=1):
@@ -161,7 +161,7 @@ def sample_times(start, end, period):
     return np.arange(n) * period + start
 
 
-# ------- Resample Base -------
+# ------------------------------------ Trace Resampling ------------------------------------
 
 
 class Resample:
@@ -209,7 +209,7 @@ class Resample:
 
     @property
     def x(self):
-        return self.transform_times(self.times)
+        return fill_nans(self.transform_times(self.times))
 
     @property
     def y(self):
@@ -262,15 +262,11 @@ class Resample:
         return y.astype(self.dtype)
 
 
-# ------- Resample Types -------
+# ------------------------------------ Resample Types ------------------------------------
 
 
 class Nans(Resample):
     """Detect Nans"""
-
-    @property
-    def x(self):
-        return fill_nans(self.transform_times(self.times))
 
     @property
     def dtype(self):
@@ -285,11 +281,7 @@ class Nans(Resample):
 
 
 class Hamming(Resample):
-    """Resample with Hamming filtering"""
-
-    @property
-    def x(self):
-        return fill_nans(self.transform_times(self.times))
+    """Resample with Hamming Filtering"""
 
     @property
     def y(self):
@@ -305,7 +297,7 @@ class Hamming(Resample):
 
 
 class LowpassHamming(Resample):
-    """Resample with Lowpass Hamming filtering"""
+    """Resample with Lowpass Hamming Filtering"""
 
     def __init__(self, times, values, target_period, lowpass_period, target_offset=0):
         """
@@ -325,10 +317,6 @@ class LowpassHamming(Resample):
         self.lowpass_period = lowpass_period
 
         super().__init__(times=times, values=values, target_period=target_period, target_offset=target_offset)
-
-    @property
-    def x(self):
-        return fill_nans(self.transform_times(self.times))
 
     @property
     def y(self):
