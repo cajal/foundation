@@ -20,6 +20,12 @@ class VisualMeasure:
     measure = NULL          : float     # visual response measure
     """
 
+    @property
+    def key_source(self):
+        from foundation.recording.compute_visual import VisualMeasure
+
+        return VisualMeasure.key_source
+
     def make(self, key):
         from foundation.recording.compute_visual import VisualMeasure
 

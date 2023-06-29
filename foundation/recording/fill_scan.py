@@ -1,6 +1,6 @@
 from djutils import keys, merge, cache_rowproperty
 from foundation.virtual.bridge import pipe_fuse, pipe_shared
-from foundation.virtual import scan, utility, recording
+from foundation.virtual import utility, stimulus, scan, recording
 
 
 @keys
@@ -103,7 +103,7 @@ class ScanTrials:
                 ResizedVideo.populate(videos, key, display_progress=True, reserve_jobs=True)
 
 
-class ScanTraces:
+class _ScanTraces:
     """Scan Traces"""
 
     @property
@@ -150,7 +150,7 @@ class ScanTraces:
 
 
 @keys
-class ScanUnits(ScanTraces):
+class ScanUnits(_ScanTraces):
     """Scan Units"""
 
     @property
@@ -159,7 +159,7 @@ class ScanUnits(ScanTraces):
 
 
 @keys
-class ScanVisualPerspectives(ScanTraces):
+class ScanVisualPerspectives(_ScanTraces):
     """Scan Visual Perspectives"""
 
     @property
@@ -168,9 +168,41 @@ class ScanVisualPerspectives(ScanTraces):
 
 
 @keys
-class ScanVisualModulations(ScanTraces):
+class ScanVisualModulations(_ScanTraces):
     """Scan Visual Modulations"""
 
     @property
     def traces(self):
         return recording.ScanVisualModulations
+
+
+@keys
+class ScanUnitsVisualMeasure:
+    """Scan Units -- Visual Measure"""
+
+    @property
+    def keys(self):
+        return [
+            recording.ScanUnits,
+            recording.TrialFilterSet,
+            stimulus.VideoSet,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
+            utility.Measure,
+            utility.Burnin,
+        ]
+
+    def fill(self):
+        from foundation.recording.trace import TraceSet
+        from foundation.recording.visual import VisualMeasure
+
+        for key in self.key:
+
+            with cache_rowproperty():
+                # unit traces
+                traces = recording.ScanUnits & key
+                traces = (TraceSet & traces).members
+
+                # visual measure
+                VisualMeasure.populate(traces, key, display_progress=True, reserve_jobs=True)
