@@ -139,7 +139,7 @@ class ScanTreadmill(ScanTraceType):
         return True
 
 
-# ----------------------------- Query -----------------------------
+# -- Trace --
 
 
 @keys
