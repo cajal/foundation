@@ -263,24 +263,27 @@ class ResampledTrace:
         trial_id : Sequence[str]
             sequence of keys (foundation.recording.trial.Trial)
 
-        Yields
+        Yields (in order of provided trial_ids)
         ------
-        1D array -- [samples]
-            resampled trace
+        1D array
+            [samples] -- resampled trace
         """
+        # trial keys
+        keys = [{"trial_id": trial_id} for trial_id in trial_ids]
+
         # recording trials
-        trials = recording.Trial.proj() & [dict(trial_id=trial_id) for trial_id in trial_ids]
+        trials = recording.Trial.proj() & keys
 
         # ensure trials are valid
         assert not trials - (Trace & self.key).valid_trials, "Invalid trials"
 
-        # trial start and end times
-        starts, ends = merge(trials, recording.TrialBounds).fetch("start", "end")
-
         # trace resampler
         resampler = self.resampler
 
-        for start, end in zip(starts, ends):
+        for key in keys:
+            # trial start and end times
+            start, end = (recording.TrialBounds & key).fetch1("start", "end")
+
             # resampled trace
             yield resampler(start, end)
 
