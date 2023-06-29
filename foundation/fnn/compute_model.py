@@ -59,7 +59,7 @@ class _Instance(ModelType):
         from foundation.fnn.network import Network
         from foundation.fnn.model import Model, NetworkModel
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
-        from foundation.fnn.cache import NetworkInfo, NetworkCheckpoint, NetworkDone
+        from foundation.fnn.progress import NetworkInfo, NetworkCheckpoint, NetworkDone
 
         # model id, cycle, checkpoint
         key = merge(self.key, self.model_type)
@@ -207,7 +207,7 @@ class Instance(_Instance):
         from random import randint
         from torch.cuda import device_count
         from torch.multiprocessing import spawn
-        from foundation.fnn.cache import NetworkCheckpoint, NetworkDone
+        from foundation.fnn.progress import NetworkCheckpoint, NetworkDone
 
         # tcp port
         port = randint(10000, 60000)
@@ -310,7 +310,7 @@ class NetworkSetInstance(_Instance):
         from torch.cuda import device_count
         from torch.multiprocessing import spawn
         from foundation.fnn.network import NetworkSet
-        from foundation.fnn.cache import NetworkCheckpoint, NetworkDone
+        from foundation.fnn.progress import NetworkCheckpoint, NetworkDone
 
         # tcp port
         port = randint(10000, 60000)

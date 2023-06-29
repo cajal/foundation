@@ -41,7 +41,7 @@ class VisualTrials:
 
 @keys
 class VisualResponse:
-    """Visual Trials"""
+    """Visual Response"""
 
     @property
     def keys(self):
