@@ -68,7 +68,7 @@ class _Instance(ModelType):
         initialize = (cycle == 0) and (not checkpoint)
 
         # network module
-        module = (State & self.key).link.state.build(network_id=network_id, initialize=initialize)
+        module = (State & self.item).link.state.build(network_id=network_id, initialize=initialize)
         module = module.to(device="cuda")
 
         if checkpoint:
@@ -100,15 +100,15 @@ class _Instance(ModelType):
                 module.load_state_dict(params)
 
             # scheduler
-            scheduler = (Scheduler & self.key).link.scheduler
+            scheduler = (Scheduler & self.item).link.scheduler
             scheduler._init(epoch=0, cycle=cycle)
 
             # optimizer
-            optimizer = (Optimizer & self.key).link.optimizer
+            optimizer = (Optimizer & self.item).link.optimizer
             optimizer._init(scheduler=scheduler)
 
         # training objective
-        objective = (Objective & self.key).link.objective
+        objective = (Objective & self.item).link.objective
         objective._init(module=module)
 
         # training dataset
@@ -116,7 +116,7 @@ class _Instance(ModelType):
         dataset = network.link.compute_data.dataset
 
         # data loader
-        loader = (Loader & self.key).link.loader
+        loader = (Loader & self.item).link.loader
         loader._init(dataset=dataset)
 
         # parameters and parallel groups
@@ -316,7 +316,7 @@ class NetworkSetInstance(_Instance):
         port = randint(10000, 60000)
 
         # network set
-        networks = (NetworkSet & self.key).members.fetch("network_id", order_by="networkset_index")
+        networks = (NetworkSet & self.item).members.fetch("network_id", order_by="networkset_index")
         assert network_id in networks, "Invalid network_id"
 
         # parallel group size, model_id

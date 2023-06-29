@@ -55,7 +55,7 @@ class Clip(VideoType):
 
     @rowproperty
     def video(self):
-        clip = pipe_stim.Movie * pipe_stim.Movie.Clip * pipe_stim.Clip & self.key
+        clip = pipe_stim.Movie * pipe_stim.Movie.Clip * pipe_stim.Clip & self.item
         clip, start, end, fps = clip.fetch1("clip", "skip_time", "cut_after", "frame_rate")
 
         start, end = map(float, [start, end])
@@ -90,13 +90,13 @@ class Monet2(VideoType):
 
     @rowproperty
     def video(self):
-        frames, fps = (pipe_stim.Monet2 & self.key).fetch1("movie", "fps")
+        frames, fps = (pipe_stim.Monet2 & self.item).fetch1("movie", "fps")
         frames = np.einsum("H W C T -> T H W C", frames)
         return video.Video.fromarray(frames, period=1 / float(fps))
 
     @rowproperty
     def directions(self):
-        directions, onsets, duration, n_dirs, frac = (pipe_stim.Monet2 & self.key).fetch1(
+        directions, onsets, duration, n_dirs, frac = (pipe_stim.Monet2 & self.item).fetch1(
             "directions", "onsets", "duration", "n_dirs", "ori_fraction", squeeze=True
         )
         assert len(directions) == len(onsets) == n_dirs
@@ -122,7 +122,7 @@ class Trippy(VideoType):
 
     @rowproperty
     def video(self):
-        frames, fps = (pipe_stim.Trippy & self.key).fetch1("movie", "fps")
+        frames, fps = (pipe_stim.Trippy & self.item).fetch1("movie", "fps")
         frames = np.einsum("H W T -> T H W", frames)
         return video.Video.fromarray(frames, period=1 / float(fps))
 
@@ -139,7 +139,7 @@ class GaborSequence(VideoType):
 
     @rowproperty
     def video(self):
-        sequence = (pipe_stim.GaborSequence & self.key).fetch1()
+        sequence = (pipe_stim.GaborSequence & self.item).fetch1()
         fps = (pipe_gabor.Display & sequence).fetch1("fps")
 
         movs = pipe_gabor.Sequence.Gabor * pipe_gabor.Gabor & sequence
@@ -161,7 +161,7 @@ class DotSequence(VideoType):
 
     @rowproperty
     def video(self):
-        sequence = (pipe_stim.DotSequence & self.key).fetch1()
+        sequence = (pipe_stim.DotSequence & self.item).fetch1()
         fps = (pipe_dot.Display & sequence).fetch1("fps")
 
         imgs = pipe_dot.Dot * pipe_dot.Sequence.Dot * pipe_dot.Display & sequence
@@ -187,7 +187,7 @@ class RdkSequence(VideoType):
 
     @rowproperty
     def video(self):
-        sequence = (pipe_stim.RdkSequence & self.key).fetch1()
+        sequence = (pipe_stim.RdkSequence & self.item).fetch1()
         fps = (pipe_rdk.Display & sequence).fetch1("fps")
 
         movs = []
@@ -218,7 +218,7 @@ class Frame(VideoType):
 
     @rowproperty
     def video(self):
-        tup = pipe_stim.StaticImage.Image * pipe_stim.Frame & self.key
+        tup = pipe_stim.StaticImage.Image * pipe_stim.Frame & self.item
         image, pre_blank, duration = tup.fetch1("image", "pre_blank_period", "presentation_time")
         image = video.Frame.fromarray(image)
 
@@ -255,10 +255,10 @@ class ResizedVideo:
         from foundation.stimulus.video import Video
 
         # load video
-        video = (Video & self.key).link.compute.video
+        video = (Video & self.item).link.compute.video
 
         # target size
-        height, width = (Resolution & self.key).fetch1("height", "width")
+        height, width = (Resolution & self.item).fetch1("height", "width")
 
         # resize video
-        return (Resize & self.key).link.resize(video, height, width)
+        return (Resize & self.item).link.resize(video, height, width)

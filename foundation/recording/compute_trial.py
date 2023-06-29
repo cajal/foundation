@@ -62,14 +62,14 @@ class ScanTrial(TrialType):
     def video_id(self):
         from foundation.stimulus.video import Video
 
-        trial = pipe_stim.Trial * pipe_stim.Condition & self.key
+        trial = pipe_stim.Trial * pipe_stim.Condition & self.item
         stim_type = trial.fetch1("stimulus_type")
         stim_type = stim_type.split(".")[1]
         return Video.get(stim_type, trial).fetch1("video_id")
 
     @rowproperty
     def flip_times(self):
-        return (pipe_stim.Trial & self.key).fetch1("flip_times", squeeze=True)
+        return (pipe_stim.Trial & self.item).fetch1("flip_times", squeeze=True)
 
     @rowproperty
     def bounds(self):
@@ -110,7 +110,7 @@ class ResampledTrial:
         start, end = merge(self.key, recording.TrialBounds).fetch1("start", "end")
 
         # resampling period
-        period = (Rate & self.key).link.period
+        period = (Rate & self.item).link.period
 
         # trial samples
         return samples(start, end, period)
@@ -128,10 +128,10 @@ class ResampledTrial:
         from foundation.recording.trial import Trial
 
         # trial flip times
-        flips = (Trial & self.key).link.compute.flip_times
+        flips = (Trial & self.item).link.compute.flip_times
 
         # resampling period
-        period = (Rate & self.key).link.period
+        period = (Rate & self.item).link.period
 
         # start time
         start = merge(self.key, recording.TrialBounds).fetch1("start")

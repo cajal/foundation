@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
-from djutils import keys, merge, rowproperty, rowmethod, cache_rowproperty, U
-from foundation.utils import tqdm, disable_tqdm
+from djutils import keys, merge, rowproperty, rowmethod, cache_rowproperty, U, MissingError
+from foundation.utils import tqdm
 from foundation.virtual import stimulus, recording, fnn
 
 
@@ -11,7 +11,7 @@ from foundation.virtual import stimulus, recording, fnn
 
 
 class DataType:
-    """Network Data"""
+    """Data"""
 
     @rowproperty
     def sizes(self):
@@ -52,29 +52,80 @@ class DataType:
         raise NotImplementedError()
 
     @rowmethod
-    def visual_inputs(self, video_id, trial_perspective=True, trial_modulation=True, trial_filterset_id=None):
+    def visual_stimuli(self, video_id):
+        """
+        Returns
+        -------
+        4D array
+            [samples, height, width, channels] (uint8) -- video frames
+        """
+        raise NotImplementedError()
+
+    @rowmethod
+    def visual_trial_ids(self, video_id, trial_filterset_id):
         """
         Parameters
         ----------
         video_id : str
             key (foundation.stimulus.video.Video)
-        trial_perspective : bool
-            True (return trial perspectives) | False (return None)
-        trial_modulation : bool
-            True (return trial modulations) | False (return None)
-        trial_filterset_id : str | None
-            key (foundation.recording.TrialFilterSet) | None (no trial filtering beyond video selection)
+        trial_filterset_id : str
+            key (foundation.recording.TrialFilterSet)
 
         Returns
         -------
-        Iterable[3D array]
-            video frames -- [height, width, channels] x samples -- dtype=uint8
-        Iterable[2D array] | None
-            trial perspectives -- [trials, perspectives] x samples -- dtype=float-like ---OR--- None
-        Iterable[2D array] | None
-            trial modulations -- [trials, modulations] x samples -- dtype=float-like ---OR--- None
-        List[str] | None
-            list of trial_ids -- key (foundation.recording.trial.Trial) -- ordered by trial start ---OR--- None
+        Tuple[str]
+            tuple of keys (foundation.recording.trial.Trial) -- ordered by trial start time
+        """
+        raise NotImplementedError()
+
+    @rowmethod
+    def trial_perspectives(self, trial_ids, perspective_index=None):
+        """
+        Parameters
+        ----------
+        trial_id : Sequence[str]
+            sequence of keys (foundation.recording.trial.Trial)
+        perspective_index : int | None
+            perspective index (specific perspective) | None (all perspectives)
+
+        Yields
+        ------
+        1D array | 2D array
+            [samples] (specific perspective) | [samples, perspectives] (all perspectives)
+        """
+        raise NotImplementedError()
+
+    @rowmethod
+    def trial_modulations(self, trial_ids, modulation_index=None):
+        """
+        Parameters
+        ----------
+        trial_id : Sequence[str]
+            sequence of keys (foundation.recording.trial.Trial)
+        modulation_index : int | None
+            modulation index (specific modulation) | None (all modulations)
+
+        Yields
+        ------
+        1D array | 2D array
+            [samples] (specific modulation) | [samples, modulations] (all modulations)
+        """
+        raise NotImplementedError()
+
+    @rowmethod
+    def trial_units(self, trial_ids, unit_index=None):
+        """
+        Parameters
+        ----------
+        trial_id : Sequence[str]
+            sequence of keys (foundation.recording.trial.Trial)
+        unit_index : int | None
+            unit index (specific unit) | None (all units)
+
+        Yields
+        ------
+        1D array | 2D array
+            [samples] (specific unit) | [samples, units] (all units)
         """
         raise NotImplementedError()
 
@@ -94,12 +145,11 @@ class VisualScan(DataType):
 
     @rowproperty
     def key_video(self):
-        return (fnn.Spec.VisualSpec & self.key).proj("height", "width", "resize_id", "rate_id").fetch1()
+        return (fnn.Spec.VisualSpec & self.item).proj("height", "width", "resize_id", "rate_id").fetch1()
 
     def _key_traces(self, datatype):
         keymap = {f"{_}_id": f"{datatype}_{_}_id" for _ in ["resample", "offset", "standardize"]}
-        key = (fnn.Spec.VisualSpec & self.key).proj("rate_id", **keymap)
-        return key * recording.ScanTrials * self.key
+        return (recording.ScanTrials * fnn.Spec.VisualSpec & self.item).proj("rate_id", "trialset_id", **keymap)
 
     @rowproperty
     def key_perspective(self):
@@ -114,16 +164,10 @@ class VisualScan(DataType):
         return (self._key_traces("unit") * recording.ScanUnits).fetch1()
 
     @rowproperty
-    def trials(self):
-        from foundation.recording.trial import Trial, TrialSet
-
-        key = merge(recording.ScanRecording & self.key)
-        return Trial & (TrialSet & key).members
-
-    @rowproperty
     def sizes(self):
         # stimuli
-        videos = merge(self.trials, recording.TrialVideo, stimulus.VideoInfo)
+        key = recording.ScanRecording & self.item
+        videos = merge(recording.TrialSet.Member & key, recording.TrialVideo, stimulus.VideoInfo)
         sizes = [(U("channels") & videos).fetch1("channels")]
 
         # perspectives
@@ -177,8 +221,8 @@ class VisualScan(DataType):
 
         # trials
         trials = merge(
-            recording.ScanTrials & self.key,
-            recording.TrialTier & self.key & tier_keys,
+            recording.ScanTrials & self.item,
+            recording.TrialTier & self.item & tier_keys,
             recording.TrialBounds,
             recording.TrialSamples,
             recording.TrialVideo,
@@ -224,72 +268,74 @@ class VisualScan(DataType):
         return Dataset(data)
 
     @rowmethod
-    def visual_inputs(self, video_id, trial_perspective=True, trial_modulation=True, trial_filterset_id=None):
-        from foundation.utils.resample import flip_index, truncate
-        from foundation.utility.resample import Rate
+    def visual_stimuli(self, video_id):
         from foundation.stimulus.compute_video import ResizedVideo
-        from foundation.recording.compute_trace import StandardizedTraces, ResampledTraces
-        from foundation.recording.trial import Trial, TrialVideo, TrialBounds, TrialFilterSet
+        from foundation.utility.resample import Rate
+        from foundation.utils.resample import flip_index
 
-        # data keys
-        key_v = self.key_video
-        key_p = self.key_perspective
-        key_m = self.key_modulation
+        # video key
+        key = {"video_id": video_id, **self.key_video}
 
         # resized video
-        key = self.key_video
-        video = (ResizedVideo & key_v & {"video_id": video_id}).video
+        video = (ResizedVideo & key).video
 
-        # resampled video
-        time_scale = (recording.ScanVideoTimeScale & self.key).fetch1("time_scale")
-        period = (Rate & key_v).link.period
+        # time scale of recording
+        time_scale = (recording.ScanVideoTimeScale & self.item).fetch1("time_scale")
+
+        # resampling period
+        period = (Rate & key).link.period
+
+        # resampling flip index
         index = flip_index(video.times * time_scale, period)
-        video = video.array[index]
 
-        # neither perspectives nor modulations requested
-        if not trial_perspective and not trial_modulation:
-            return video, None, None, None
+        # resampled and resized video
+        return video.array[index]
 
-        # all trials
-        trials = self.trials
+    @rowmethod
+    def visual_trial_ids(self, video_id, trial_filterset_id):
+        from foundation.recording.compute_visual import VisualTrials
 
-        # filtered trials
-        if trial_filterset_id is not None:
-            trials = (TrialFilterSet & {"trial_filterset_id": trial_filterset_id}).filter(trials)
+        # visual trialset key
+        key = {
+            "trialset_id": (recording.ScanRecording & self.item).fetch1("trialset_id"),
+            "trial_filterset_id": trial_filterset_id,
+            "video_id": video_id,
+        }
+        # visual trial_ids
+        return (VisualTrials & key).trial_ids
 
-        # video trials
-        trials = merge(trials, TrialVideo, TrialBounds) & {"video_id": video_id}
-        trials = trials.fetch("trial_id", order_by="start").tolist()
+    def _trial_traces(self, trial_ids, traceset_index, key):
+        from foundation.recording.compute_trace import (
+            ResampledTrace,
+            ResampledTraces,
+            StandardizedTrace,
+            StandardizedTraces,
+        )
 
-        # no trials
-        if not trials:
-            return video, None, None, None
+        if traceset_index is None:
+            # resampled traces
+            trials = (ResampledTraces & key).trials(trial_ids=trial_ids)
+            transform = (StandardizedTraces & key).transform
+        else:
+            # resampled trace
+            trace = (recording.TraceSet.Member & key & {"traceset_index": traceset_index}).fetch1()
+            trials = (ResampledTrace & trace & key).trials(trial_ids=trial_ids)
+            transform = (StandardizedTrace & trace & key).transform
 
-        # perspectives and modulations
-        perspectives_modulations = []
+        # transformed and resampled trace(s)
+        return map(transform, trials)
 
-        for key, requested, desc in [
-            [key_p, trial_perspective, "Perspectives"],
-            [key_m, trial_modulation, "Modulations"],
-        ]:
-            if requested:
-                # transform and resampler
-                transform = (StandardizedTraces & key).transform
-                resampler = ResampledTraces & key
+    @rowmethod
+    def trial_perspectives(self, trial_ids, perspective_index=None):
+        # perspective trace(s)
+        return self._trial_traces(trial_ids, perspective_index, self.key_perspective)
 
-                # resample and transform traces
-                traces = (resampler.trial(trial_id=trial) for trial in tqdm(trials, desc=desc))
-                with cache_rowproperty(), disable_tqdm():
-                    traces = np.stack(truncate(*map(transform, traces), tolerance=1), axis=1)
+    @rowmethod
+    def trial_modulations(self, trial_ids, modulation_index=None):
+        # modulation trace(s)
+        return self._trial_traces(trial_ids, modulation_index, self.key_modulation)
 
-                # verify length
-                assert len(traces) == len(video)
-
-                # append traces
-                perspectives_modulations.append(traces)
-
-            else:
-                # append none
-                perspectives_modulations.append(None)
-
-        return video, *perspectives_modulations, trials
+    @rowmethod
+    def trial_units(self, trial_ids, unit_index=None):
+        # unit trace(s)
+        return self._trial_traces(trial_ids, unit_index, self.key_unit)

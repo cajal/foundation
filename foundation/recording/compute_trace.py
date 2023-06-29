@@ -79,13 +79,13 @@ class ScanUnit(ScanTraceType):
 
     @rowproperty
     def times(self):
-        times = (scan.Scan & self.key).fetch1("scan_times")
-        delay = (resolve_pipe(self.key).ScanSet.UnitInfo & self.key).fetch1("ms_delay") / 1000
+        times = (scan.Scan & self.item).fetch1("scan_times")
+        delay = (resolve_pipe(self.item).ScanSet.UnitInfo & self.item).fetch1("ms_delay") / 1000
         return times + delay
 
     @rowproperty
     def values(self):
-        return (resolve_pipe(self.key).Activity.Trace & self.key).fetch1("trace").clip(0)
+        return (resolve_pipe(self.item).Activity.Trace & self.item).fetch1("trace").clip(0)
 
     @rowproperty
     def homogeneous(self):
@@ -104,11 +104,11 @@ class ScanPupil(ScanTraceType):
 
     @rowproperty
     def times(self):
-        return (scan.Scan & self.key).fetch1("eye_times")
+        return (scan.Scan & self.item).fetch1("eye_times")
 
     @rowproperty
     def values(self):
-        return (scan.PupilTrace & self.key).fetch1("pupil_trace")
+        return (scan.PupilTrace & self.item).fetch1("pupil_trace")
 
     @rowproperty
     def homogeneous(self):
@@ -128,11 +128,11 @@ class ScanTreadmill(ScanTraceType):
 
     @rowproperty
     def times(self):
-        return (scan.Scan & self.key).fetch1("treadmill_times")
+        return (scan.Scan & self.item).fetch1("treadmill_times")
 
     @rowproperty
     def values(self):
-        return (pipe_tread.Treadmill & self.key).fetch1("treadmill_vel")
+        return (pipe_tread.Treadmill & self.item).fetch1("treadmill_vel")
 
     @rowproperty
     def homogeneous(self):
@@ -189,7 +189,7 @@ class Traces:
         from foundation.recording.trial import Trial, TrialSet
 
         # trace set trials
-        key = (TraceSet & self.key).members
+        key = (TraceSet & self.item).members
         key = merge(key, recording.TraceTrials)
         return Trial & (TrialSet & key).members
 
@@ -222,12 +222,12 @@ class ResampledTrace:
         from foundation.recording.trace import Trace
 
         # resampling period, offset, method
-        period = (Rate & self.key).link.period
-        offset = (Offset & self.key).link.offset
-        resample = (Resample & self.key).link.resample
+        period = (Rate & self.item).link.period
+        offset = (Offset & self.item).link.offset
+        resample = (Resample & self.item).link.resample
 
         # trace resampler
-        trace = (Trace & self.key).link.compute
+        trace = (Trace & self.item).link.compute
         return resample(times=trace.times, values=trace.values, target_period=period, target_offset=offset)
 
     @rowmethod
@@ -243,14 +243,12 @@ class ResampledTrace:
         1D array -- [samples]
             resampled trace
         """
-        # recording trial
-        trial = recording.Trial.proj() & {"trial_id": trial_id}
-
-        # ensure trial is valid
-        assert not trial - (Trace & self.key).valid_trials, "Invalid trial"
+        # verify trial_id
+        valid_ids = (Trace & self.item).valid_trials.fetch("trial_id")
+        assert trial_id in valid_ids, "Invalid trial_id"
 
         # trial start and end times
-        start, end = merge(trial, recording.TrialBounds).fetch1("start", "end")
+        start, end = (recording.TrialBounds & {"trial_id": trial_id}).fetch1("start", "end")
 
         # resampled trace
         return self.resampler(start, end)
@@ -263,26 +261,21 @@ class ResampledTrace:
         trial_id : Sequence[str]
             sequence of keys (foundation.recording.trial.Trial)
 
-        Yields (in order of provided trial_ids)
+        Yields
         ------
         1D array
             [samples] -- resampled trace
         """
-        # trial keys
-        keys = [{"trial_id": trial_id} for trial_id in trial_ids]
-
-        # recording trials
-        trials = recording.Trial.proj() & keys
-
-        # ensure trials are valid
-        assert not trials - (Trace & self.key).valid_trials, "Invalid trials"
+        # verify trial_ids
+        valid_ids = (Trace & self.item).valid_trials.fetch("trial_id")
+        assert not set(trial_ids) - set(valid_ids), "Invalid trial_ids"
 
         # trace resampler
         resampler = self.resampler
 
-        for key in keys:
+        for trial_id in trial_ids:
             # trial start and end times
-            start, end = (recording.TrialBounds & key).fetch1("start", "end")
+            start, end = (recording.TrialBounds & {"trial_id": trial_id}).fetch1("start", "end")
 
             # resampled trace
             yield resampler(start, end)
@@ -312,14 +305,14 @@ class ResampledTraces:
         from foundation.recording.trace import TraceSet
 
         # trace set
-        traces = (TraceSet & self.key).members
+        traces = (TraceSet & self.item).members
         traces = traces.fetch("trace_id", order_by="traceset_index", as_dict=True)
         traces = tqdm(traces, desc="Traces")
 
         # trace resamplers
         resamplers = []
         for trace in traces:
-            resampler = (ResampledTrace & trace & self.key).resampler
+            resampler = (ResampledTrace & trace & self.item).resampler
             resamplers.append(resampler)
 
         return tuple(resamplers)
@@ -334,20 +327,45 @@ class ResampledTraces:
 
         Returns
         -------
-        2D array -- [samples, traces]
-            resampled traces, ordered by traceset index
+        2D array
+            [samples, traces] -- resampled traces, ordered by traceset index
         """
-        # recording trial
-        trial = recording.Trial.proj() & {"trial_id": trial_id}
-
-        # ensure trial is valid
-        assert not trial - (Traces & self.key).valid_trials, "Invalid trial"
+        # verify trial_id
+        valid_ids = (Traces & self.item).valid_trials.fetch("trial_id")
+        assert trial_id in valid_ids, "Invalid trial_id"
 
         # trial start and end times
-        start, end = merge(trial, recording.TrialBounds).fetch1("start", "end")
+        start, end = (recording.TrialBounds & {"trial_id": trial_id}).fetch1("start", "end")
 
         # resampled traces
         return np.stack([r(start, end) for r in self.resamplers], axis=1)
+
+    @rowmethod
+    def trials(self, trial_ids):
+        """
+        Parameters
+        ----------
+        trial_id : Sequence[str]
+            sequence of keys (foundation.recording.trial.Trial)
+
+        Yields
+        ------
+        2D array
+            [samples, traces] -- resampled traces (ordered by traceset index)
+        """
+        # verify trial_ids
+        valid_ids = (Traces & self.item).valid_trials.fetch("trial_id")
+        assert not set(trial_ids) - set(valid_ids), "Invalid trial_ids"
+
+        # trace resamplers
+        resamplers = self.resamplers
+
+        for trial_id in trial_ids:
+            # trial start and end times
+            start, end = (recording.TrialBounds & {"trial_id": trial_id}).fetch1("start", "end")
+
+            # resampled traces
+            yield np.stack([r(start, end) for r in resamplers], axis=1)
 
 
 # ----------------------------- Statistics -----------------------------
@@ -380,14 +398,14 @@ class TraceSummary:
         from foundation.recording.trial import TrialSet
 
         # recording trials
-        trial_ids = (TrialSet & self.key).members.fetch("trial_id", order_by="trialset_index")
+        trial_ids = (TrialSet & self.item).members.fetch("trial_id", order_by="trialset_index")
 
         # resampled traces
-        trials = (ResampledTrace & self.key).trials(trial_ids)
+        trials = (ResampledTrace & self.item).trials(trial_ids)
         trials = np.concatenate(list(trials))
 
         # summary statistic
-        return (Summary & self.key).link.summary(trials)
+        return (Summary & self.item).link.summary(trials)
 
 
 # ----------------------------- Standardization -----------------------------
@@ -419,12 +437,11 @@ class StandardizedTrace:
         from foundation.utility.standardize import Standardize
 
         # homogeneous mask
-        hom = merge(self.key, recording.TraceHomogeneous)
-        hom = hom.fetch1("homogeneous")
+        hom = merge(self.key, recording.TraceHomogeneous).fetch1("homogeneous")
         hom = [hom.astype(bool)]
 
         # standardization link
-        stand = (Standardize & self.key).link
+        stand = (Standardize & self.item).link
 
         # summary stats
         stat_keys = [{"summary_id": _} for _ in stand.summary_ids]
@@ -466,7 +483,7 @@ class StandardizedTraces:
         from foundation.recording.trace import TraceSet
 
         # traces
-        traces = (TraceSet & self.key).members
+        traces = (TraceSet & self.item).members
 
         # homogeneous mask
         hom = merge(traces, recording.TraceHomogeneous)
@@ -474,7 +491,7 @@ class StandardizedTraces:
         hom = hom.astype(bool)
 
         # standardization link
-        stand = (Standardize & self.key).link
+        stand = (Standardize & self.item).link
 
         # summary stats
         stat_keys = [{"summary_id": _} for _ in stand.summary_ids]
