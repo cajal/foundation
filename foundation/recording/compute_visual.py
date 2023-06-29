@@ -59,7 +59,7 @@ class VisualResponse:
         """
         Returns
         -------
-        foundation.utils.response.Trials | None
+        foundation.utils.response.Trials
             visual response trials -- ordered by trial start time
         """
         from foundation.recording.compute_trace import ResampledTrace

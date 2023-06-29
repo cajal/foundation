@@ -17,7 +17,7 @@ class VisualMeasure:
     -> utility.Measure
     -> utility.Burnin
     ---
-    measure = NULL          : float     # visual response measure
+    measure = NULL      : float     # visual response measure
     """
 
     @property
