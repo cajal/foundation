@@ -316,6 +316,7 @@ class VisualScan(DataType):
             # resampled traces
             trials = (ResampledTraces & key).trials(trial_ids=trial_ids)
             transform = (StandardizedTraces & key).transform
+
         else:
             # resampled trace
             trace = (recording.TraceSet.Member & key & {"traceset_index": traceset_index}).fetch1()
