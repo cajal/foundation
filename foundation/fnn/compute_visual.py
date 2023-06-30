@@ -125,14 +125,14 @@ class VisualUnitCorrelation:
         data_id = (Network & self.item).link.data_id
         data = (Data & {"data_id": data_id}).link.compute
 
-        # model responses and targets
+        # responses and targets
         responses = []
         targets = []
 
         with cache_rowproperty():
             for video in tqdm(videos, desc="Videos"):
 
-                # model respose
+                # response
                 response, trial_ids = (VisualNetworkRecording & video & self.item).trial_responses
                 response = Trials(response[:, unit_index], index=trial_ids, tolerance=0)
 
@@ -140,7 +140,7 @@ class VisualUnitCorrelation:
                 target = data.trial_units(trial_ids, unit_index=unit_index)
                 target = Trials(target, index=trial_ids, tolerance=1)
 
-                # verify match
+                # verify response and target match
                 assert response.matches(target)
 
                 # append
@@ -148,8 +148,8 @@ class VisualUnitCorrelation:
                 targets.append(target)
 
         # concatenate model responses and targets
-        responses = concatenate(*responses, burnin=self.item["burnin"])
-        targets = concatenate(*targets, burnin=self.item["burnin"])
+        responses = concatenate(*responses, burnin=burnin)
+        targets = concatenate(*targets, burnin=burnin)
 
         # compute correlation
         return (Correlation & self.item).link.correlation(responses, targets)
