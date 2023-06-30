@@ -69,7 +69,7 @@ class VisualNetwork(NetworkType):
             unit=(Unit & self).link.nn,
         )
 
-        data = (Data & {"data_id": self.data_id}).link.compute
+        data = (Data & self).link.compute
         module._init(
             stimuli=data.stimuli,
             perspectives=data.perspectives,

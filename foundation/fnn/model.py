@@ -18,7 +18,7 @@ class ModelType:
         Returns
         -------
         foundation.fnn.compute_model.NetworkModel (row)
-            network model
+            compute model
         """
         raise NotImplementedError()
 
