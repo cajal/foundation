@@ -1,4 +1,3 @@
-from djutils import rowproperty
 from foundation.virtual import utility, stimulus
 from foundation.recording.trial import Trial, TrialFilterSet
 from foundation.recording.trace import Trace

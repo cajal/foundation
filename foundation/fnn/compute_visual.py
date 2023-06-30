@@ -74,12 +74,15 @@ class VisualNetworkRecording:
             modulations=modulations,
         )
         responses = tqdm(responses, desc="Responses")
-        responses = np.stack(list(responses), axis=1)
+        responses = np.stack(list(responses), axis=0)
 
         if perspectives is None and modulations is None:
             # unsqueeze and repeat trials
             responses = np.expand_dims(responses, axis=0)
             responses = np.repeat(responses, repeats=len(trial_ids), axis=0)
+        else:
+            # [samples, trials, units] -> [trials, samples, units]
+            responses = np.einsum("S T U -> T S U", responses)
 
         return responses, trial_ids
 
@@ -134,7 +137,7 @@ class VisualUnitCorrelation:
 
                 # response
                 response, trial_ids = (VisualNetworkRecording & video & self.item).trial_responses
-                response = Trials(response[:, unit_index], index=trial_ids, tolerance=0)
+                response = Trials(response[:, :, unit_index], index=trial_ids, tolerance=0)
 
                 # target
                 target = data.trial_units(trial_ids, unit_index=unit_index)
