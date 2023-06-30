@@ -100,3 +100,56 @@ class VisualUnitCorrelation:
             utility.Correlation,  # correlation between model and recording
             utility.Burnin,  # response burnin frames
         ]
+
+    @rowproperty
+    def correlation(self):
+        """
+        Returns
+        -------
+        float
+            correlation between model and target
+        """
+        from foundation.fnn.data import Data
+        from foundation.fnn.network import Network
+        from foundation.stimulus.video import VideoSet
+        from foundation.utility.response import Correlation
+        from foundation.utils.response import Trials, concatenate
+
+        # unit index and burnin
+        unit_index, burnin = self.key.fetch1("unit_index", "burnin")
+
+        # videos
+        videos = (VideoSet & self.item).members.fetch("video_id", as_dict=True)
+
+        # data
+        data_id = (Network & self.item).link.data_id
+        data = (Data & {"data_id": data_id}).link.compute
+
+        # model responses and targets
+        responses = []
+        targets = []
+
+        with cache_rowproperty():
+            for video in tqdm(videos, desc="Videos"):
+
+                # model respose
+                response, trial_ids = (VisualNetworkRecording & video & self.item).trial_responses
+                response = Trials(response[:, unit_index], index=trial_ids, tolerance=0)
+
+                # target
+                target = data.trial_units(trial_ids, unit_index=unit_index)
+                target = Trials(target, index=trial_ids, tolerance=1)
+
+                # verify match
+                assert response.matches(target)
+
+                # append
+                responses.append(response)
+                targets.append(target)
+
+        # concatenate model responses and targets
+        responses = concatenate(*responses, burnin=self.item["burnin"])
+        targets = concatenate(*targets, burnin=self.item["burnin"])
+
+        # compute correlation
+        return (Correlation & self.item).link.correlation(responses, targets)

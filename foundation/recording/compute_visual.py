@@ -27,13 +27,13 @@ class VisualTrials:
         from foundation.recording.trial import Trial, TrialSet, TrialVideo, TrialBounds, TrialFilterSet
 
         # all trials
-        trials = Trial & (TrialSet & self.key).members
+        trials = Trial & (TrialSet & self.item).members
 
         # filtered trials
-        trials = (TrialFilterSet & self.key).filter(trials)
+        trials = (TrialFilterSet & self.item).filter(trials)
 
         # video trials
-        trials = merge(trials, TrialBounds, TrialVideo) & self.key
+        trials = merge(trials, TrialBounds, TrialVideo) & self.item
 
         # trial ids, ordered by trial start
         return tuple(trials.fetch("trial_id", order_by="start"))
@@ -71,7 +71,7 @@ class VisualResponse:
 
         if trial_ids:
             # trial responses
-            responses = (ResampledTrace & self.key).trials(trial_ids)
+            responses = (ResampledTrace & self.item).trials(trial_ids)
             return Trials(responses, index=trial_ids, tolerance=1)
 
         else:
@@ -109,16 +109,13 @@ class VisualMeasure:
         from foundation.utils.response import concatenate
 
         # videos
-        videos = (VideoSet & self.key).members.fetch("video_id", order_by="video_id", as_dict=True)
+        videos = (VideoSet & self.item).members.fetch("video_id", order_by="video_id", as_dict=True)
         videos = tqdm(videos, desc="Videos")
-
-        # response burnin
-        burnin = self.key.fetch1("burnin")
 
         # trial responses
         with cache_rowproperty():
-            responses = [(VisualResponse & self.key & video).trials for video in videos]
-            responses = concatenate(*responses, burnin=burnin)
+            responses = [(VisualResponse & self.item & video).trials for video in videos]
+            responses = concatenate(*responses, burnin=self.item["burnin"])
 
         # response measure
-        return (Measure & self.key).link.measure(responses)
+        return (Measure & self.item).link.measure(responses)
