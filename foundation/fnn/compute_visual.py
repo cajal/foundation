@@ -77,7 +77,7 @@ class VisualNetworkRecording:
         responses = np.stack(list(responses), axis=0)
 
         if perspectives is None and modulations is None:
-            # unsqueeze and repeat trials
+            # [samples, units] -> [trials, samples, units]
             responses = np.expand_dims(responses, axis=0)
             responses = np.repeat(responses, repeats=len(trial_ids), axis=0)
         else:
