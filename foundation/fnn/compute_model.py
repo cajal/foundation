@@ -56,6 +56,7 @@ class _Instance(ModelType):
         network_id : str
             key (foundation.fnn.network.Network)
         """
+        from foundation.fnn.data import Data
         from foundation.fnn.network import Network
         from foundation.fnn.model import Model, NetworkModel
         from foundation.fnn.train import State, Scheduler, Optimizer, Loader, Objective
@@ -112,8 +113,8 @@ class _Instance(ModelType):
         objective._init(module=module)
 
         # training dataset
-        network = Network & {"network_id": network_id}
-        dataset = network.link.compute_data.dataset
+        data_id = (Network & {"network_id": network_id}).link.data_id
+        dataset = (Data & {"data_id": data_id}).link.compute.dataset
 
         # data loader
         loader = (Loader & self.item).link.loader

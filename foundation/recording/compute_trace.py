@@ -19,7 +19,7 @@ class TraceType:
         Returns
         -------
         str
-            trialset_id (foundation.recording.trial.TrialSet)
+            key (foundation.recording.trial.TrialSet)
         """
         raise NotImplementedError()
 

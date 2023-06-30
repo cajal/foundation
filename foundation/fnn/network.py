@@ -26,12 +26,12 @@ class NetworkType:
         raise NotImplementedError()
 
     @rowproperty
-    def compute_data(self):
+    def data_id(self):
         """
         Returns
         -------
-        foundation.fnn.compute_data.DataType (row)
-            compute data
+        str
+            key (foundation.fnn.data.Data)
         """
         raise NotImplementedError()
 
@@ -53,8 +53,8 @@ class VisualNetwork(NetworkType):
     """
 
     @rowproperty
-    def compute_data(self):
-        return (Data & self).link.compute
+    def data_id(self):
+        return self.fetch1("data_id")
 
     @rowproperty
     def module(self):
@@ -69,12 +69,12 @@ class VisualNetwork(NetworkType):
             unit=(Unit & self).link.nn,
         )
 
-        stimuli, perspectives, modulations, units = self.compute_data.sizes
+        data = (Data & {"data_id": self.data_id}).link.compute
         module._init(
-            stimuli=stimuli,
-            perspectives=perspectives,
-            modulations=modulations,
-            units=units,
+            stimuli=data.stimuli,
+            perspectives=data.perspectives,
+            modulations=data.modulations,
+            units=data.units,
             streams=self.fetch1("streams"),
         )
 
@@ -99,6 +99,27 @@ class NetworkSet:
 
 
 # -- Computed Network --
+
+
+@schema.computed
+class NetworkUnit:
+    definition = """
+    -> Network
+    unit_index      : int unsigned  # network unit index
+    """
+
+    def make(self, key):
+        # network data
+        data_id = (Network & key).link.data_id
+
+        # number of units
+        units = (Data & {"data_id": data_id}).link.compute.units
+
+        # index keys
+        keys = [dict(key, unit_index=i) for i in range(units)]
+
+        # insert
+        self.insert(keys)
 
 
 @schema.computed

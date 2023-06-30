@@ -78,7 +78,7 @@ class VisualScan(DataType):
         return VisualScan & self
 
 
-# -- Data Set Types --
+# -- Data --
 
 
 @schema.link

@@ -6,7 +6,7 @@ from foundation.virtual import utility, stimulus, recording, fnn
 
 @keys
 class VisualNetworkRecording:
-    """Network Model Recording"""
+    """Visual Network Model using data from Recording"""
 
     @property
     def keys(self):
@@ -19,21 +19,23 @@ class VisualNetworkRecording:
         ]
 
     @rowproperty
-    def response(self):
+    def trial_responses(self):
         """
         Returns
         -------
         3D array
-            [samples, trials, units] -- visual response
-        List[str] | None
-            list of trial_ids -- key (foundation.recording.trial.Trial)
+            [trials, samples, units] -- visual response
+        Tuple[str] | None
+            tuple of trial_ids -- key (foundation.recording.trial.Trial)
         """
+        from foundation.fnn.data import Data
         from foundation.fnn.network import Network
         from foundation.fnn.model import NetworkModel
         from foundation.utils.resample import truncate
 
         # load data
-        data = (Network & self.item).link.compute_data
+        data_id = (Network & self.item).link.data_id
+        data = (Data & {"data_id": data_id}).link.compute
 
         # load trials
         trial_ids = data.visual_trial_ids(
@@ -72,11 +74,29 @@ class VisualNetworkRecording:
             modulations=modulations,
         )
         responses = tqdm(responses, desc="Responses")
-        responses = np.stack(list(responses), axis=0)
+        responses = np.stack(list(responses), axis=1)
 
         if perspectives is None and modulations is None:
             # unsqueeze and repeat trials
-            responses = np.expand_dims(responses, axis=1)
-            responses = np.repeat(responses, repeats=len(trial_ids), axis=1)
+            responses = np.expand_dims(responses, axis=0)
+            responses = np.repeat(responses, repeats=len(trial_ids), axis=0)
 
         return responses, trial_ids
+
+
+@keys
+class VisualUnitCorrelation:
+    """Correlation between Modeled and Recorded Unit"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.NetworkModel,  # network model
+            fnn.NetworkUnit,  # network unit
+            utility.Bool.proj(trial_perspective="bool"),  # trial | default perspective
+            utility.Bool.proj(trial_modulation="bool"),  # trial | default modulation
+            recording.TrialFilterSet,  # trial filter
+            stimulus.VideoSet,  # visual stimulus set
+            utility.Correlation,  # correlation between model and recording
+            utility.Burnin,  # response burnin frames
+        ]

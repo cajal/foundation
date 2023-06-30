@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from djutils import keys, merge, rowproperty, rowmethod, cache_rowproperty, U, MissingError
+from djutils import keys, merge, rowproperty, rowmethod, cache_rowproperty, unique, MissingError
 from foundation.utils import tqdm
 from foundation.virtual import stimulus, recording, fnn
 
@@ -14,16 +14,40 @@ class DataType:
     """Data"""
 
     @rowproperty
-    def sizes(self):
+    def stimuli(self):
         """
         Returns
         -------
         int
             stimulus channels
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def perspectives(self):
+        """
+        Returns
+        -------
         int
             perspective features
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def modulations(self):
+        """
+        Returns
+        -------
         int
-            modulation features
+            modulations features
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def units(self):
+        """
+        Returns
+        -------
         int
             number of units
         """
@@ -164,22 +188,22 @@ class VisualScan(DataType):
         return (self._key_traces("unit") * recording.ScanUnits).fetch1()
 
     @rowproperty
-    def sizes(self):
-        # stimuli
+    def stimuli(self):
         key = recording.ScanRecording & self.item
         videos = merge(recording.TrialSet.Member & key, recording.TrialVideo, stimulus.VideoInfo)
-        sizes = [(U("channels") & videos).fetch1("channels")]
+        return unique(videos, "channels")
 
-        # perspectives
-        sizes += [(recording.TraceSet & self.key_perspective).fetch1("members")]
+    @rowproperty
+    def perspectives(self):
+        return (recording.TraceSet & self.key_perspective).fetch1("members")
 
-        # modulations
-        sizes += [(recording.TraceSet & self.key_modulation).fetch1("members")]
+    @rowproperty
+    def modulations(self):
+        return (recording.TraceSet & self.key_modulation).fetch1("members")
 
-        # units
-        sizes += [(recording.TraceSet & self.key_unit).fetch1("members")]
-
-        return tuple(sizes)
+    @rowproperty
+    def units(self):
+        return (recording.TraceSet & self.key_unit).fetch1("members")
 
     @rowproperty
     def timing(self):
