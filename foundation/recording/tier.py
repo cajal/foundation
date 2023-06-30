@@ -55,9 +55,9 @@ class Tier:
 @schema.computed
 class TrialTier:
     definition = """
+    -> Tier
     -> TrialSet
     -> Trial
-    -> Tier
     ---
     tier_index      : int unsigned  # trial tier index
     """

@@ -13,6 +13,18 @@ class TrialType:
     """Recording Trial"""
 
     @rowproperty
+    def bounds(self):
+        """
+        Returns
+        -------
+        float
+            trial start time (seconds)
+        float
+            trial end time (seconds)
+        """
+        raise NotImplementedError()
+
+    @rowproperty
     def video_id(self):
         """
         Returns
@@ -32,18 +44,6 @@ class TrialType:
         """
         raise NotImplementedError()
 
-    @rowproperty
-    def bounds(self):
-        """
-        Returns
-        -------
-        float
-            trial start time (seconds)
-        float
-            trial end time (seconds)
-        """
-        raise NotImplementedError()
-
 
 # -- Trial Types --
 
@@ -59,6 +59,15 @@ class ScanTrial(TrialType):
         ]
 
     @rowproperty
+    def bounds(self):
+        from foundation.utils.resample import monotonic
+
+        flip_times = self.flip_times
+        assert np.isfinite(flip_times).all()
+        assert monotonic(flip_times)
+        return flip_times[0], flip_times[-1]
+
+    @rowproperty
     def video_id(self):
         from foundation.stimulus.video import Video
 
@@ -70,15 +79,6 @@ class ScanTrial(TrialType):
     @rowproperty
     def flip_times(self):
         return (pipe_stim.Trial & self.item).fetch1("flip_times", squeeze=True)
-
-    @rowproperty
-    def bounds(self):
-        from foundation.utils.resample import monotonic
-
-        flip_times = self.flip_times
-        assert np.isfinite(flip_times).all()
-        assert monotonic(flip_times)
-        return flip_times[0], flip_times[-1]
 
 
 # ----------------------------- Resampling -----------------------------

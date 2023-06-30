@@ -4,8 +4,8 @@ from foundation.virtual import utility
 
 
 @keys
-class Scan:
-    """Scan Stimulus"""
+class VisualScanVideo:
+    """Visual Scan Video"""
 
     @property
     def keys(self):

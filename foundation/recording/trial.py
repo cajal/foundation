@@ -60,19 +60,6 @@ class TrialSet:
 
 
 @schema.computed
-class TrialVideo:
-    definition = """
-    -> Trial
-    ---
-    -> stimulus.Video
-    """
-
-    def make(self, key):
-        key["video_id"] = (Trial & key).link.compute.video_id
-        self.insert1(key)
-
-
-@schema.computed
 class TrialBounds:
     definition = """
     -> Trial
@@ -83,6 +70,19 @@ class TrialBounds:
 
     def make(self, key):
         key["start"], key["end"] = (Trial & key).link.compute.bounds
+        self.insert1(key)
+
+
+@schema.computed
+class TrialVideo:
+    definition = """
+    -> Trial
+    ---
+    -> stimulus.Video
+    """
+
+    def make(self, key):
+        key["video_id"] = (Trial & key).link.compute.video_id
         self.insert1(key)
 
 
