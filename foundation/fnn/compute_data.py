@@ -103,7 +103,7 @@ class DataType:
         raise NotImplementedError()
 
     @rowmethod
-    def trial_perspectives(self, trial_ids, perspective_index=None):
+    def trial_perspectives(self, trial_ids, perspective_index=None, use_cache=False):
         """
         Parameters
         ----------
@@ -111,6 +111,8 @@ class DataType:
             sequence of keys (foundation.recording.trial.Trial)
         perspective_index : int | None
             perspective index (specific perspective) | None (all perspectives)
+        use_cache : bool
+            use cache (True) | compute (False)
 
         Yields
         ------
@@ -120,7 +122,7 @@ class DataType:
         raise NotImplementedError()
 
     @rowmethod
-    def trial_modulations(self, trial_ids, modulation_index=None):
+    def trial_modulations(self, trial_ids, modulation_index=None, use_cache=False):
         """
         Parameters
         ----------
@@ -128,6 +130,8 @@ class DataType:
             sequence of keys (foundation.recording.trial.Trial)
         modulation_index : int | None
             modulation index (specific modulation) | None (all modulations)
+        use_cache : bool
+            use cache (True) | compute (False)
 
         Yields
         ------
@@ -137,7 +141,7 @@ class DataType:
         raise NotImplementedError()
 
     @rowmethod
-    def trial_units(self, trial_ids, unit_index=None):
+    def trial_units(self, trial_ids, unit_index=None, use_cache=False):
         """
         Parameters
         ----------
@@ -145,6 +149,8 @@ class DataType:
             sequence of keys (foundation.recording.trial.Trial)
         unit_index : int | None
             unit index (specific unit) | None (all units)
+        use_cache : bool
+            use cache (True) | compute (False)
 
         Yields
         ------
@@ -328,39 +334,56 @@ class VisualScan(DataType):
         # visual trial_ids
         return (VisualTrials & key).trial_ids
 
-    def _trial_traces(self, trial_ids, traceset_index, key):
-        from foundation.recording.compute_trace import (
-            ResampledTrace,
-            ResampledTraces,
-            StandardizedTrace,
-            StandardizedTraces,
-        )
+    def _trial_traces(self, trial_ids, traceset_index, key, use_cache=False):
+        from foundation.recording import cache, compute_trace as compute
+
+        if use_cache:
+            # trial keys
+            keys = [{"trial_id": _} for _ in trial_ids]
+
+            # populate cached traces
+            with cache_rowproperty():
+                cache.ResampledTraces.populate(key, keys, display_progress=True, reserve_jobs=True)
+
+            # load cached traces
+            trials = map(np.load, ((cache.ResampledTraces & key & _).fetch1("traces") for _ in keys))
 
         if traceset_index is None:
-            # resampled traces
-            trials = (ResampledTraces & key).trials(trial_ids=trial_ids)
-            transform = (StandardizedTraces & key).transform
+            # standardize traces
+            transform = (compute.StandardizedTraces & key).transform
+
+            if not use_cache:
+                # compute traces
+                trials = (compute.ResampledTraces & key).trials(trial_ids=trial_ids)
 
         else:
-            # resampled trace
+            # specific trace
             trace = (recording.TraceSet.Member & key & {"traceset_index": traceset_index}).fetch1()
-            trials = (ResampledTrace & trace & key).trials(trial_ids=trial_ids)
-            transform = (StandardizedTrace & trace & key).transform
+
+            # standardize trace
+            transform = (compute.StandardizedTrace & trace & key).transform
+
+            if use_cache:
+                # index trace
+                trials = (_[:, traceset_index] for _ in trials)
+            else:
+                # compute trace
+                trials = (compute.ResampledTrace & trace & key).trials(trial_ids=trial_ids)
 
         # transformed and resampled trace(s)
         return map(transform, trials)
 
     @rowmethod
-    def trial_perspectives(self, trial_ids, perspective_index=None):
+    def trial_perspectives(self, trial_ids, perspective_index=None, use_cache=False):
         # perspective trace(s)
-        return self._trial_traces(trial_ids, perspective_index, self.key_perspective)
+        return self._trial_traces(trial_ids, perspective_index, self.key_perspective, use_cache)
 
     @rowmethod
-    def trial_modulations(self, trial_ids, modulation_index=None):
+    def trial_modulations(self, trial_ids, modulation_index=None, use_cache=False):
         # modulation trace(s)
-        return self._trial_traces(trial_ids, modulation_index, self.key_modulation)
+        return self._trial_traces(trial_ids, modulation_index, self.key_modulation, use_cache)
 
     @rowmethod
-    def trial_units(self, trial_ids, unit_index=None):
+    def trial_units(self, trial_ids, unit_index=None, use_cache=False):
         # unit trace(s)
-        return self._trial_traces(trial_ids, unit_index, self.key_unit)
+        return self._trial_traces(trial_ids, unit_index, self.key_unit, use_cache)
