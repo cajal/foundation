@@ -112,7 +112,7 @@ class DataType:
         perspective_index : int | None
             perspective index (specific perspective) | None (all perspectives)
         use_cache : bool
-            use cache (True) | compute (False)
+            use cache (True) | compute from scratch (False)
 
         Yields
         ------
@@ -131,7 +131,7 @@ class DataType:
         modulation_index : int | None
             modulation index (specific modulation) | None (all modulations)
         use_cache : bool
-            use cache (True) | compute (False)
+            use cache (True) | compute from scratch (False)
 
         Yields
         ------
@@ -150,7 +150,7 @@ class DataType:
         unit_index : int | None
             unit index (specific unit) | None (all units)
         use_cache : bool
-            use cache (True) | compute (False)
+            use cache (True) | compute from scratch (False)
 
         Yields
         ------
