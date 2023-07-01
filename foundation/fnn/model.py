@@ -97,7 +97,7 @@ class NetworkModel:
         return (Network * Model).proj() & keys
 
     def make(self, key):
-        from foundation.utils.torch import save_to_array
+        from foundation.utils.serialize import torch_save
 
         # network trainer
         trainer = (Model & key).link.compute.train(network_id=key["network_id"])
@@ -105,7 +105,7 @@ class NetworkModel:
         for network_id, state_dict in trainer:
 
             # network parameters
-            _key = dict(key, network_id=network_id, parameters=save_to_array(state_dict))
+            _key = dict(key, network_id=network_id, parameters=torch_save(state_dict))
 
             # insert
             self.insert1(_key)
@@ -118,10 +118,10 @@ class NetworkModel:
         dict[str, torch.Tensor]
             pytorch state dict
         """
-        from foundation.utils.torch import load_from_array
+        from foundation.utils.serialize import torch_load
 
         # module parameters, mapped to specified device
-        return load_from_array(self.fetch1("parameters"), map_location=device)
+        return torch_load(self.fetch1("parameters"), map_location=device)
 
     @rowproperty
     def model(self):
@@ -131,7 +131,7 @@ class NetworkModel:
         fnn.networks.Network
             trained network module
         """
-        from foundation.utils.torch import cuda_enabled
+        from foundation.utils.context import cuda_enabled
 
         # frozen module
         module = (Network & self).link.module.freeze()

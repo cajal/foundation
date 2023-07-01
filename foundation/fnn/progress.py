@@ -34,14 +34,14 @@ class NetworkInfo:
         info : dict
             training info
         """
-        from foundation.utils.torch import save_to_array
+        from foundation.utils.serialize import torch_save
 
         key = dict(
             model_id=model_id,
             network_id=network_id,
             rank=rank,
             epoch=epoch,
-            info=save_to_array(info),
+            info=torch_save(info),
         )
         cls.insert1(key)
 
@@ -53,9 +53,9 @@ class NetworkInfo:
         dict
             training info
         """
-        from foundation.utils.torch import load_from_array
+        from foundation.utils.serialize import torch_load
 
-        return load_from_array(self.fetch1("info"), map_location=device)
+        return torch_load(self.fetch1("info"), map_location=device)
 
     def df(self, device="cpu"):
         """
@@ -96,14 +96,14 @@ class NetworkCheckpoint:
         checkpoint : serializable object
             training checkpoint
         """
-        from foundation.utils.torch import save_to_array
+        from foundation.utils.serialize import torch_save
 
         key = dict(
             model_id=model_id,
             network_id=network_id,
             rank=rank,
             epoch=epoch,
-            checkpoint=save_to_array(checkpoint),
+            checkpoint=torch_save(checkpoint),
         )
         cls.insert1(key, replace=True)
 
@@ -115,9 +115,9 @@ class NetworkCheckpoint:
         deserialized object
             training checkpoint
         """
-        from foundation.utils.torch import load_from_array
+        from foundation.utils.serialize import torch_load
 
-        return load_from_array(self.fetch1("checkpoint"), map_location=device)
+        return torch_load(self.fetch1("checkpoint"), map_location=device)
 
 
 @schema.lookup
