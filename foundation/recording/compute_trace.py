@@ -240,8 +240,8 @@ class ResampledTrace:
 
         Returns
         -------
-        1D array -- [samples]
-            resampled trace
+        1D array
+            [samples] -- resampled trace
         """
         # verify trial_id
         valid_ids = (Trace & self.item).valid_trials.fetch("trial_id")
