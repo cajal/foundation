@@ -55,3 +55,46 @@ class Tanh(BoundType):
 class Bound:
     links = [Sigmoid, Tanh]
     name = "bound"
+
+
+# ----------------------------- Reduce -----------------------------
+
+# -- Reduce Interface --
+
+
+class ReduceType:
+    """Reduce"""
+
+    @rowproperty
+    def nn(self):
+        """
+        Returns
+        -------
+        fnn.model.reductions.Reduce
+            reduction method
+        """
+        raise NotImplementedError()
+
+
+# -- Unit Types --
+
+
+@schema.method
+class Mean(ReduceType):
+    name = "mean"
+    comment = "mean reduction"
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.reductions import Mean
+
+        return Mean()
+
+
+# -- Unit --
+
+
+@schema.link
+class Reduce:
+    links = [Mean]
+    name = "reduce"

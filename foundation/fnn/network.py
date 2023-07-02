@@ -1,8 +1,9 @@
 from djutils import rowproperty, unique
 from foundation.fnn.core import Core
-from foundation.fnn.readout import Readout, Reduce, Unit
-from foundation.fnn.modulation import Modulation
 from foundation.fnn.perspective import Perspective
+from foundation.fnn.modulation import Modulation
+from foundation.fnn.readout import Readout, Unit
+from foundation.fnn.shared import Reduce
 from foundation.fnn.data import Data
 from foundation.schemas import fnn as schema
 
