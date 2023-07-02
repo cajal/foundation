@@ -1,4 +1,5 @@
 from djutils import rowproperty
+from foundation.fnn.shared import Bound
 from foundation.schemas import fnn as schema
 
 
@@ -47,49 +48,6 @@ class Position:
     name = "position"
 
 
-# ----------------------------- Bound -----------------------------
-
-# -- Bound Interface --
-
-
-class BoundType:
-    """Bound"""
-
-    @rowproperty
-    def nn(self):
-        """
-        Returns
-        -------
-        fnn.model.bounds.Bound
-            bound component
-        """
-        raise NotImplementedError()
-
-
-# -- Bound Types --
-
-
-@schema.method
-class Tanh(BoundType):
-    name = "tanh"
-    comment = "tanh bound"
-
-    @rowproperty
-    def nn(self):
-        from fnn.model.bounds import Tanh
-
-        return Tanh()
-
-
-# -- Bound --
-
-
-@schema.link
-class Bound:
-    links = [Tanh]
-    name = "bound"
-
-
 # ----------------------------- Feature -----------------------------
 
 # -- Feature Interface --
@@ -103,8 +61,8 @@ class FeatureType:
         """
         Returns
         -------
-        fnn.model.bounds.Bound
-            bound component
+        fnn.model.features.Feature
+            feature component
         """
         raise NotImplementedError()
 
