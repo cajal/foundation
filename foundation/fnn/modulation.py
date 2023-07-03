@@ -39,10 +39,25 @@ class LnLstm(ModulationType):
         return LnLstm(**self.fetch1("KEY"))
 
 
+@schema.lookup
+class FlatLstm(ModulationType):
+    definition = """
+    lstm_features   : int unsigned      # lstm features per stream
+    out_features    : int unsigned      # out features per stream
+    dropout         : decimal(6, 6)     # dropout probability
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.modulations import FlatLstm
+
+        return FlatLstm(**self.fetch1("KEY"))
+
+
 # -- Modulation --
 
 
 @schema.link
 class Modulation:
-    links = [LnLstm]
+    links = [LnLstm, FlatLstm]
     name = "modulation"
