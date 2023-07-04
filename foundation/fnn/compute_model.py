@@ -69,8 +69,8 @@ class _Instance(ModelType):
         initialize = (cycle == 0) and (not checkpoint)
 
         # network module
-        module = (State & self.item).link.state.build(network_id=network_id, initialize=initialize)
-        module = module.to(device="cuda")
+        network = (State & self.item).link.state.build(network_id=network_id, initialize=initialize)
+        network = network.to(device="cuda")
 
         if checkpoint:
             logger.info("Reloading from checkpoint")
@@ -79,7 +79,7 @@ class _Instance(ModelType):
             prev = checkpoint.load(device="cuda")
 
             # reload parameters
-            module.load_state_dict(prev["state_dict"])
+            network.load_state_dict(prev["state_dict"])
 
             # optimizer
             optimizer = prev["optimizer"]
@@ -94,11 +94,11 @@ class _Instance(ModelType):
                 _model_id = (self.model_type & key).fetch1("model_id")
 
                 # load previous cycle
-                network = NetworkModel & {"network_id": network_id, "model_id": _model_id}
-                params = network.parameters(device="cuda")
+                _network = NetworkModel & {"network_id": network_id, "model_id": _model_id}
+                params = _network.parameters(device="cuda")
 
                 # reload parameters
-                module.load_state_dict(params)
+                network.load_state_dict(params)
 
             # scheduler
             scheduler = (Scheduler & self.item).link.scheduler
@@ -110,7 +110,7 @@ class _Instance(ModelType):
 
         # training objective
         objective = (Objective & self.item).link.objective
-        objective._init(module=module)
+        objective._init(network=network)
 
         # training dataset
         data_id = (Network & {"network_id": network_id}).link.data_id
@@ -121,8 +121,8 @@ class _Instance(ModelType):
         loader._init(dataset=dataset)
 
         # parameters and parallel groups
-        params = module.named_parameters()
-        groups = module.parallel_groups(group_size=parallel)
+        params = network.named_parameters()
+        groups = network.parallel_groups(group_size=parallel)
 
         # train epochs
         for epoch, info in optimizer.optimize(loader=loader, objective=objective, parameters=params, groups=groups):
@@ -142,7 +142,7 @@ class _Instance(ModelType):
                 model_id=model_id,
                 rank=rank,
                 epoch=epoch,
-                checkpoint={"optimizer": optimizer, "state_dict": module.state_dict()},
+                checkpoint={"optimizer": optimizer, "state_dict": network.state_dict()},
             )
 
         # register done

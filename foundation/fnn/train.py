@@ -16,7 +16,7 @@ class LoaderType:
         """
         Returns
         -------
-        fnn.train.loaders.Loader
+        fnn.train.loaders.DatasetLoader
             data loader
         """
         raise NotImplementedError()
@@ -57,15 +57,15 @@ class Loader:
 
 
 class ObjectiveType:
-    """Objective"""
+    """Network Objective"""
 
     @rowproperty
     def objective(self):
         """
         Returns
         -------
-        fnn.train.objectives.Objective
-            training objective
+        fnn.train.objectives.NetworkObjective
+            network objective
         """
         raise NotImplementedError()
 
@@ -166,16 +166,6 @@ class SchedulerType:
         """
         raise NotImplementedError()
 
-    @rowproperty
-    def epochs(self):
-        """
-        Returns
-        -------
-        int
-            number of epochs in a cycle
-        """
-        raise NotImplementedError()
-
 
 # -- Scheduler Types --
 
@@ -193,10 +183,6 @@ class CosineLr(SchedulerType):
         from fnn.train.schedulers import CosineLr
 
         return CosineLr(**self.fetch1())
-
-    @rowproperty
-    def epochs(self):
-        return self.fetch1("cycle_size")
 
 
 # -- Scheduler --
@@ -223,7 +209,7 @@ class StateType:
         Returns
         -------
         foundation.fnn.compute_state.NetworkState (row)
-           network state
+           compute state
         """
         raise NotImplementedError()
 
