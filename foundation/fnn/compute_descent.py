@@ -225,5 +225,5 @@ class VisualNetworkDescent(DescentType):
         conn.connect()
 
         # return computed video
-        key = (progress.VisualNetworkDescentDone & self.item).fetch1()
-        return (progress.VisualNetworkDescentCheckpoint & key).load()["video"]
+        key = (VisualNetworkDescentDone & self.item).fetch1()
+        return (VisualNetworkDescentCheckpoint & key).load()["video"]
