@@ -146,3 +146,55 @@ class Video:
 
         else:
             return self.__class__(map(transform, self.frames))
+
+    def animate(self, start=None, end=None, fps=30, vmin=0, vmax=255, cmap="gray", width=6, dpi=None, html=True):
+        """
+        Parameters
+        ----------
+        start : int | None
+            start frame
+        end : int | None
+            end frame
+        fps : float
+            frames per second
+        vmin : float
+            data range minimum
+        vmax : float
+            data range maximum
+        cmap : str | matplotlib.colors.Colormap
+            colormap -- ignored if video is RGB(A)
+        width : float
+            width of the video in inches
+        dpi : float | None
+            dots per inch
+        html : bool
+            return HTML for IPython display | pyplot FuncAnimation
+        """
+        from matplotlib import pyplot as plt
+        from matplotlib import animation
+
+        frames = self.array[slice(start, end)]
+
+        fig = plt.figure(figsize=(width, width / self.width * self.height), dpi=dpi)
+        im = plt.imshow(frames[0], vmin=vmin, vmax=vmax, cmap=cmap)
+
+        plt.axis("off")
+        plt.tight_layout()
+        plt.close()
+
+        def init():
+            im.set_data(frames[0])
+
+        def animate(i):
+            im.set_data(frames[i])
+            return im
+
+        ani = animation.FuncAnimation(fig, animate, init_func=init, frames=len(self), interval=1000 / fps)
+
+        if html:
+            from IPython.display import HTML
+
+            return HTML(ani.to_jshtml())
+
+        else:
+            return ani
