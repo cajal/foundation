@@ -2,6 +2,7 @@ from djutils import rowproperty
 from foundation.virtual import utility, stimulus, recording
 from foundation.fnn.shared import Bound
 from foundation.fnn.train import Optimizer, Scheduler
+from foundation.fnn.network import NetworkUnit
 from foundation.fnn.model import NetworkModel
 from foundation.schemas import fnn as schema
 
@@ -84,6 +85,23 @@ class DescentType:
 
 
 @schema.lookup
+class Excitation(DescentType):
+    definition = """
+    sample_stream       : bool              # sample stream during optimization
+    burnin_frames       : int unsigned      # initial losses discarded
+    stimulus_frames     : int unsigned      # stimulus frames
+    stimulus_penalty    : decimal(9, 6)     # stimulus penalty weight
+    temperature         : decimal(9, 6)     # exponential temperature
+    """
+
+    @rowproperty
+    def compute(self):
+        from foundation.fnn.compute_descent import Excitation
+
+        return Excitation & self
+
+
+@schema.lookup
 class VisualReconstruction(DescentType):
     definition = """
     -> stimulus.Video
@@ -106,7 +124,7 @@ class VisualReconstruction(DescentType):
 
 @schema.link
 class Descent:
-    links = [VisualReconstruction]
+    links = [Excitation, VisualReconstruction]
     name = "descent"
     comment = "gradient descent"
 
@@ -141,10 +159,36 @@ class VisualNetworkDescent:
         from foundation.fnn.compute_descent import VisualNetworkDescent
 
         # compute video
-        key["video"] = (VisualNetworkDescent & key).video
-
-        # video size
-        key["frames"], _, _, key["channels"] = key["video"].shape
+        video = (VisualNetworkDescent & key).video
+        frames, _, _, channels = video.shape
 
         # insert
-        self.insert1(key)
+        self.insert1(dict(key, frames=frames, channels=channels, video=video))
+
+
+@schema.computed
+class VisualUnitDescent:
+    definition = """
+    -> NetworkModel
+    -> NetworkUnit
+    -> Descent
+    -> Stimulus
+    -> Optimizer
+    -> Scheduler
+    -> DescentSteps
+    -> utility.Resolution
+    ---
+    frames          : int unsigned      # video frames
+    channels        : int unsigned      # video channels
+    video           : longblob          # [frames, height, width, channels] -- dtype=np.uint8
+    """
+
+    def make(self, key):
+        from foundation.fnn.compute_descent import VisualUnitDescent
+
+        # compute video
+        video = (VisualUnitDescent & key).video
+        frames, _, _, channels = video.shape
+
+        # insert
+        self.insert1(dict(key, frames=frames, channels=channels, video=video))

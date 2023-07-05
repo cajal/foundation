@@ -117,7 +117,7 @@ class NetworkDone:
     """
 
 
-# ----------------------------- Descent Progress -----------------------------
+# ----------------------------- Visual Network Descent Progress -----------------------------
 
 
 @schema.lookup
@@ -158,6 +158,62 @@ class VisualNetworkDescentCheckpoint(Checkpoint):
 class VisualNetworkDescentDone:
     definition = """
     -> fnn.NetworkModel
+    -> fnn.Descent
+    -> fnn.Stimulus
+    -> fnn.Optimizer
+    -> fnn.Scheduler
+    -> fnn.DescentSteps
+    -> utility.Resolution
+    ---
+    epoch                                   : int unsigned  # descent epoch
+    descent_done_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
+    """
+
+
+# ----------------------------- Visual Unit Descent Progress -----------------------------
+
+
+@schema.lookup
+class VisualUnitDescentInfo(Info):
+    definition = """
+    -> fnn.NetworkModel
+    -> fnn.NetworkUnit
+    -> fnn.Descent
+    -> fnn.Stimulus
+    -> fnn.Optimizer
+    -> fnn.Scheduler
+    -> fnn.DescentSteps
+    -> utility.Resolution
+    epoch                                   : int unsigned  # descent epoch
+    ---
+    info                                    : longblob      # descent info
+    descent_info_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
+    """
+
+
+@schema.lookup
+class VisualUnitDescentCheckpoint(Checkpoint):
+    definition = """
+    -> fnn.NetworkModel
+    -> fnn.NetworkUnit
+    -> fnn.Descent
+    -> fnn.Stimulus
+    -> fnn.Optimizer
+    -> fnn.Scheduler
+    -> fnn.DescentSteps
+    -> utility.Resolution
+    ---
+    epoch                                       : int unsigned  # descent epoch
+    checkpoint                                  : longblob      # descent checkpoint
+    descent_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp     # automatic timestamp
+    """
+
+
+@schema.lookup
+class VisualUnitDescentDone:
+    definition = """
+    -> fnn.NetworkModel
+    -> fnn.NetworkUnit
     -> fnn.Descent
     -> fnn.Stimulus
     -> fnn.Optimizer
