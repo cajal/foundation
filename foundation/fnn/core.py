@@ -101,12 +101,29 @@ class Rvt(RecurrentType):
         return Rvt(**self.fetch1())
 
 
+@schema.lookup
+class ConvLstm(RecurrentType):
+    definition = """
+    recurrent_channels  : int unsigned  # recurrent channels per stream
+    out_channels        : int unsigned  # out channels per stream
+    groups              : int unsigned  # groups per stream
+    kernel_size         : int unsigned  # kernel size
+    dropout             : decimal(6, 6) # dropout probability
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.recurrents import ConvLstm
+
+        return ConvLstm(**self.fetch1())
+
+
 # -- Recurrent --
 
 
 @schema.link
 class Recurrent:
-    links = [Rvt]
+    links = [Rvt, ConvLstm]
     name = "recurrent"
 
 

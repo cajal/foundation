@@ -25,21 +25,6 @@ class ModulationType:
 
 
 @schema.lookup
-class LnLstm(ModulationType):
-    definition = """
-    features        : int unsigned      # feature size
-    nonlinear       : varchar(128)      # nonlinearity
-    dropout         : decimal(6, 6)     # dropout probability
-    """
-
-    @rowproperty
-    def nn(self):
-        from fnn.model.modulations import LnLstm
-
-        return LnLstm(**self.fetch1("KEY"))
-
-
-@schema.lookup
 class FlatLstm(ModulationType):
     definition = """
     lstm_features   : int unsigned      # lstm features per stream
@@ -59,5 +44,5 @@ class FlatLstm(ModulationType):
 
 @schema.link
 class Modulation:
-    links = [LnLstm, FlatLstm]
+    links = [FlatLstm]
     name = "modulation"
