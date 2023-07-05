@@ -127,26 +127,33 @@ class _Instance(ModelType):
         # train epochs
         for epoch, info in optimizer.optimize(loader=loader, objective=objective, parameters=params, groups=groups):
 
-            # log epoch info
-            NetworkInfo.fill(
-                network_id=network_id,
-                model_id=model_id,
-                rank=rank,
-                epoch=epoch,
-                info=info,
-            )
+            # save epoch info
+            key = {
+                "network_id": network_id,
+                "model_id": model_id,
+                "rank": rank,
+                "epoch": epoch,
+                "info": info,
+            }
+            NetworkInfo.fill(key)
 
             # save checkpoint
-            NetworkCheckpoint.fill(
-                network_id=network_id,
-                model_id=model_id,
-                rank=rank,
-                epoch=epoch,
-                checkpoint={"optimizer": optimizer, "state_dict": network.state_dict()},
-            )
+            key = {
+                "network_id": network_id,
+                "model_id": model_id,
+                "rank": rank,
+                "epoch": epoch,
+                "checkpoint": {"optimizer": optimizer, "state_dict": network.state_dict()},
+            }
+            NetworkCheckpoint.fill(key)
 
         # register done
-        key = {"rank": rank, "network_id": network_id, "model_id": model_id, "epoch": epoch}
+        key = {
+            "network_id": network_id,
+            "model_id": model_id,
+            "rank": rank,
+            "epoch": epoch,
+        }
         NetworkDone.insert1(key)
 
 

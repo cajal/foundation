@@ -1,48 +1,27 @@
 import pandas as pd
-from djutils import rowmethod, U
+from djutils import rowmethod
 from foundation.utils import tqdm
-from foundation.fnn.network import Network
-from foundation.fnn.model import Model
+from foundation.virtual import utility, fnn
 from foundation.schemas import fnn as schema
 
 
-@schema.lookup
-class NetworkInfo:
-    definition = """
-    -> Network
-    -> Model
-    rank                                    : int unsigned  # training rank
-    epoch                                   : int unsigned  # training epoch
-    ---
-    info                                    : longblob      # training info
-    network_info_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
-    """
+# ----------------------------- Progress Bases -----------------------------
+
+
+class Info:
+    """Info"""
 
     @classmethod
-    def fill(cls, network_id, model_id, rank, epoch, info):
+    def fill(cls, key):
         """
         Parameters
         ----------
-        network_id : str
-            key (foundation.fnn.network.Network)
-        model_id : str
-            key (foundation.fnn.model.Model)
-        rank : int
-            training rank
-        epoch : int
-            training epoch
-        info : dict
-            training info
+        key : dict[str, ...]
+            row to insert
         """
         from foundation.utils.serialize import torch_save
 
-        key = dict(
-            model_id=model_id,
-            network_id=network_id,
-            rank=rank,
-            epoch=epoch,
-            info=torch_save(info),
-        )
+        key["info"] = torch_save(key["info"])
         cls.insert1(key)
 
     @rowmethod
@@ -51,7 +30,7 @@ class NetworkInfo:
         Returns
         -------
         dict
-            training info
+            row info
         """
         from foundation.utils.serialize import torch_load
 
@@ -62,49 +41,26 @@ class NetworkInfo:
         Returns
         -------
         pandas.DataFrame
-            training info dataframe
+            info dataframe
         """
         keys = tqdm(self.fetch("KEY", order_by=self.primary_key))
-        return pd.DataFrame([dict(k, **(NetworkInfo & k).load(device=device)) for k in keys])
+        return pd.DataFrame([dict(k, **(self & k).load(device=device)) for k in keys])
 
 
-@schema.lookup
-class NetworkCheckpoint:
-    definition = """
-    -> Network
-    -> Model
-    rank                                        : int unsigned  # training rank
-    ---
-    epoch                                       : int unsigned  # training epoch
-    checkpoint                                  : longblob      # training checkpoint
-    network_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp     # automatic timestamp
-    """
+class Checkpoint:
+    """Checkpoint"""
 
     @classmethod
-    def fill(cls, network_id, model_id, rank, epoch, checkpoint):
+    def fill(cls, key):
         """
         Parameters
         ----------
-        network_id : str
-            key (foundation.fnn.network.Network)
-        model_id : str
-            key (foundation.fnn.model.Model)
-        rank : int
-            training rank
-        epoch : int
-            training epoch
-        checkpoint : serializable object
-            training checkpoint
+        key : dict[str, ...]
+            row to insert
         """
         from foundation.utils.serialize import torch_save
 
-        key = dict(
-            model_id=model_id,
-            network_id=network_id,
-            rank=rank,
-            epoch=epoch,
-            checkpoint=torch_save(checkpoint),
-        )
+        key["checkpoint"] = torch_save(key["checkpoint"])
         cls.insert1(key, replace=True)
 
     @rowmethod
@@ -113,20 +69,102 @@ class NetworkCheckpoint:
         Returns
         -------
         deserialized object
-            training checkpoint
+            row checkpoint
         """
         from foundation.utils.serialize import torch_load
 
         return torch_load(self.fetch1("checkpoint"), map_location=device)
 
 
+# ----------------------------- Network Progress -----------------------------
+
+
+@schema.lookup
+class NetworkInfo(Info):
+    definition = """
+    -> fnn.Network
+    -> fnn.Model
+    rank                                    : int unsigned  # training rank
+    epoch                                   : int unsigned  # training epoch
+    ---
+    info                                    : longblob      # training info
+    network_info_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
+    """
+
+
+@schema.lookup
+class NetworkCheckpoint(Checkpoint):
+    definition = """
+    -> fnn.Network
+    -> fnn.Model
+    rank                                        : int unsigned  # training rank
+    ---
+    epoch                                       : int unsigned  # training epoch
+    checkpoint                                  : longblob      # training checkpoint
+    network_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp     # automatic timestamp
+    """
+
+
 @schema.lookup
 class NetworkDone:
     definition = """
-    -> Network
-    -> Model
+    -> fnn.Network
+    -> fnn.Model
     rank                                    : int unsigned  # training rank
     ---
     epoch                                   : int unsigned  # training epoch
     network_done_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
+    """
+
+
+# ----------------------------- Descent Progress -----------------------------
+
+
+@schema.lookup
+class VisualNetworkDescentInfo(Info):
+    definition = """
+    -> fnn.NetworkModel
+    -> fnn.Descent
+    -> fnn.Stimulus
+    -> fnn.Optimizer
+    -> fnn.Scheduler
+    -> fnn.DescentSteps
+    -> utility.Resolution
+    epoch                                   : int unsigned  # descent epoch
+    ---
+    info                                    : longblob      # descent info
+    descent_info_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
+    """
+
+
+@schema.lookup
+class VisualNetworkDescentCheckpoint(Checkpoint):
+    definition = """
+    -> fnn.NetworkModel
+    -> fnn.Descent
+    -> fnn.Stimulus
+    -> fnn.Optimizer
+    -> fnn.Scheduler
+    -> fnn.DescentSteps
+    -> utility.Resolution
+    ---
+    epoch                                       : int unsigned  # descent epoch
+    checkpoint                                  : longblob      # descent checkpoint
+    descent_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp     # automatic timestamp
+    """
+
+
+@schema.lookup
+class VisualNetworkDescentDone:
+    definition = """
+    -> fnn.NetworkModel
+    -> fnn.Descent
+    -> fnn.Stimulus
+    -> fnn.Optimizer
+    -> fnn.Scheduler
+    -> fnn.DescentSteps
+    -> utility.Resolution
+    ---
+    epoch                                   : int unsigned  # descent epoch
+    descent_done_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
     """
