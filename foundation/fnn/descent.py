@@ -144,7 +144,7 @@ class VisualNetworkDescent:
         key["video"] = (VisualNetworkDescent & key).video
 
         # video size
-        key["frames"], _, _, key["channel"] = key["video"].shape
+        key["frames"], _, _, key["channels"] = key["video"].shape
 
         # insert
         self.insert1(key)
