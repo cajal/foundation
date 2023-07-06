@@ -3,6 +3,28 @@ from contextlib import contextmanager
 
 
 @contextmanager
+def torch_rng(seed=None):
+    """Context manager that forks the torch RNG and optionally sets a manual seed in the forked state
+
+    Parameters
+    ----------
+    seed : int | None
+        seed for generating random numbers
+    """
+    from torch import cuda, random
+
+    devices = list(range(cuda.device_count()))
+
+    try:
+        with random.fork_rng(devices):
+            if seed is not None:
+                random.manual_seed(seed)
+            yield
+    finally:
+        pass
+
+
+@contextmanager
 def use_cuda(device=None):
     """Context manager that explicitly enables cuda usage
 
@@ -23,6 +45,7 @@ def use_cuda(device=None):
 
     prev = os.getenv("FOUNDATION_CUDA", "-1")
     os.environ["FOUNDATION_CUDA"] = str(device)
+
     try:
         with cuda.device(device):
             yield

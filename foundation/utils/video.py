@@ -168,7 +168,12 @@ class Video:
         dpi : float | None
             dots per inch
         html : bool
-            return HTML for IPython display | pyplot FuncAnimation
+            return HTML for IPython display | return pyplot FuncAnimation
+
+        Returns
+        -------
+            IPython.display.HTML | matplotlib.animation.FuncAnimation
+                animated video, either as HTML or pyplot object
         """
         from matplotlib import pyplot as plt
         from matplotlib import animation
@@ -189,7 +194,7 @@ class Video:
             im.set_data(frames[i])
             return im
 
-        ani = animation.FuncAnimation(fig, animate, init_func=init, frames=len(self), interval=1000 / fps)
+        ani = animation.FuncAnimation(fig, animate, init_func=init, frames=len(frames), interval=1000 / fps)
 
         if html:
             from IPython.display import HTML
