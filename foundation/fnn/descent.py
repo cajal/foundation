@@ -33,6 +33,7 @@ class StimulusType:
 class VisualNlm(StimulusType):
     definition = """
     -> Bound
+    init_value      : decimal(6, 4)     # initial pixel value
     spatial_std     : decimal(6, 4)     # spatial standard deviation
     temporal_std    : decimal(6, 4)     # temporal standard deviation
     cutoff          : decimal(6, 4)     # standard deviation cutoff
@@ -42,12 +43,13 @@ class VisualNlm(StimulusType):
     def visual(self):
         from fnn.model.stimuli import VisualNlm
 
-        spatial_std, temporal_std, cutoff = self.fetch1("spatial_std", "temporal_std", "cutoff")
+        init, spatial, temporal, cutoff = self.fetch1("init_value", "spatial_std", "temporal_std", "cutoff")
 
         return VisualNlm(
             bound=(Bound & self).link.nn,
-            spatial_std=float(spatial_std),
-            temporal_std=float(temporal_std),
+            init_value=float(init),
+            spatial_std=float(spatial),
+            temporal_std=float(temporal),
             cutoff=float(cutoff),
         )
 
