@@ -52,7 +52,7 @@ class Initial(StateType):
             logger.info(f"Initializing network with random seed {seed}")
             seed = self.key.fetch1("seed")
         else:
-            # no need to seed manual seed
+            # no need to set manual seed
             seed = None
 
         # fork torch rng
