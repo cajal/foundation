@@ -45,12 +45,9 @@ class RandomSplit(TierType):
         # ordered trial ids
         trial_ids = trials.fetch("trial_id", order_by="trial_id")
 
-        # split fraction, split seed
-        fraction, seed = self.key.fetch1("fraction", "seed")
-
         # random split
-        rng = np.random.default_rng(seed)
-        trials_a = rng.choice(trial_ids, size=round(len(trial_ids) * fraction), replace=False)
+        rng = np.random.default_rng(self.item["seed"])
+        trials_a = rng.choice(trial_ids, size=round(len(trial_ids) * self.item["fraction"]), replace=False)
         trials_a = set(trials_a)
         trials_b = set(trial_ids) - (trials_a)
 
