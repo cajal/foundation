@@ -36,5 +36,5 @@ class VisualScanVideo:
         Video.fill()
 
         # compute video
-        keys = [Video.get(_, trials).proj() for _ in link_types]
+        keys = [Video.query(_, trials).proj() for _ in link_types]
         VideoInfo.populate(keys, reserve_jobs=True, display_progress=True)

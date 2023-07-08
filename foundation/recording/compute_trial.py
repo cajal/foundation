@@ -74,7 +74,7 @@ class ScanTrial(TrialType):
         trial = pipe_stim.Trial * pipe_stim.Condition & self.item
         stim_type = trial.fetch1("stimulus_type")
         stim_type = stim_type.split(".")[1]
-        return Video.get(stim_type, trial).fetch1("video_id")
+        return Video.query(stim_type, trial).fetch1("video_id")
 
     @rowproperty
     def flip_times(self):
