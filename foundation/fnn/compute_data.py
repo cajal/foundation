@@ -68,6 +68,11 @@ class DataType:
     @rowproperty
     def dataset(self):
         """
+        Parameters
+        ----------
+        video_id : str
+            key (foundation.stimulus.video.Video)
+
         Returns
         -------
         fnn.data.Dataset

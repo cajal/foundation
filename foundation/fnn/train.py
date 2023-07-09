@@ -1,5 +1,4 @@
 from djutils import rowproperty
-from foundation.fnn.network import NetworkSet
 from foundation.schemas import fnn as schema
 
 

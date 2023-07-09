@@ -37,7 +37,7 @@ class DescentType:
 
 @keys
 class Excitation(DescentType):
-    """Visual Reconstruction"""
+    """Visual Excitation"""
 
     @property
     def keys(self):
