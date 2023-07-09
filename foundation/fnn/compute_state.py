@@ -49,8 +49,8 @@ class Initial(StateType):
 
         if initialize:
             # set manual seed for parameter initialization
-            logger.info(f"Initializing network with random seed {seed}")
             seed = self.key.fetch1("seed")
+            logger.info(f"Initializing network with random seed {seed}")
         else:
             # no need to set manual seed
             seed = None
