@@ -173,8 +173,8 @@ class SchedulerType:
 class CosineLr(SchedulerType):
     definition = """
     cycle_size      : int unsigned  # epochs in a cycle
-    burnin_epochs   : int unsigned  # burnin epochs
-    burnin_cycles   : int unsigned  # burnin cycles
+    warmup_epochs   : int unsigned  # burnin epochs
+    warmup_cycles   : int unsigned  # burnin cycles
     """
 
     @rowproperty
