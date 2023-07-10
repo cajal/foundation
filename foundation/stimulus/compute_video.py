@@ -1,7 +1,7 @@
 import io
 import av
 import numpy as np
-from djutils import keys, rowproperty
+from djutils import keys, rowproperty, rowmethod
 from foundation.utils import video
 from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
 from foundation.virtual import utility, stimulus
@@ -25,7 +25,7 @@ class VideoType:
         """
         raise NotImplementedError()
 
-    @rowproperty
+    @rowmethod
     def directions(self):
         """
         Yields
@@ -94,7 +94,7 @@ class Monet2(VideoType):
         frames = np.einsum("H W C T -> T H W C", frames)
         return video.Video.fromarray(frames, period=1 / float(fps))
 
-    @rowproperty
+    @rowmethod
     def directions(self):
         directions, onsets, duration, n_dirs, frac = (pipe_stim.Monet2 & self.item).fetch1(
             "directions", "onsets", "duration", "n_dirs", "ori_fraction", squeeze=True
