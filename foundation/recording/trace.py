@@ -157,12 +157,27 @@ class ScanUnitFilter:
         return traces & key.proj()
 
 
+@schema.lookupfilter
+class ScanActivityFilter:
+    filtertype = Trace
+    definition = """
+    min_activity    : decimal(9, 6) # minimum mean activity
+    """
+
+    @rowmethod
+    def filter(self, traces):
+        vmin = self.fetch1("min_activity")
+        key = merge(traces.proj(), Trace.ScanUnit, scan.MeanActivity) & f"mean_activity > {vmin}"
+
+        return traces & key
+
+
 # -- Trace Filter --
 
 
 @schema.filterlink
 class TraceFilter:
-    links = [ScanUnitFilter]
+    links = [ScanUnitFilter, ScanActivityFilter]
     name = "trace_filter"
     comment = "trace filter"
 
