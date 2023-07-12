@@ -27,14 +27,15 @@ class FeedforwardType:
 @schema.lookup
 class Dense(FeedforwardType):
     definition = """
-    pre_kernel      : int unsigned  # pre kernel size
-    pre_stride      : int unsigned  # pre stride
+    in_spatial      : int unsigned  # input spatial kernel size
+    in_stride       : int unsigned  # input spatial stride
+    out_channels    : int unsigned  # output channels per stream
     block_channels  : varchar(128)  # block channels per stream (csv)
     block_groups    : varchar(128)  # block groups per stream (csv)
     block_layers    : varchar(128)  # block layers (csv)
-    block_pools     : varchar(128)  # block pool sizes (csv)
-    block_kernels   : varchar(128)  # block kernel sizes (csv)
-    block_dynamics  : varchar(128)  # block dynamic sizes (csv)
+    block_temporals : varchar(128)  # block temporal kernel sizes (csv)
+    block_spatials  : varchar(128)  # block spatial kernel sizes (csv)
+    block_pools     : varchar(128)  # block spatial pooling sizes (csv)
     nonlinear       : varchar(128)  # nonlinearity
     dropout         : decimal(6, 6) # dropout probability
     """
@@ -90,7 +91,7 @@ class Rvt(RecurrentType):
     out_channels        : int unsigned  # out channels per stream
     groups              : int unsigned  # groups per stream
     heads               : int unsigned  # heads per stream
-    kernel_size         : int unsigned  # kernel size
+    spatial             : int unsigned  # spatial kernel size
     dropout             : decimal(6, 6) # dropout probability
     """
 
@@ -107,7 +108,7 @@ class ConvLstm(RecurrentType):
     recurrent_channels  : int unsigned  # recurrent channels per stream
     out_channels        : int unsigned  # out channels per stream
     groups              : int unsigned  # groups per stream
-    kernel_size         : int unsigned  # kernel size
+    spatial             : int unsigned  # spatial kernel size
     dropout             : decimal(6, 6) # dropout probability
     """
 
