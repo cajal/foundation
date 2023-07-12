@@ -29,6 +29,8 @@ class FlatLstm(ModulationType):
     definition = """
     lstm_features   : int unsigned      # lstm features per stream
     out_features    : int unsigned      # out features per stream
+    init_input      : decimal(6, 4)     # initial input gate bias
+    init_forget     : decimal(6, 4)     # initial forget gate bias
     dropout         : decimal(6, 6)     # dropout probability
     """
 

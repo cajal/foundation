@@ -109,6 +109,8 @@ class ConvLstm(RecurrentType):
     out_channels        : int unsigned  # out channels per stream
     groups              : int unsigned  # groups per stream
     spatial             : int unsigned  # spatial kernel size
+    init_input          : decimal(6, 4) # initial input gate bias
+    init_forget         : decimal(6, 4) # initial forget gate bias
     dropout             : decimal(6, 6) # dropout probability
     """
 
