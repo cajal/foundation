@@ -166,13 +166,13 @@ class TraceSetFilter:
     """
 
     @rowmethod
-    def filter(self, trials):
+    def filter(self, traces):
         key = (TraceSet & self).members
 
         if self.fetch1("include"):
-            return trials & key.proj()
+            return traces & key.proj()
         else:
-            return trials - key.proj()
+            return traces - key.proj()
 
 
 # -- Trace Filter --
