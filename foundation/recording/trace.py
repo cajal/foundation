@@ -158,18 +158,21 @@ class ScanUnitFilter:
 
 
 @schema.lookupfilter
-class ScanActivityFilter:
+class TraceSetFilter:
     filtertype = Trace
     definition = """
-    min_activity    : decimal(9, 6) # minimum mean activity
+    -> TraceSet
+    include         : bool          # include or exclude
     """
 
     @rowmethod
-    def filter(self, traces):
-        vmin = self.fetch1("min_activity")
-        key = merge(traces.proj(), Trace.ScanUnit, scan.MeanActivity) & f"mean_activity > {vmin}"
+    def filter(self, trials):
+        key = (TraceSet & self).members
 
-        return traces & key
+        if self.fetch1("include"):
+            return trials & key.proj()
+        else:
+            return trials - key.proj()
 
 
 # -- Trace Filter --
@@ -177,7 +180,7 @@ class ScanActivityFilter:
 
 @schema.filterlink
 class TraceFilter:
-    links = [ScanUnitFilter, ScanActivityFilter]
+    links = [ScanUnitFilter, TraceSetFilter]
     name = "trace_filter"
     comment = "trace filter"
 
