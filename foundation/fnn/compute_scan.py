@@ -17,6 +17,7 @@ class VisualScanPerformance:
             utility.Burnin,
         ]
 
+    @property
     def cc_norm(self):
         # key
         key = self.key.fetch(as_dict=True)
