@@ -14,44 +14,33 @@ class VisualScanModel:
 
     @property
     def data(self):
-        return self.key * fnn.Network.VisualNetwork.proj("data_id")
+        return self.key * fnn.Network.VisualNetwork.proj("data_id") * fnn.Data.VisualScan
 
     @property
     def rate(self):
-        key = self.data * fnn.Data.VisualScan * fnn.Spec.VisualSpec
-        return key.proj("rate_id")
+        return (self.data * fnn.Spec.VisualSpec).proj("rate_id")
 
     @property
     def unit_resample(self):
-        key = self.data * fnn.Data.VisualScan * fnn.Spec.VisualSpec
-        return key.proj(resample_id="unit_resample_id")
+        return (self.data * fnn.Spec.VisualSpec).proj(resample_id="unit_resample_id")
 
     @property
     def unit_offset(self):
-        key = self.data * fnn.Data.VisualScan * fnn.Spec.VisualSpec
-        return key.proj(offset_id="unit_offset_id")
+        return (self.data * fnn.Spec.VisualSpec).proj(offset_id="unit_offset_id")
 
     @property
     def unit_standardize(self):
-        key = self.data * fnn.Data.VisualScan * fnn.Spec.VisualSpec
-        return key.proj(standardize_id="unit_standardize_id")
-
-    @property
-    def unit_traces(self):
-        key = (
-            self.data
-            * fnn.Data.VisualScan
-            * recording.ScanUnits
-            * recording.TraceSet.Member
-            * recording.Trace.ScanUnit
-            * recording.ScanUnit
-        )
-        return key.proj("traceset_index")
+        return (self.data * fnn.Spec.VisualSpec).proj(standardize_id="unit_standardize_id")
 
     @property
     def standardize_trials(self):
-        key = self.data * fnn.Data.VisualScan * recording.ScanTrials
-        return key.proj("trialset_id")
+        return (self.data * recording.ScanTrials).proj("trialset_id")
+
+    @property
+    def unit_traces(self):
+        return (
+            self.data * recording.ScanUnits * recording.TraceSet.Member * recording.Trace.ScanUnit * recording.ScanUnit
+        ).proj("traceset_index")
 
 
 @keys
