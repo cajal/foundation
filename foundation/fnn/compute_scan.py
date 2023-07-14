@@ -18,33 +18,40 @@ class VisualScanModel:
 
     @property
     def rate(self):
-        key = (fnn.Data.VisualScan * fnn.Spec.VisualSpec).proj("rate_id")
-        return self.data * key
+        key = self.data * fnn.Data.VisualScan * fnn.Spec.VisualSpec
+        return key.proj("rate_id")
 
     @property
     def unit_resample(self):
-        key = (fnn.Data.VisualScan * fnn.Spec.VisualSpec).proj(resample_id="unit_resample_id")
-        return self.data * key
+        key = self.data * fnn.Data.VisualScan * fnn.Spec.VisualSpec
+        return key.proj(resample_id="unit_resample_id")
 
     @property
     def unit_offset(self):
-        key = (fnn.Data.VisualScan * fnn.Spec.VisualSpec).proj(offset_id="unit_offset_id")
-        return self.data * key
+        key = self.data * fnn.Data.VisualScan * fnn.Spec.VisualSpec
+        return key.proj(offset_id="unit_offset_id")
 
     @property
     def unit_standardize(self):
-        key = (fnn.Data.VisualScan * fnn.Spec.VisualSpec).proj(standardize_id="unit_standardize_id")
-        return self.data * key
+        key = self.data * fnn.Data.VisualScan * fnn.Spec.VisualSpec
+        return key.proj(standardize_id="unit_standardize_id")
 
     @property
     def unit_traces(self):
-        key = (fnn.Data.VisualScan * recording.ScanUnits * recording.TraceSet.Member).proj("traceset_index")
-        return self.data * key
+        key = (
+            self.data
+            * fnn.Data.VisualScan
+            * recording.ScanUnits
+            * recording.TraceSet.Member
+            * recording.Trace.ScanUnit
+            * recording.ScanUnit
+        )
+        return key.proj("traceset_index")
 
     @property
     def standardize_trials(self):
-        key = (fnn.Data.VisualScan * recording.ScanTrials).proj("trialset_id")
-        return self.data * key
+        key = self.data * fnn.Data.VisualScan * recording.ScanTrials
+        return key.proj("trialset_id")
 
 
 @keys
