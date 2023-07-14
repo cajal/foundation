@@ -184,19 +184,19 @@ class VisualScan(DataType):
 
     def _key_traces(self, datatype):
         keymap = {f"{_}_id": f"{datatype}_{_}_id" for _ in ["resample", "offset", "standardize"]}
-        return (recording.ScanTrials * fnn.Spec.VisualSpec & self.item).proj("rate_id", "trialset_id", **keymap)
+        return (recording.ScanTrials * fnn.Spec.VisualSpec).proj("rate_id", "trialset_id", **keymap)
 
     @rowproperty
     def key_perspective(self):
-        return (self._key_traces("perspective") * recording.ScanVisualPerspectives).fetch1()
+        return (self._key_traces("perspective") * recording.ScanVisualPerspectives & self.item).fetch1()
 
     @rowproperty
     def key_modulation(self):
-        return (self._key_traces("modulation") * recording.ScanVisualModulations).fetch1()
+        return (self._key_traces("modulation") * recording.ScanVisualModulations & self.item).fetch1()
 
     @rowproperty
     def key_unit(self):
-        return (self._key_traces("unit") * recording.ScanUnits).fetch1()
+        return (self._key_traces("unit") * recording.ScanUnits & self.item).fetch1()
 
     @rowproperty
     def stimuli(self):
