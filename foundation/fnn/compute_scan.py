@@ -45,7 +45,7 @@ class VisualScanModel:
 
 @keys
 class VisualScanPerformance:
-    """Visual Scan CC Norm"""
+    """Visual Scan Performance"""
 
     @property
     def keys(self):
