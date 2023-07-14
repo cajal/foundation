@@ -4,7 +4,7 @@ from foundation.virtual import utility, stimulus, scan, recording, fnn
 
 @keys
 class VisualScanModel:
-    """Visual Scan CC Norm"""
+    """Visual Scan Model"""
 
     @property
     def keys(self):
