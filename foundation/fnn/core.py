@@ -88,11 +88,11 @@ class CvtLstm(RecurrentType):
     definition = """
     recurrent_channels  : int unsigned  # recurrent channels per stream
     attention_channels  : int unsigned  # attention channels per stream
+    common_channels     : int unsigned  # common channels per stream
     out_channels        : int unsigned  # out channels per stream
     groups              : int unsigned  # groups per stream
     heads               : int unsigned  # heads per stream
-    spatial_token       : int unsigned  # spatial kernel size -- token
-    spatial_skip        : int unsigned  # spatial kernel size -- skip
+    spatial             : int unsigned  # spatial kernel size
     init_input          : decimal(6, 4) # initial input gate bias
     init_forget         : decimal(6, 4) # initial forget gate bias
     dropout             : decimal(6, 6) # dropout probability
