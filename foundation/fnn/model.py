@@ -113,6 +113,11 @@ class NetworkModel:
     @rowmethod
     def parameters(self, device="cpu"):
         """
+        Parameters
+        ----------
+        device : "cpu" | "cuda" | torch.device
+            device to allocate tensors
+
         Returns
         -------
         dict[str, torch.Tensor]

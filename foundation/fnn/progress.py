@@ -38,6 +38,11 @@ class Info:
 
     def df(self, device="cpu"):
         """
+        Parameters
+        ----------
+        device : "cpu" | "cuda" | torch.device
+            device to allocate tensors
+
         Returns
         -------
         pandas.DataFrame
@@ -66,6 +71,11 @@ class Checkpoint:
     @rowmethod
     def load(self, device="cpu"):
         """
+        Parameters
+        ----------
+        device : "cpu" | "cuda" | torch.device
+            device to allocate tensors
+
         Returns
         -------
         deserialized object
