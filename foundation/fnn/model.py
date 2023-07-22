@@ -176,7 +176,7 @@ class NetworkSetModel:
         from torch import allclose
 
         nets = (NetworkSet & key).members
-        nets = merge(nets, NetworkModel)
+        nets = merge(nets, NetworkModel & key)
         nets = nets.fetch("KEY", order_by="networkset_index")
 
         model = (NetworkModel & nets[0]).model
