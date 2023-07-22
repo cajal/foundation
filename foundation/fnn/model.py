@@ -1,4 +1,5 @@
-from djutils import rowproperty, rowmethod
+from djutils import rowproperty, rowmethod, merge
+from foundation.utils import tqdm
 from foundation.fnn.network import Network, NetworkSet
 from foundation.fnn.train import State, Loader, Objective, Optimizer, Scheduler
 from foundation.schemas import fnn as schema
@@ -150,3 +151,59 @@ class NetworkModel:
         module.load_state_dict(params)
 
         return module
+
+
+@schema.computed
+class NetworkSetModel:
+    definition = """
+    -> NetworkSet
+    -> Model
+    module          : varchar(128)  # module name
+    ---
+    shared          : bool          # shared parameters
+    """
+
+    @property
+    def key_source(self):
+        keys = (NetworkSet.Member * Model * NetworkModel).proj()
+        keys &= [
+            Model.NetworkSetInstance,
+        ]
+        keys = (NetworkSet * Model).aggr(keys, n="count(*)") * NetworkSet & "n=members"
+        return keys.proj()
+
+    def make(self, key):
+        from torch import allclose
+
+        nets = (NetworkSet & key).members
+        nets = merge(nets, NetworkModel)
+        nets = nets.fetch("KEY", order_by="networkset_index")
+
+        model = (NetworkModel & nets[0]).model
+        params = {k: v.state_dict() for k, v in model.named_children()}
+        shared = set(params)
+
+        for net in tqdm(nets[1:]):
+
+            _model = (NetworkModel & net).model
+            _params = {k: v.state_dict() for k, v in _model.named_children()}
+            not_shared = set()
+
+            for module in shared:
+
+                if set(params[module]) != set(_params[module]):
+                    not_shared |= {module}
+                    continue
+
+                for k, v in params[module].items():
+                    _v = _params[module][k]
+
+                    if v.shape != _v.shape or not allclose(v, _v):
+                        not_shared |= {module}
+                        break
+
+            shared = shared - not_shared
+
+        keys = [dict(key, module=module, shared=True) for module in shared]
+        keys += [dict(key, module=module, shared=False) for module in set(params) - shared]
+        self.insert(keys)
