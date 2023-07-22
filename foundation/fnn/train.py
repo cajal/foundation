@@ -203,7 +203,7 @@ class StateType:
     """State"""
 
     @rowproperty
-    def state(self):
+    def compute(self):
         """
         Returns
         -------
@@ -223,10 +223,26 @@ class Initial(StateType):
     """
 
     @rowproperty
-    def state(self):
+    def compute(self):
         from foundation.fnn.compute_state import Initial
 
         return Initial & self
+
+
+@schema.lookup
+class SharedCore(StateType):
+    definition = """
+    networkset_id       : char(32)      # key (foundation.fnn.network.NetworkSet)
+    model_id            : char(32)      # key (foundation.fnn.model.Model)
+    freeze              : bool          # freeze core
+    seed                : int unsigned  # seed for non-core initialization
+    """
+
+    @rowproperty
+    def compute(self):
+        from foundation.fnn.compute_state import SharedCore
+
+        return SharedCore & self
 
 
 # -- State --
@@ -234,6 +250,6 @@ class Initial(StateType):
 
 @schema.link
 class State:
-    links = [Initial]
+    links = [Initial, SharedCore]
     name = "state"
     comment = "network state"

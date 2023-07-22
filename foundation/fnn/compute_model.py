@@ -65,12 +65,13 @@ class _Instance(ModelType):
         # model id, cycle, checkpoint
         key = merge(self.key, self.model_type)
         model_id, cycle, parallel = key.fetch1("model_id", "cycle", "parallel")
-        checkpoint = NetworkCheckpoint & {"rank": rank, "network_id": network_id, "model_id": model_id}
-        initialize = (cycle == 0) and (not checkpoint)
 
         # network module
-        network = (State & self.item).link.state.build(network_id=network_id, initialize=initialize)
+        network = (State & self.item).link.compute.state(network_id=network_id)
         network = network.to(device="cuda")
+
+        # checkpoint
+        checkpoint = NetworkCheckpoint & {"rank": rank, "network_id": network_id, "model_id": model_id}
 
         if checkpoint:
             logger.info("Reloading from checkpoint")
