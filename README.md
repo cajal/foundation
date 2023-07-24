@@ -5,12 +5,14 @@ Pipeline for recordings and foundation models of the visual cortex.
 
 ## Setup
 
-Step 1) Clone the respository
+Step 1) Make sure `scratch09` is mounted, and the `at-docker.ad.bcm.edu:5000` registry is configured.
+
+Step 2) Clone the respository
 ```
 git clone https://github.com/cajal/foundation.git
 ```
 
-Step 2) Navigate to the `docker` directory
+Step 3) Navigate to the `docker` directory
 ```
 cd foundation/docker
 ```
@@ -24,7 +26,7 @@ DJ_PASS=*
 JUPYTER_TOKEN=*
 ```
 
-Step 4) Launch the docker container
+Step 5) Launch the docker container
 ```
 docker compose run -d -p 8880:8888 foundation
 ```
