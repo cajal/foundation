@@ -30,7 +30,7 @@ DJ_PASS=*
 JUPYTER_TOKEN=*
 ```
 
-Step 5) Launch the docker container
+Step 4) Launch the docker container
 ```
 docker compose run -d -p 8880:8888 foundation
 ```
