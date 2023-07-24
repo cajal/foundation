@@ -1,6 +1,6 @@
 # Foundation
 
-Neuronal recordings and foundation models.
+Neuronal recordings and Foundation models
 
 
 ## Requirements
