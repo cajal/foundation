@@ -1,5 +1,6 @@
 # foundation
-Foundation Models of the Visual Cortex
+
+Pipeline for foundation data and models of the Visual Cortex
 
 
 ## Setup
