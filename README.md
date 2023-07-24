@@ -1,6 +1,6 @@
-# foundation
+# Foundation
 
-Pipeline for neuronal recordings and foundation models.
+Neuronal recordings and foundation models.
 
 
 ## Requirements
