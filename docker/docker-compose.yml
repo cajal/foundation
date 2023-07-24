@@ -17,5 +17,3 @@ services:
       ]
     working_dir: /
     ipc: host
-    ports :
-      - "8880:8888"
