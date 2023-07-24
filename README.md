@@ -5,7 +5,7 @@ Pipeline for recordings and foundation models of the visual cortex.
 
 ## Setup
 
-Step 1) Make sure `scratch09` is mounted, and the `at-docker.ad.bcm.edu:5000` registry is configured.
+Step 1) Mount the `scratch09` network drive, and configure the `at-docker.ad.bcm.edu:5000` docker registry.
 
 Step 2) Clone the respository
 ```
