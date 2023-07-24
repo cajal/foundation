@@ -3,10 +3,11 @@
 Pipeline for neuronal recordings and foundation models.
 
 
-## Configure
+## Requirements
 
 - Network drive `/mnt/scratch09`
 - Docker registry `at-docker.ad.bcm.edu:5000`
+- Database account with privileges for `foundation_*` schemas
 
 ## Setup
 
