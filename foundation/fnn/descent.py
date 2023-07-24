@@ -34,6 +34,7 @@ class VisualNlm(StimulusType):
     definition = """
     -> Bound
     init_value      : decimal(6, 4)     # initial pixel value
+    init_gain       : decimal(6, 4)     # initial pixel gain
     spatial_std     : decimal(6, 4)     # spatial standard deviation
     temporal_std    : decimal(6, 4)     # temporal standard deviation
     cutoff          : decimal(6, 4)     # standard deviation cutoff
@@ -43,13 +44,41 @@ class VisualNlm(StimulusType):
     def visual(self):
         from fnn.model.stimuli import VisualNlm
 
-        init, spatial, temporal, cutoff = self.fetch1("init_value", "spatial_std", "temporal_std", "cutoff")
+        value, gain, spatial, temporal, cutoff = self.fetch1(
+            "init_value", "init_gain", "spatial_std", "temporal_std", "cutoff"
+        )
 
         return VisualNlm(
             bound=(Bound & self).link.nn,
-            init_value=float(init),
+            init_value=float(value),
+            init_gain=float(gain),
             spatial_std=float(spatial),
             temporal_std=float(temporal),
+            cutoff=float(cutoff),
+        )
+
+
+@schema.lookup
+class StaticVisualNlm(StimulusType):
+    definition = """
+    -> Bound
+    init_value      : decimal(6, 4)     # initial pixel value
+    init_gain       : decimal(6, 4)     # initial pixel gain
+    spatial_std     : decimal(6, 4)     # spatial standard deviation
+    cutoff          : decimal(6, 4)     # standard deviation cutoff
+    """
+
+    @rowproperty
+    def visual(self):
+        from fnn.model.stimuli import StaticVisualNlm
+
+        value, gain, spatial, cutoff = self.fetch1("init_value", "init_gain", "spatial_std", "cutoff")
+
+        return StaticVisualNlm(
+            bound=(Bound & self).link.nn,
+            init_value=float(value),
+            init_gain=float(gain),
+            spatial_std=float(spatial),
             cutoff=float(cutoff),
         )
 
@@ -59,7 +88,7 @@ class VisualNlm(StimulusType):
 
 @schema.link
 class Stimulus:
-    links = [VisualNlm]
+    links = [VisualNlm, StaticVisualNlm]
     name = "stimulus"
     comment = "stimulus module"
 
