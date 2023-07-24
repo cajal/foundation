@@ -3,16 +3,19 @@
 Pipeline for recordings and foundation models of the visual cortex.
 
 
+## Requirements
+
+- Network drive `/mnt/scratch09`
+- Docker registry `at-docker.ad.bcm.edu:5000`
+
 ## Setup
 
-Step 1) Mount the `scratch09` network drive, and configure the `at-docker.ad.bcm.edu:5000` docker registry.
-
-Step 2) Clone the respository
+Step 1) Clone the respository
 ```
 git clone https://github.com/cajal/foundation.git
 ```
 
-Step 3) Navigate to the `docker` directory
+Step 2) Navigate to the `docker` directory
 ```
 cd foundation/docker
 ```
