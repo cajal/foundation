@@ -1,0 +1,21 @@
+version: "3"
+
+services:
+  foundation:
+    image: at-docker.ad.bcm.edu:5000/foundation:v0
+    env_file: .env
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /mnt/scratch09/:/mnt/scratch09/
+    entrypoint:
+      [
+        "/bin/bash",
+        "-c",
+        "pip install git+https://github.com/cajal/djutils.git@v0.0.1 && \
+         pip install git+https://github.com/cajal/foundation.git && \
+         jupyter lab --NotebookApp.token=$${JUPYTER_TOKEN}"
+      ]
+    working_dir: /
+    ipc: host
+    ports :
+      - "8880:8888"
