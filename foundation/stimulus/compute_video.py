@@ -25,6 +25,10 @@ class VideoType:
         """
         raise NotImplementedError()
 
+
+class DirectionType:
+    """Directional Stimulus"""
+
     @rowmethod
     def directions(self):
         """
@@ -79,7 +83,7 @@ class Clip(VideoType):
 
 
 @keys
-class Monet2(VideoType):
+class Monet2(DirectionType, VideoType):
     """Monet2 Video"""
 
     @property

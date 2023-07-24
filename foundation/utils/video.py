@@ -147,20 +147,12 @@ class Video:
         else:
             return self.__class__(map(transform, self.frames))
 
-    def animate(self, start=None, end=None, fps=30, vmin=0, vmax=255, cmap="gray", width=6, dpi=None, html=True):
+    def animate(self, fps=30, vmin=0, vmax=255, cmap="gray", width=6, dpi=None, html=True):
         """
         Parameters
         ----------
-        start : int | None
-            start frame
-        end : int | None
-            end frame
         fps : float
-            frames per second
-        vmin : float
-            data range minimum
-        vmax : float
-            data range maximum
+            animation frames per second
         cmap : str | matplotlib.colors.Colormap
             colormap -- ignored if video is RGB(A)
         width : float
@@ -177,8 +169,13 @@ class Video:
         """
         from matplotlib import pyplot as plt
         from matplotlib import animation
+        from .resample import flip_index
 
-        frames = self.array[slice(start, end)]
+        if self.times is None:
+            raise ValueError("Cannot animate without timing information")
+
+        index = flip_index(self.times, 1 / fps)
+        frames = self.array[index]
 
         fig = plt.figure(figsize=(width, width / self.width * self.height), dpi=dpi)
         im = plt.imshow(frames[0], vmin=vmin, vmax=vmax, cmap=cmap)
