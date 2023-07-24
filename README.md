@@ -1,6 +1,6 @@
 # foundation
 
-Pipeline for recordings and foundation models of the visual cortex.
+Pipeline for neuronal recordings and foundation models.
 
 
 ## Requirements
