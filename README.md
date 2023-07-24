@@ -25,7 +25,7 @@ JUPYTER_TOKEN=*
 
 Step 4) Launch the docker container
 ```
-docker compose run -d --service-ports foundation
+docker compose run -d -p 8880:8888 foundation
 ```
 
-The jupyter lab environment should now be accessible at `http://HOSTNAME:8880/`.
+The jupyter lab environment (protected by the `JUPYTER_TOKEN` variable) should now be accessible at `http://HOSTNAME:8880/`.
