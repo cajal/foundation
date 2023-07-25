@@ -3,7 +3,7 @@ from djutils import rowproperty
 from foundation.schemas import utility as schema
 
 
-# ---------- Summary ----------
+# ------------------------------------ Summary ------------------------------------
 
 # -- Summary Interface --
 
