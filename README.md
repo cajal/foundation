@@ -5,9 +5,10 @@ Neuronal recordings and Foundation models
 
 ## Requirements
 
-- Network drive `/mnt/scratch09`
-- Docker registry `at-docker.ad.bcm.edu:5000`
 - Database account `at-database.ad.bcm.edu:3306`
+- Docker registry `at-docker.ad.bcm.edu:5000`
+- Network drive `/mnt/scratch09`
+
 
 ## Setup
 
