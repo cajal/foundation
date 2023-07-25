@@ -62,8 +62,8 @@ class Trials(pd.Series):
         """
         Parameters
         ----------
-        other : Response
-            another response object
+        other : Trials
+            another Trials object
 
         Returns
         -------
