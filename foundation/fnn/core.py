@@ -93,7 +93,6 @@ class Rvt(RecurrentType):
     groups              : int unsigned  # groups per stream
     heads               : int unsigned  # heads per stream
     spatial             : int unsigned  # spatial kernel size
-    nonlinear           : varchar(128)  # nonlinearity
     dropout             : decimal(6, 6) # dropout probability
     """
 
