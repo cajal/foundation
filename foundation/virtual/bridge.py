@@ -11,6 +11,7 @@ pipe_tread = dj.create_virtual_module("pipe_tread", "pipeline_treadmill")
 pipe_gabor = dj.create_virtual_module("pipe_gabor", "pipeline_gabor")
 pipe_dot = dj.create_virtual_module("pipe_dot", "pipeline_dot")
 pipe_rdk = dj.create_virtual_module("pipe_rdk", "pipeline_rdk")
+pipe_netflix = dj.create_virtual_module("pipe_netflix", "pipeline_netflix")
 
 
 def resolve_pipe(key):
