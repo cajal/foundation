@@ -270,19 +270,19 @@ class VisualScan(DataType):
 
             # stimuli
             video, index = (stimulus.ResizedVideo * recording.ResampledTrial & trial & key_v).fetch1("video", "index")
-            trial_stimuli = np.load(video)[np.load(index)].astype(np.uint8)
+            trial_stimuli = video[index].astype(np.uint8)
 
             # perspectives
             traces = (recording.ResampledTraces & trial & key_p).fetch1("traces")
-            trial_perspectives = transform_p(np.load(traces)).astype(np.float32)
+            trial_perspectives = transform_p(traces).astype(np.float32)
 
             # modulations
             traces = (recording.ResampledTraces & trial & key_m).fetch1("traces")
-            trial_modulations = transform_m(np.load(traces)).astype(np.float32)
+            trial_modulations = transform_m(traces).astype(np.float32)
 
             # units
             traces = (recording.ResampledTraces & trial & key_u).fetch1("traces")
-            trial_units = transform_u(np.load(traces)).astype(np.float32)
+            trial_units = transform_u(traces).astype(np.float32)
 
             # append
             stimuli.append(NpyFile(trial_stimuli))
@@ -351,7 +351,7 @@ class VisualScan(DataType):
                 cache.ResampledTraces.populate(key, keys, display_progress=True, reserve_jobs=True)
 
             # load cached traces
-            trials = map(np.load, ((cache.ResampledTraces & key & _).fetch1("traces") for _ in keys))
+            trials = [(cache.ResampledTraces & key & _).fetch1("traces") for _ in keys]
 
         if traceset_index is None:
             # standardize traces
