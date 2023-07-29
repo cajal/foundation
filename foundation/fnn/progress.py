@@ -116,6 +116,26 @@ class TempNetworkCheckpoint(Checkpoint):
 
 
 @schema.computed
+class TransferInfo:
+    definition = """
+    -> fnn.Network
+    -> fnn.Model
+    rank                                        : int unsigned  # training rank
+    epoch                                       : int unsigned  # training epoch
+    ---
+    """
+
+    @property
+    def key_source(self):
+        return TempNetworkInfo.proj() - NetworkInfo.proj()
+
+    def make(self, key):
+        self.insert1(key)
+        key = (TempNetworkInfo & key).fetch1()
+        NetworkInfo.insert1(key)
+
+
+@schema.computed
 class TransferCheckpoint:
     definition = """
     -> fnn.Network
@@ -126,13 +146,12 @@ class TransferCheckpoint:
 
     @property
     def key_source(self):
-        return NetworkCheckpoint.proj() - TempNetworkCheckpoint.proj()
+        return TempNetworkCheckpoint.proj() - NetworkCheckpoint.proj()
 
     def make(self, key):
         self.insert1(key)
-        key = (NetworkCheckpoint & key).fetch1()
-        TempNetworkCheckpoint.insert1(key)
-
+        key = (TempNetworkCheckpoint & key).fetch1()
+        NetworkCheckpoint.insert1(key)
 
 
 @schema.lookup
@@ -140,11 +159,11 @@ class NetworkInfo(Info):
     definition = """
     -> fnn.Network
     -> fnn.Model
-    rank                                    : int unsigned  # training rank
-    epoch                                   : int unsigned  # training epoch
+    rank                                        : int unsigned      # training rank
+    epoch                                       : int unsigned      # training epoch
     ---
-    info                                    : longblob      # training info
-    network_info_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
+    info                                        : blob@external     # training info
+    network_info_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
     """
 
 
@@ -153,11 +172,11 @@ class NetworkCheckpoint(Checkpoint):
     definition = """
     -> fnn.Network
     -> fnn.Model
-    rank                                        : int unsigned  # training rank
+    rank                                        : int unsigned      # training rank
     ---
-    epoch                                       : int unsigned  # training epoch
-    checkpoint                                  : longblob      # training checkpoint
-    network_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp     # automatic timestamp
+    epoch                                       : int unsigned      # training epoch
+    checkpoint                                  : blob@external     # training checkpoint
+    network_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp         # automatic timestamp
     """
 
 
