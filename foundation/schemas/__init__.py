@@ -2,11 +2,6 @@ from datajoint import config
 from djutils import Schema
 
 config["stores"] = {
-    "scratch09": dict(
-        protocol="file",
-        location="/mnt/scratch09/foundation/",
-        stage="/mnt/scratch09/foundation/",
-    ),
     "external": dict(
         protocol="file",
         location="/mnt/scratch09/foundation/external/",
