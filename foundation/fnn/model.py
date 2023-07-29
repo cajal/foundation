@@ -85,8 +85,8 @@ class NetworkModel:
     -> Network
     -> Model
     ---
-    parameters                              : longblob      # parameter state dict
-    network_model_ts = CURRENT_TIMESTAMP    : timestamp     # automatic timestamp
+    parameters                              : blob@external     # parameter state dict
+    network_model_ts = CURRENT_TIMESTAMP    : timestamp         # automatic timestamp
     """
 
     @property
