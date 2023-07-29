@@ -27,3 +27,22 @@ class ResizedVideo(Filepath):
 
         # insert key
         self.insert1(dict(key, video=filepath))
+
+
+@schema.computed
+class ResizedVideoTemp:
+    definition = """
+    -> Video
+    -> utility.Resize
+    -> utility.Resolution
+    ---
+    video       : blob@external    # npy file, [frames, height, width, channels]
+    """
+
+    @property
+    def key_source(self):
+        return ResizedVideo.proj()
+
+    def make(self, key):
+        v = (ResizedVideo & key).fetch1("video")
+        self.insert1(dict(key, video=np.load(v)))
