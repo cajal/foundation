@@ -90,71 +90,6 @@ class Checkpoint:
 
 
 @schema.lookup
-class TempNetworkInfo(Info):
-    definition = """
-    -> fnn.Network
-    -> fnn.Model
-    rank                                    : int unsigned  # training rank
-    epoch                                   : int unsigned  # training epoch
-    ---
-    info                                    : blob@external      # training info
-    network_info_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
-    """
-
-
-@schema.lookup
-class TempNetworkCheckpoint(Checkpoint):
-    definition = """
-    -> fnn.Network
-    -> fnn.Model
-    rank                                        : int unsigned  # training rank
-    ---
-    epoch                                       : int unsigned  # training epoch
-    checkpoint                                  : blob@external      # training checkpoint
-    network_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp     # automatic timestamp
-    """
-
-
-@schema.computed
-class TransferInfo:
-    definition = """
-    -> fnn.Network
-    -> fnn.Model
-    rank                                        : int unsigned  # training rank
-    epoch                                       : int unsigned  # training epoch
-    ---
-    """
-
-    @property
-    def key_source(self):
-        return TempNetworkInfo.proj() - NetworkInfo.proj()
-
-    def make(self, key):
-        self.insert1(key)
-        key = (TempNetworkInfo & key).fetch1()
-        NetworkInfo.insert1(key)
-
-
-@schema.computed
-class TransferCheckpoint:
-    definition = """
-    -> fnn.Network
-    -> fnn.Model
-    rank                                        : int unsigned  # training rank
-    ---
-    """
-
-    @property
-    def key_source(self):
-        return TempNetworkCheckpoint.proj() - NetworkCheckpoint.proj()
-
-    def make(self, key):
-        self.insert1(key)
-        key = (TempNetworkCheckpoint & key).fetch1()
-        NetworkCheckpoint.insert1(key)
-
-
-@schema.lookup
 class NetworkInfo(Info):
     definition = """
     -> fnn.Network
@@ -185,10 +120,10 @@ class NetworkDone:
     definition = """
     -> fnn.Network
     -> fnn.Model
-    rank                                    : int unsigned  # training rank
+    rank                                        : int unsigned      # training rank
     ---
-    epoch                                   : int unsigned  # training epoch
-    network_done_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
+    epoch                                       : int unsigned      # training epoch
+    network_done_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
     """
 
 
@@ -205,10 +140,10 @@ class VisualNetworkDescentInfo(Info):
     -> fnn.Scheduler
     -> fnn.DescentSteps
     -> utility.Resolution
-    epoch                                   : int unsigned  # descent epoch
+    epoch                                       : int unsigned      # descent epoch
     ---
-    info                                    : longblob      # descent info
-    descent_info_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
+    info                                        : blob@external     # descent info
+    descent_info_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
     """
 
 
@@ -223,9 +158,9 @@ class VisualNetworkDescentCheckpoint(Checkpoint):
     -> fnn.DescentSteps
     -> utility.Resolution
     ---
-    epoch                                       : int unsigned  # descent epoch
-    checkpoint                                  : longblob      # descent checkpoint
-    descent_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp     # automatic timestamp
+    epoch                                       : int unsigned      # descent epoch
+    checkpoint                                  : blob@external     # descent checkpoint
+    descent_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp         # automatic timestamp
     """
 
 
@@ -240,8 +175,8 @@ class VisualNetworkDescentDone:
     -> fnn.DescentSteps
     -> utility.Resolution
     ---
-    epoch                                   : int unsigned  # descent epoch
-    descent_done_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
+    epoch                                       : int unsigned      # descent epoch
+    descent_done_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
     """
 
 
@@ -259,10 +194,10 @@ class VisualUnitDescentInfo(Info):
     -> fnn.Scheduler
     -> fnn.DescentSteps
     -> utility.Resolution
-    epoch                                   : int unsigned  # descent epoch
+    epoch                                       : int unsigned      # descent epoch
     ---
-    info                                    : longblob      # descent info
-    descent_info_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
+    info                                        : blob@external     # descent info
+    descent_info_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
     """
 
 
@@ -278,9 +213,9 @@ class VisualUnitDescentCheckpoint(Checkpoint):
     -> fnn.DescentSteps
     -> utility.Resolution
     ---
-    epoch                                       : int unsigned  # descent epoch
-    checkpoint                                  : longblob      # descent checkpoint
-    descent_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp     # automatic timestamp
+    epoch                                           : int unsigned      # descent epoch
+    checkpoint                                      : blob@external     # descent checkpoint
+    descent_checkpoint_ts = CURRENT_TIMESTAMP       : timestamp         # automatic timestamp
     """
 
 
@@ -296,6 +231,6 @@ class VisualUnitDescentDone:
     -> fnn.DescentSteps
     -> utility.Resolution
     ---
-    epoch                                   : int unsigned  # descent epoch
-    descent_done_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
+    epoch                                           : int unsigned      # descent epoch
+    descent_done_ts = CURRENT_TIMESTAMP             : timestamp         # automatic timestamp
     """
