@@ -6,7 +6,11 @@ config["stores"] = {
         protocol="file",
         location="/mnt/scratch09/foundation/",
         stage="/mnt/scratch09/foundation/",
-    )
+    ),
+    "external": dict(
+        protocol="file",
+        location="/mnt/scratch09/foundation/external/",
+    ),
 }
 
 utility = Schema("foundation_utility")
