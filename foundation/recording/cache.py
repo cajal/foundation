@@ -61,3 +61,45 @@ class ResampledTraces(Filepath):
 
         # insert key
         self.insert1(dict(key, traces=filepath, finite=bool(finite)))
+
+
+@schema.computed
+class ResampledTrialTemp(Filepath):
+    definition = """
+    -> Trial
+    -> utility.Rate
+    ---
+    index       : blob@external    # [samples]
+    """
+
+    @property
+    def key_source(self):
+        return ResampledTrial.proj()
+
+    def make(self, key):
+        i = (ResampledTrial & key).fetch1("index")
+
+        self.insert1(dict(key, index=np.load(i)))
+
+
+@schema.computed
+class ResampledTracesTemp(Filepath):
+    definition = """
+    -> TraceSet
+    -> Trial
+    -> utility.Resample
+    -> utility.Offset
+    -> utility.Rate
+    ---
+    traces      : blob@external     # [samples, traces]
+    finite      : bool              # all values finite
+    """
+
+    @property
+    def key_source(self):
+        return ResampledTraces.proj()
+
+    def make(self, key):
+        t, f = (ResampledTraces & key).fetch1("traces", "finite")
+
+        self.insert1(dict(key, traces=np.load(t), finite=f))
