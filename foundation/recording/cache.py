@@ -6,48 +6,6 @@ from foundation.schemas import recording as schema
 
 
 @schema.computed
-class ResampledTrialTemp:
-    definition = """
-    -> Trial
-    -> utility.Rate
-    ---
-    index       : blob@external    # [samples]
-    """
-
-    @property
-    def key_source(self):
-        return ResampledTrial.proj()
-
-    def make(self, key):
-        i = (ResampledTrial & key).fetch1("index")
-
-        self.insert1(dict(key, index=np.load(i)))
-
-
-@schema.computed
-class ResampledTracesTemp:
-    definition = """
-    -> TraceSet
-    -> Trial
-    -> utility.Resample
-    -> utility.Offset
-    -> utility.Rate
-    ---
-    traces      : blob@external     # [samples, traces]
-    finite      : bool              # all values finite
-    """
-
-    @property
-    def key_source(self):
-        return ResampledTraces.proj()
-
-    def make(self, key):
-        t, f = (ResampledTraces & key).fetch1("traces", "finite")
-
-        self.insert1(dict(key, traces=np.load(t), finite=f))
-
-
-@schema.computed
 class ResampledTrial:
     definition = """
     -> Trial
@@ -56,27 +14,14 @@ class ResampledTrial:
     index       : blob@external     # [samples]
     """
 
-    @property
-    def key_source(self):
-        return ResampledTrialTemp.proj()
-
     def make(self, key):
-        i = (ResampledTrialTemp & key).fetch1("index")
+        from foundation.recording.compute_trial import ResampledTrial
 
-        self.insert1(dict(key, index=i))
+        # resampled flip indices
+        index = (ResampledTrial & key).flip_index
 
-    # def make(self, key):
-    #     from foundation.recording.compute_trial import ResampledTrial
-
-    #     # resampled video frame indices
-    #     index = (ResampledTrial & key).flip_index
-
-    #     # save file
-    #     filepath = self.createpath(key, "index", "npy")
-    #     np.save(filepath, index)
-
-    #     # insert key
-    #     self.insert1(dict(key, index=filepath))
+        # insert key
+        self.insert1(dict(key, index=index))
 
 
 @schema.computed
@@ -92,27 +37,14 @@ class ResampledTraces:
     finite      : bool              # all values finite
     """
 
-    @property
-    def key_source(self):
-        return ResampledTracesTemp.proj()
-
     def make(self, key):
-        t, f = (ResampledTracesTemp & key).fetch1("traces", "finite")
+        from foundation.recording.compute_trace import ResampledTraces
 
-        self.insert1(dict(key, traces=t, finite=f))
+        # resampled traces
+        traces = (ResampledTraces & key).trial(trial_id=key["trial_id"])
 
-    # def make(self, key):
-    #     from foundation.recording.compute_trace import ResampledTraces
+        # trace values finite
+        finite = np.isfinite(traces).all()
 
-    #     # resampled traces
-    #     traces = (ResampledTraces & key).trial(trial_id=key["trial_id"])
-
-    #     # trace values finite
-    #     finite = np.isfinite(traces).all()
-
-    #     # save file
-    #     filepath = self.createpath(key, "traces", "npy")
-    #     np.save(filepath, traces)
-
-    #     # insert key
-    #     self.insert1(dict(key, traces=filepath, finite=bool(finite)))
+        # insert key
+        self.insert1(dict(key, traces=traces, finite=bool(finite)))
