@@ -90,6 +90,52 @@ class Checkpoint:
 
 
 @schema.lookup
+class TempNetworkInfo(Info):
+    definition = """
+    -> fnn.Network
+    -> fnn.Model
+    rank                                    : int unsigned  # training rank
+    epoch                                   : int unsigned  # training epoch
+    ---
+    info                                    : blob@external      # training info
+    network_info_ts = CURRENT_TIMESTAMP     : timestamp     # automatic timestamp
+    """
+
+
+@schema.lookup
+class TempNetworkCheckpoint(Checkpoint):
+    definition = """
+    -> fnn.Network
+    -> fnn.Model
+    rank                                        : int unsigned  # training rank
+    ---
+    epoch                                       : int unsigned  # training epoch
+    checkpoint                                  : blob@external      # training checkpoint
+    network_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp     # automatic timestamp
+    """
+
+
+@schema.computed
+class TransferCheckpoint:
+    definition = """
+    -> fnn.Network
+    -> fnn.Model
+    rank                                        : int unsigned  # training rank
+    ---
+    """
+
+    @property
+    def key_source(self):
+        return NetworkCheckpoint.proj() - TempNetworkCheckpoint.proj()
+
+    def make(self, key):
+        self.insert1(key)
+        key = (NetworkCheckpoint & key).fetch1()
+        TempNetworkCheckpoint.insert1(key)
+
+
+
+@schema.lookup
 class NetworkInfo(Info):
     definition = """
     -> fnn.Network
