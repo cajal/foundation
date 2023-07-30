@@ -13,7 +13,7 @@ from foundation.virtual import utility, stimulus
 
 
 class VideoType:
-    """Video Stimulus"""
+    """Video"""
 
     @rowproperty
     def video(self):
@@ -26,8 +26,8 @@ class VideoType:
         raise NotImplementedError()
 
 
-class DirectionType:
-    """Directional Stimulus"""
+class DirectionType(VideoType):
+    """Directional Video"""
 
     @rowmethod
     def directions(self):
@@ -83,7 +83,7 @@ class Clip(VideoType):
 
 
 @keys
-class Monet2(DirectionType, VideoType):
+class Monet2(DirectionType):
     """Monet2 Video"""
 
     @property

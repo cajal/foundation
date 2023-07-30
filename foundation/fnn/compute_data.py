@@ -19,7 +19,7 @@ class DataType:
         Returns
         -------
         int
-            stimulus channels
+            number of stimulus channels
         """
         raise NotImplementedError()
 
@@ -29,7 +29,7 @@ class DataType:
         Returns
         -------
         int
-            perspective features
+            number of perspective features
         """
         raise NotImplementedError()
 
@@ -39,7 +39,7 @@ class DataType:
         Returns
         -------
         int
-            modulations features
+            number of modulations features
         """
         raise NotImplementedError()
 
@@ -54,25 +54,48 @@ class DataType:
         raise NotImplementedError()
 
     @rowproperty
-    def timing(self):
+    def perspective_offset(self):
+        """
+        Returns
+        -------
+        float
+            perspective sampling offset (seconds)
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def modulation_offset(self):
+        """
+        Returns
+        -------
+        float
+            modulation sampling offset (seconds)
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def unit_offset(self):
+        """
+        Returns
+        -------
+        float
+            unit sampling offset (seconds)
+        """
+        raise NotImplementedError()
+
+    @rowproperty
+    def sampling_period(self):
         """
         Returns
         -------
         float
             sampling period (seconds)
-        float
-            response offset (seconds)
         """
         raise NotImplementedError()
 
     @rowproperty
     def dataset(self):
         """
-        Parameters
-        ----------
-        video_id : str
-            key (foundation.stimulus.video.Video)
-
         Returns
         -------
         fnn.data.Dataset
@@ -80,32 +103,35 @@ class DataType:
         """
         raise NotImplementedError()
 
-    @rowmethod
-    def visual_stimuli(self, video_id):
+
+class VisualType(DataType):
+    """Visual Data"""
+
+    @rowproperty
+    def resolution(self):
         """
         Returns
         -------
-        4D array
-            [samples, height, width, channels] (uint8) -- video frames
+        int
+            height (pixels)
+        int
+            width (pixels)
         """
         raise NotImplementedError()
 
-    @rowmethod
-    def visual_trial_ids(self, video_id, trial_filterset_id):
+    @rowproperty
+    def resize_id(self):
         """
-        Parameters
-        ----------
-        video_id : str
-            key (foundation.stimulus.video.Video)
-        trial_filterset_id : str
-            key (foundation.recording.TrialFilterSet)
-
         Returns
         -------
-        Tuple[str]
-            tuple of keys (foundation.recording.trial.Trial) -- ordered by trial start time
+        str
+            key (foundation.utility.resize.Resize)
         """
         raise NotImplementedError()
+
+
+class RecordingType(DataType):
+    """Recording Data"""
 
     @rowmethod
     def trial_perspectives(self, trial_ids, perspective_index=None, use_cache=False):
@@ -165,11 +191,47 @@ class DataType:
         raise NotImplementedError()
 
 
+class VisualRecordingType(VisualType, RecordingType):
+    """Visual Recording"""
+
+    @rowmethod
+    def visual_trial_ids(self, video_id, trial_filterset_id):
+        """
+        Parameters
+        ----------
+        video_id : str
+            key (foundation.stimulus.video.Video)
+        trial_filterset_id : str
+            key (foundation.recording.TrialFilterSet)
+
+        Returns
+        -------
+        Tuple[str]
+            tuple of keys (foundation.recording.trial.Trial) -- ordered by trial start time
+        """
+        raise NotImplementedError()
+
+    @rowmethod
+    def visual_trial_stimulus(self, video_id):
+        """
+        Parameters
+        ----------
+        video_id : str
+            key (foundation.stimulus.video.Video)
+
+        Returns
+        -------
+        4D array
+            [samples, height, width, channels] (uint8) -- video frames
+        """
+        raise NotImplementedError()
+
+
 # -- Data Types --
 
 
 @keys
-class VisualScan(DataType):
+class VisualScan(VisualRecordingType):
     """Visual Scan Data"""
 
     @property
@@ -217,19 +279,37 @@ class VisualScan(DataType):
         return (recording.TraceSet & self.key_unit).fetch1("members")
 
     @rowproperty
-    def timing(self):
-        from foundation.utility.resample import Rate, Offset
+    def perspective_offset(self):
+        from foundation.utility.resample import Offset
 
-        # repsonse key
-        key = self.key_unit
+        return (Offset & self.key_perspective).link.offset
 
-        # sampling period
-        period = (Rate & key).link.period
+    @rowproperty
+    def modulation_offset(self):
+        from foundation.utility.resample import Offset
 
-        # response offset
-        offset = (Offset & key).link.offset
+        return (Offset & self.key_modulation).link.offset
 
-        return period, offset
+    @rowproperty
+    def unit_offset(self):
+        from foundation.utility.resample import Offset
+
+        return (Offset & self.key_unit).link.offset
+
+    @rowproperty
+    def sampling_period(self):
+        from foundation.utility.resample import Rate
+
+        return (Rate & self.key_video).link.period
+
+    @rowproperty
+    def resolution(self):
+        key = self.key_video
+        return key["height"], key["width"]
+
+    @rowproperty
+    def resize_id(self):
+        return self.key_video["resize_id"]
 
     @rowproperty
     def dataset(self):
@@ -302,43 +382,6 @@ class VisualScan(DataType):
         data = pd.DataFrame(data, index=pd.Index(ids, name="trial_id"))
         return Dataset(data)
 
-    @rowmethod
-    def visual_stimuli(self, video_id):
-        from foundation.stimulus.compute_video import ResizedVideo
-        from foundation.utility.resample import Rate
-        from foundation.utils.resample import flip_index
-
-        # video key
-        key = {"video_id": video_id, **self.key_video}
-
-        # resized video
-        video = (ResizedVideo & key).video
-
-        # time scale of recording
-        time_scale = (recording.ScanVideoTimeScale & self.item).fetch1("time_scale")
-
-        # resampling period
-        period = (Rate & key).link.period
-
-        # resampling flip index
-        index = flip_index(video.times * time_scale, period)
-
-        # resampled and resized video
-        return video.array[index]
-
-    @rowmethod
-    def visual_trial_ids(self, video_id, trial_filterset_id):
-        from foundation.recording.compute_visual import VisualTrials
-
-        # visual trialset key
-        key = {
-            "trialset_id": (recording.ScanRecording & self.item).fetch1("trialset_id"),
-            "trial_filterset_id": trial_filterset_id,
-            "video_id": video_id,
-        }
-        # visual trial_ids
-        return (VisualTrials & key).trial_ids
-
     def _trial_traces(self, trial_ids, traceset_index, key, use_cache=False):
         from foundation.recording import cache, compute_trace as compute
 
@@ -392,3 +435,40 @@ class VisualScan(DataType):
     def trial_units(self, trial_ids, unit_index=None, use_cache=False):
         # unit trace(s)
         return self._trial_traces(trial_ids, unit_index, self.key_unit, use_cache)
+
+    @rowmethod
+    def visual_trial_ids(self, video_id, trial_filterset_id):
+        from foundation.recording.compute_visual import VisualTrials
+
+        # visual trialset key
+        key = {
+            "trialset_id": (recording.ScanRecording & self.item).fetch1("trialset_id"),
+            "trial_filterset_id": trial_filterset_id,
+            "video_id": video_id,
+        }
+        # visual trial_ids
+        return (VisualTrials & key).trial_ids
+
+    @rowmethod
+    def visual_trial_stimulus(self, video_id):
+        from foundation.stimulus.compute_video import ResizedVideo
+        from foundation.utility.resample import Rate
+        from foundation.utils.resample import flip_index
+
+        # video key
+        key = {"video_id": video_id, **self.key_video}
+
+        # resized video
+        video = (ResizedVideo & key).video
+
+        # time scale of recording
+        time_scale = (recording.ScanVideoTimeScale & self.item).fetch1("time_scale")
+
+        # resampling period
+        period = (Rate & key).link.period
+
+        # resampling flip index
+        index = flip_index(video.times * time_scale, period)
+
+        # resampled and resized video
+        return video.array[index]

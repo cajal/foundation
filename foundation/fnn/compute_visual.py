@@ -48,7 +48,7 @@ class VisualNetworkRecording:
             raise MissingError("No trials found")
 
         # load stimuli
-        stimuli = data.visual_stimuli(video_id=self.item["video_id"])
+        stimuli = data.visual_trial_stimulus(video_id=self.item["video_id"])
 
         # load perspectives
         if self.item["trial_perspective"]:
