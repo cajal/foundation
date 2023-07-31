@@ -202,7 +202,7 @@ class Video:
         else:
             return ani
 
-    def generate_frames(self, period, array=True, display_progress=True):
+    def generate(self, period, array=True, display_progress=True):
         """
         Parameters
         ----------
