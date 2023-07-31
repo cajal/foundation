@@ -86,8 +86,8 @@ class RecurrentType:
 @schema.lookup
 class Rvt(RecurrentType):
     definition = """
-    common_channels     : int unsigned  # common channels per stream
     attention_channels  : int unsigned  # attention channels per stream
+    projection_channels : int unsigned  # projections channels per stream
     recurrent_channels  : int unsigned  # recurrent channels per stream
     out_channels        : int unsigned  # out channels per stream
     groups              : int unsigned  # groups per stream
