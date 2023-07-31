@@ -1,5 +1,7 @@
 import numpy as np
 from PIL import Image as Frame
+from .resample import flip_index
+from .logging import tqdm
 
 
 class Video:
@@ -169,7 +171,6 @@ class Video:
         """
         from matplotlib import pyplot as plt
         from matplotlib import animation
-        from .resample import flip_index
 
         if self.times is None:
             raise ValueError("Cannot animate without timing information")
@@ -200,3 +201,30 @@ class Video:
 
         else:
             return ani
+
+    def generate_frames(self, period, array=True, display_progress=True):
+        """
+        Parameters
+        ----------
+        period : float
+            sampling period (seconds)
+        array : bool
+            numpy array (True) | PIL Image (False)
+        display_progress : bool
+            display generation progress
+
+        Yields
+        -------
+            np.array | PIL.Image
+                video frame, either as numpy array or PIL Image
+        """
+        index = flip_index(self.times, period)
+
+        if display_progress:
+            index = tqdm(index, desc="Video Frames")
+
+        for i in index:
+            if array:
+                yield np.array(self.frames[i])
+            else:
+                yield self.frames[i]
