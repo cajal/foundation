@@ -181,3 +181,32 @@ class ScanVideoTimeScale:
         # median time scale
         key["time_scale"] = np.nanmedian(rperiod / period)
         self.insert1(key)
+
+
+@schema.computed
+class ScanUnitOrder:
+    definition = """
+    -> ScanUnits
+    -> Trace
+    ---
+    trace_order     : int unsigned  # trace order
+    """
+
+    @property
+    def key_source(self):
+        return ScanUnits.proj()
+
+    def make(self, key):
+        # trace set
+        traces = ScanUnits & key
+        traces = (TraceSet & traces).members
+        traces = traces * Trace.ScanUnit
+
+        # fetch trace ids in order
+        trace_ids = traces.fetch("trace_id", order_by=ScanUnit.primary_key)
+
+        # trace keys
+        keys = [dict(key, trace_id=t, trace_order=i) for i, t in enumerate(trace_ids)]
+
+        # insert
+        self.insert(keys)
