@@ -134,59 +134,47 @@ class RecordingType(DataType):
     """Recording Data"""
 
     @rowmethod
-    def trial_perspectives(self, trial_ids, perspective_index=None, use_cache=False):
+    def trial_perspectives(self, trial_ids):
         """
         Parameters
         ----------
         trial_id : Sequence[str]
             sequence of keys (foundation.recording.trial.Trial)
-        perspective_index : int | None
-            perspective index (specific perspective) | None (all perspectives)
-        use_cache : bool
-            use cache (True) | compute from scratch (False)
 
         Yields
         ------
-        1D array | 2D array
-            [samples] (specific perspective) | [samples, perspectives] (all perspectives)
+        2D array
+            [samples, perspectives]
         """
         raise NotImplementedError()
 
     @rowmethod
-    def trial_modulations(self, trial_ids, modulation_index=None, use_cache=False):
+    def trial_modulations(self, trial_ids):
         """
         Parameters
         ----------
         trial_id : Sequence[str]
             sequence of keys (foundation.recording.trial.Trial)
-        modulation_index : int | None
-            modulation index (specific modulation) | None (all modulations)
-        use_cache : bool
-            use cache (True) | compute from scratch (False)
 
         Yields
         ------
-        1D array | 2D array
-            [samples] (specific modulation) | [samples, modulations] (all modulations)
+        2D array
+            [samples, modulations]
         """
         raise NotImplementedError()
 
     @rowmethod
-    def trial_units(self, trial_ids, unit_index=None, use_cache=False):
+    def trial_units(self, trial_ids):
         """
         Parameters
         ----------
         trial_id : Sequence[str]
             sequence of keys (foundation.recording.trial.Trial)
-        unit_index : int | None
-            unit index (specific unit) | None (all units)
-        use_cache : bool
-            use cache (True) | compute from scratch (False)
 
         Yields
         ------
-        1D array | 2D array
-            [samples] (specific unit) | [samples, units] (all units)
+        2D array
+            [samples, units]
         """
         raise NotImplementedError()
 
@@ -313,19 +301,31 @@ class VisualScan(VisualRecordingType):
 
     @rowproperty
     def dataset(self):
-        from foundation.recording.compute_trace import StandardizedTraces
         from fnn.data import NpyFile, Dataset
+        from foundation.recording.trace import TraceSet
+        from foundation.recording.compute_trace import StandardizedTraces
+        from foundation.recording.scan import ScanUnitOrder, ScanVisualPerspectiveOrder, ScanVisualModulationOrder
 
-        # data keys
+        # keys
         key_v = self.key_video
         key_p = self.key_perspective
         key_m = self.key_modulation
         key_u = self.key_unit
 
-        # data transforms
+        # transforms
         transform_p = (StandardizedTraces & key_p).transform
         transform_m = (StandardizedTraces & key_m).transform
         transform_u = (StandardizedTraces & key_u).transform
+
+        # traces
+        traces_p = merge((TraceSet & key_p).members, ScanVisualPerspectiveOrder & key_p)
+        traces_m = merge((TraceSet & key_m).members, ScanVisualModulationOrder & key_m)
+        traces_u = merge((TraceSet & key_u).members, ScanUnitOrder & key_u)
+
+        # orders
+        order_p = traces_p.fetch("traceset_index", order_by="trace_order")
+        order_m = traces_m.fetch("traceset_index", order_by="trace_order")
+        order_u = traces_u.fetch("traceset_index", order_by="trace_order")
 
         # data lists
         stimuli, perspectives, modulations, units = [], [], [], []
@@ -354,15 +354,15 @@ class VisualScan(VisualRecordingType):
 
             # perspectives
             traces = (recording.ResampledTraces & trial & key_p).fetch1("traces")
-            trial_perspectives = transform_p(traces).astype(np.float32)
+            trial_perspectives = transform_p(traces).astype(np.float32)[:, order_p]
 
             # modulations
             traces = (recording.ResampledTraces & trial & key_m).fetch1("traces")
-            trial_modulations = transform_m(traces).astype(np.float32)
+            trial_modulations = transform_m(traces).astype(np.float32)[:, order_m]
 
             # units
             traces = (recording.ResampledTraces & trial & key_u).fetch1("traces")
-            trial_units = transform_u(traces).astype(np.float32)
+            trial_units = transform_u(traces).astype(np.float32)[:, order_u]
 
             # append
             stimuli.append(NpyFile(trial_stimuli))
@@ -382,59 +382,53 @@ class VisualScan(VisualRecordingType):
         data = pd.DataFrame(data, index=pd.Index(ids, name="trial_id"))
         return Dataset(data)
 
-    def _trial_traces(self, trial_ids, traceset_index, key, use_cache=False):
-        from foundation.recording import cache, compute_trace as compute
+    def _trial_traces(self, trial_ids, datatype):
+        from foundation.recording.trace import TraceSet
+        from foundation.recording.compute_trace import StandardizedTraces
+        from foundation.recording.scan import ScanVisualPerspectiveOrder, ScanVisualModulationOrder, ScanUnitOrder
 
-        if use_cache:
-            # trial keys
-            keys = [{"trial_id": _} for _ in trial_ids]
+        if datatype == "perspective":
+            key = self.key_perspective
+            order = ScanVisualPerspectiveOrder
 
-            # populate cached traces
-            with cache_rowproperty():
-                cache.ResampledTraces.populate(key, keys, display_progress=True, reserve_jobs=True)
+        elif datatype == "modulation":
+            key = self.key_modulation
+            order = ScanVisualModulationOrder
 
-            # load cached traces
-            trials = [(cache.ResampledTraces & key & _).fetch1("traces") for _ in keys]
-
-        if traceset_index is None:
-            # standardize traces
-            transform = (compute.StandardizedTraces & key).transform
-
-            if not use_cache:
-                # compute traces
-                trials = (compute.ResampledTraces & key).trials(trial_ids=trial_ids)
+        elif datatype == "unit":
+            key = self.key_unit
+            order = ScanUnitOrder
 
         else:
-            # specific trace
-            trace = (recording.TraceSet.Member & key & {"traceset_index": traceset_index}).fetch1()
+            raise ValueError(f"datatype `{datatype}` not recognized")
 
-            # standardize trace
-            transform = (compute.StandardizedTrace & trace & key).transform
+        # trace standardization
+        transform = (StandardizedTraces & key).transform
 
-            if use_cache:
-                # index trace
-                trials = (_[:, traceset_index] for _ in trials)
-            else:
-                # compute trace
-                trials = (compute.ResampledTrace & trace & key).trials(trial_ids=trial_ids)
+        # trace order
+        order = merge((TraceSet & key).members, order & key)
+        order = order.fetch("traceset_index", order_by="trace_order")
 
-        # transformed and resampled trace(s)
-        return map(transform, trials)
+        # load trials
+        for trial_id in trial_ids:
+
+            traces = (recording.ResampledTraces & key & {"trial_id": trial_id}).fetch1("traces")
+            yield transform(traces).astype(np.float32)[:, order]
 
     @rowmethod
-    def trial_perspectives(self, trial_ids, perspective_index=None, use_cache=False):
+    def trial_perspectives(self, trial_ids):
         # perspective trace(s)
-        return self._trial_traces(trial_ids, perspective_index, self.key_perspective, use_cache)
+        return self._trial_traces(trial_ids, "perspective")
 
     @rowmethod
-    def trial_modulations(self, trial_ids, modulation_index=None, use_cache=False):
+    def trial_modulations(self, trial_ids):
         # modulation trace(s)
-        return self._trial_traces(trial_ids, modulation_index, self.key_modulation, use_cache)
+        return self._trial_traces(trial_ids, "modulation")
 
     @rowmethod
-    def trial_units(self, trial_ids, unit_index=None, use_cache=False):
+    def trial_units(self, trial_ids):
         # unit trace(s)
-        return self._trial_traces(trial_ids, unit_index, self.key_unit, use_cache)
+        return self._trial_traces(trial_ids, "unit")
 
     @rowmethod
     def visual_trial_ids(self, video_id, trial_filterset_id):
