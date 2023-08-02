@@ -166,7 +166,7 @@ class ScanVideoTimeScale:
     definition = """
     -> scan.Scan
     ---
-    time_scale  : double    # video time scale
+    time_scale      : double    # video time scale
     """
 
     def make(self, key):
@@ -204,6 +204,65 @@ class ScanUnitOrder:
 
         # fetch trace ids in order
         trace_ids = traces.fetch("trace_id", order_by=ScanUnit.primary_key)
+
+        # trace keys
+        keys = [dict(key, trace_id=t, trace_order=i) for i, t in enumerate(trace_ids)]
+
+        # insert
+        self.insert(keys)
+
+
+@schema.computed
+class ScanVisualPerspectiveOrder:
+    definition = """
+    -> ScanVisualPerspectives
+    -> Trace
+    ---
+    trace_order     : int unsigned  # trace order
+    """
+
+    @property
+    def key_source(self):
+        return ScanVisualPerspectives.proj()
+
+    def make(self, key):
+        # trace set
+        traces = ScanVisualPerspectives & key
+        traces = (TraceSet & traces).members
+        traces = traces * Trace.ScanPupil
+
+        # fetch trace ids in order
+        trace_ids = traces.fetch("trace_id", order_by=ScanPupil.primary_key)
+
+        # trace keys
+        keys = [dict(key, trace_id=t, trace_order=i) for i, t in enumerate(trace_ids)]
+
+        # insert
+        self.insert(keys)
+
+
+@schema.computed
+class ScanVisualModulationOrder:
+    definition = """
+    -> ScanVisualModulations
+    -> Trace
+    ---
+    trace_order     : int unsigned  # trace order
+    """
+
+    @property
+    def key_source(self):
+        return ScanVisualModulations.proj()
+
+    def make(self, key):
+        # trace set
+        traces = ScanVisualModulations & key
+        traces = (TraceSet & traces).members
+
+        # fetch trace ids
+        trace_p = (traces & Trace.ScanPupil).fetch1("trace_id")
+        trace_t = (traces & Trace.ScanTreadmill).fetch1("trace_id")
+        trace_ids = [trace_p, trace_t]
 
         # trace keys
         keys = [dict(key, trace_id=t, trace_order=i) for i, t in enumerate(trace_ids)]
