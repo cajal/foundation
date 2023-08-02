@@ -43,17 +43,20 @@ class VisualScanData:
                 proj = {f"{x}_id": f"{projection}_{x}_id" for x in ["resample", "offset", "standardize"]}
                 return spec.proj(..., **proj)
 
-            # trials
-            trialset = recording.ScanTrials & key
-            trials = (TrialSet & trialset).members
+            # all trials
+            all_trials = recording.ScanRecording & key
+            all_trials = (TrialSet & all_trials).members
+
+            # filtered trials
+            filt_trials = recording.ScanTrials & key
 
             # populate trials
-            TrialSamples.populate(trials, spec, display_progress=True, reserve_jobs=True)
-            ResampledTrial.populate(trials, spec, display_progress=True, reserve_jobs=True)
-            TrialTier.populate(trialset, key, display_progress=True, reserve_jobs=True)
+            TrialSamples.populate(all_trials, spec, display_progress=True, reserve_jobs=True)
+            ResampledTrial.populate(all_trials, spec, display_progress=True, reserve_jobs=True)
+            TrialTier.populate(filt_trials, key, display_progress=True, reserve_jobs=True)
 
             # videos
-            videos = merge(trials, TrialVideo)
+            videos = merge(all_trials, TrialVideo)
 
             # populate videos
             ResizedVideo.populate(videos, spec, display_progress=True, reserve_jobs=True)
@@ -78,8 +81,8 @@ class VisualScanData:
                     stats = [{"summary_id": _} for _ in stats]
 
                     # populate traces
-                    TraceSummary.populate(traces, trialset, stats, _spec, display_progress=True, reserve_jobs=True)
-                    ResampledTraces.populate(traceset, trials, _spec, display_progress=True, reserve_jobs=True)
+                    TraceSummary.populate(traces, filt_trials, stats, _spec, display_progress=True, reserve_jobs=True)
+                    ResampledTraces.populate(traceset, all_trials, _spec, display_progress=True, reserve_jobs=True)
 
             # insert
             key = dict(key, training_tier=training_tier, validation_tier=validation_tier)
