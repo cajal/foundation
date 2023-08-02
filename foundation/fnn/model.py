@@ -55,6 +55,7 @@ class NetworkSetInstance(ModelType):
     -> Objective
     -> Optimizer
     -> Scheduler
+    shared          : varchar(1028)     # shared modules (csv)
     parallel        : int unsigned      # parallel group size
     cycle           : int unsigned      # training cycle
     """

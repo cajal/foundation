@@ -46,6 +46,16 @@ class _Instance(ModelType):
         """
         raise NotImplementedError()
 
+    @property
+    def shared(self):
+        """
+        Returns
+        -------
+        Sequence[str] | None
+            shared modules
+        """
+        return
+
     @rowmethod
     def _train(self, rank, network_id):
         """
@@ -123,7 +133,7 @@ class _Instance(ModelType):
 
         # parameters and parallel groups
         params = network.named_parameters()
-        groups = network.parallel_groups(group_size=parallel)
+        groups = network.parallel_groups(group_size=parallel, shared=self.shared)
 
         # train epochs
         for epoch, info in optimizer.optimize(loader=loader, objective=objective, parameters=params, groups=groups):
@@ -273,6 +283,10 @@ class NetworkSetInstance(_Instance):
     @property
     def model_type(self):
         return fnn.Model.NetworkSetInstance
+
+    @property
+    def shared(self):
+        return self.item["shared"].split(",")
 
     @staticmethod
     def _fn(rank, size, model_id, network_ids, port=23456, backend="nccl"):
