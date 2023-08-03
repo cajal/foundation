@@ -53,15 +53,17 @@ class Affine(Standardize):
             [N] -- dtype=float -- affine scale
         homogeneous : 1D array
             [N] -- dtype=bool -- homogeneous | unrestricted transform
+        eps : float
+            small number for numerical stability
         """
         super().__init__(homogeneous)
 
+        self.eps = float(eps)
         self.shift = np.array(shift, dtype=float) * np.logical_not(self.homogeneous)
-        self.scale = np.array(scale, dtype=float)
+        self.scale = np.array(scale, dtype=float).clip(min=self.eps)
 
         assert self.shift.ndim == self.scale.ndim == 1
         assert self.shift.size == self.scale.size == len(self)
-        assert self.scale.min() > eps
 
     def __call__(self, a, inverse=False):
         if inverse:
@@ -81,14 +83,16 @@ class Scale(Standardize):
             [N] -- dtype=float -- divisive scale
         homogeneous : 1D array
             [N] -- dtype=bool -- homogeneous | unrestricted transform
+        eps : float
+            small number for numerical stability
         """
         super().__init__(homogeneous)
 
-        self.scale = np.array(scale, dtype=float)
+        self.eps = float(eps)
+        self.scale = np.array(scale, dtype=float).clip(min=self.eps)
 
         assert self.scale.ndim == 1
         assert self.scale.size == len(self)
-        assert np.min(self.scale) > eps
 
     def __call__(self, a, inverse=False):
         if inverse:
