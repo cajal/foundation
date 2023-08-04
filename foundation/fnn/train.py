@@ -225,6 +225,12 @@ class Optimize(TrainType):
     -> Objective
     """
 
+    @rowproperty
+    def compute(self):
+        from foundation.fnn.compute_train import Optimize
+
+        return Optimize & self
+
 
 # -- Train --
 

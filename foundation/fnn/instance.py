@@ -1,5 +1,6 @@
 from djutils import rowproperty
 from foundation.fnn.train import Train
+from foundation.fnn.network import ModuleSet
 from foundation.fnn.transfer import TransferList
 from foundation.schemas import fnn as schema
 
@@ -35,6 +36,12 @@ class Individual:
     cycle           : int unsigned      # training cycle
     seed            : int unsigned      # seed for initialization
     """
+
+    @rowproperty
+    def compute(self):
+        from foundation.fnn.compute_instance import Individual
+
+        return Individual & self
 
 
 # -- Instance --

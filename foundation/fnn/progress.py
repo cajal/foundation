@@ -22,10 +22,11 @@ class Info:
         from foundation.utils.serialize import torch_save
 
         key["info"] = torch_save(key["info"])
+
         cls.insert1(key)
 
     @rowmethod
-    def load(self, device="cpu"):
+    def info(self, device="cpu"):
         """
         Returns
         -------
@@ -49,7 +50,7 @@ class Info:
             info dataframe
         """
         keys = tqdm(self.fetch("KEY", order_by=self.primary_key))
-        return pd.DataFrame([dict(k, **(self & k).load(device=device)) for k in keys])
+        return pd.DataFrame([dict(k, **(self & k).info(device=device)) for k in keys])
 
 
 class Checkpoint:
@@ -65,11 +66,13 @@ class Checkpoint:
         """
         from foundation.utils.serialize import torch_save
 
-        key["checkpoint"] = torch_save(key["checkpoint"])
+        key["optimizer"] = torch_save(key["optimizer"])
+        key["parameters"] = torch_save(key["parameters"])
+
         cls.insert1(key, replace=True)
 
     @rowmethod
-    def load(self, device="cpu"):
+    def optimizer(self, device="cpu"):
         """
         Parameters
         ----------
@@ -78,159 +81,174 @@ class Checkpoint:
 
         Returns
         -------
-        deserialized object
-            row checkpoint
+        fnn.train.optimizers.Optimizer
+            optimizer
         """
         from foundation.utils.serialize import torch_load
 
-        return torch_load(self.fetch1("checkpoint"), map_location=device)
+        return torch_load(self.fetch1("optimizer"), map_location=device)
+
+    @rowmethod
+    def parameters(self, device="cpu"):
+        """
+        Parameters
+        ----------
+        device : "cpu" | "cuda" | torch.device
+            device to allocate tensors
+
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            parameters
+        """
+        from foundation.utils.serialize import torch_load
+
+        return torch_load(self.fetch1("parameters"), map_location=device)
 
 
-# ----------------------------- Network Progress -----------------------------
+# ----------------------------- Model Progress -----------------------------
 
 
 @schema.lookup
-class NetworkInfo(Info):
+class ModelInfo(Info):
     definition = """
+    -> fnn.Data
     -> fnn.Network
-    -> fnn.Model
-    rank                                        : int unsigned      # training rank
-    epoch                                       : int unsigned      # training epoch
+    -> fnn.Instance
+    epoch           : int unsigned      # training epoch
     ---
-    info                                        : blob@external     # training info
-    network_info_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
+    info            : blob@external     # training info
     """
 
 
 @schema.lookup
-class NetworkCheckpoint(Checkpoint):
+class ModelCheckpoint(Checkpoint):
     definition = """
+    -> fnn.Data
     -> fnn.Network
-    -> fnn.Model
-    rank                                        : int unsigned      # training rank
+    -> fnn.Instance
     ---
-    epoch                                       : int unsigned      # training epoch
-    checkpoint                                  : blob@external     # training checkpoint
-    network_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp         # automatic timestamp
+    epoch           : int unsigned      # training epoch
+    optimizer       : blob@external     # fnn optimizer
+    parameters      : blob@external     # fnn parameters
     """
 
 
 @schema.lookup
-class NetworkDone:
+class ModelDone:
     definition = """
+    -> fnn.Data
     -> fnn.Network
-    -> fnn.Model
-    rank                                        : int unsigned      # training rank
+    -> fnn.Instance
     ---
-    epoch                                       : int unsigned      # training epoch
-    network_done_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
+    epoch           : int unsigned      # training epoch
     """
 
 
-# ----------------------------- Visual Network Descent Progress -----------------------------
+# # ----------------------------- Visual Network Descent Progress -----------------------------
 
 
-@schema.lookup
-class VisualNetworkDescentInfo(Info):
-    definition = """
-    -> fnn.NetworkModel
-    -> fnn.Descent
-    -> fnn.Stimulus
-    -> fnn.Optimizer
-    -> fnn.Scheduler
-    -> fnn.DescentSteps
-    -> utility.Resolution
-    epoch                                       : int unsigned      # descent epoch
-    ---
-    info                                        : blob@external     # descent info
-    descent_info_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
-    """
+# @schema.lookup
+# class VisualNetworkDescentInfo(Info):
+#     definition = """
+#     -> fnn.NetworkModel
+#     -> fnn.Descent
+#     -> fnn.Stimulus
+#     -> fnn.Optimizer
+#     -> fnn.Scheduler
+#     -> fnn.DescentSteps
+#     -> utility.Resolution
+#     epoch                                       : int unsigned      # descent epoch
+#     ---
+#     info                                        : blob@external     # descent info
+#     descent_info_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
+#     """
 
 
-@schema.lookup
-class VisualNetworkDescentCheckpoint(Checkpoint):
-    definition = """
-    -> fnn.NetworkModel
-    -> fnn.Descent
-    -> fnn.Stimulus
-    -> fnn.Optimizer
-    -> fnn.Scheduler
-    -> fnn.DescentSteps
-    -> utility.Resolution
-    ---
-    epoch                                       : int unsigned      # descent epoch
-    checkpoint                                  : blob@external     # descent checkpoint
-    descent_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp         # automatic timestamp
-    """
+# @schema.lookup
+# class VisualNetworkDescentCheckpoint(Checkpoint):
+#     definition = """
+#     -> fnn.NetworkModel
+#     -> fnn.Descent
+#     -> fnn.Stimulus
+#     -> fnn.Optimizer
+#     -> fnn.Scheduler
+#     -> fnn.DescentSteps
+#     -> utility.Resolution
+#     ---
+#     epoch                                       : int unsigned      # descent epoch
+#     checkpoint                                  : blob@external     # descent checkpoint
+#     descent_checkpoint_ts = CURRENT_TIMESTAMP   : timestamp         # automatic timestamp
+#     """
 
 
-@schema.lookup
-class VisualNetworkDescentDone:
-    definition = """
-    -> fnn.NetworkModel
-    -> fnn.Descent
-    -> fnn.Stimulus
-    -> fnn.Optimizer
-    -> fnn.Scheduler
-    -> fnn.DescentSteps
-    -> utility.Resolution
-    ---
-    epoch                                       : int unsigned      # descent epoch
-    descent_done_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
-    """
+# @schema.lookup
+# class VisualNetworkDescentDone:
+#     definition = """
+#     -> fnn.NetworkModel
+#     -> fnn.Descent
+#     -> fnn.Stimulus
+#     -> fnn.Optimizer
+#     -> fnn.Scheduler
+#     -> fnn.DescentSteps
+#     -> utility.Resolution
+#     ---
+#     epoch                                       : int unsigned      # descent epoch
+#     descent_done_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
+#     """
 
 
-# ----------------------------- Visual Unit Descent Progress -----------------------------
+# # ----------------------------- Visual Unit Descent Progress -----------------------------
 
 
-@schema.lookup
-class VisualUnitDescentInfo(Info):
-    definition = """
-    -> fnn.NetworkModel
-    -> fnn.NetworkUnit
-    -> fnn.Descent
-    -> fnn.Stimulus
-    -> fnn.Optimizer
-    -> fnn.Scheduler
-    -> fnn.DescentSteps
-    -> utility.Resolution
-    epoch                                       : int unsigned      # descent epoch
-    ---
-    info                                        : blob@external     # descent info
-    descent_info_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
-    """
+# @schema.lookup
+# class VisualUnitDescentInfo(Info):
+#     definition = """
+#     -> fnn.NetworkModel
+#     -> fnn.NetworkUnit
+#     -> fnn.Descent
+#     -> fnn.Stimulus
+#     -> fnn.Optimizer
+#     -> fnn.Scheduler
+#     -> fnn.DescentSteps
+#     -> utility.Resolution
+#     epoch                                       : int unsigned      # descent epoch
+#     ---
+#     info                                        : blob@external     # descent info
+#     descent_info_ts = CURRENT_TIMESTAMP         : timestamp         # automatic timestamp
+#     """
 
 
-@schema.lookup
-class VisualUnitDescentCheckpoint(Checkpoint):
-    definition = """
-    -> fnn.NetworkModel
-    -> fnn.NetworkUnit
-    -> fnn.Descent
-    -> fnn.Stimulus
-    -> fnn.Optimizer
-    -> fnn.Scheduler
-    -> fnn.DescentSteps
-    -> utility.Resolution
-    ---
-    epoch                                           : int unsigned      # descent epoch
-    checkpoint                                      : blob@external     # descent checkpoint
-    descent_checkpoint_ts = CURRENT_TIMESTAMP       : timestamp         # automatic timestamp
-    """
+# @schema.lookup
+# class VisualUnitDescentCheckpoint(Checkpoint):
+#     definition = """
+#     -> fnn.NetworkModel
+#     -> fnn.NetworkUnit
+#     -> fnn.Descent
+#     -> fnn.Stimulus
+#     -> fnn.Optimizer
+#     -> fnn.Scheduler
+#     -> fnn.DescentSteps
+#     -> utility.Resolution
+#     ---
+#     epoch                                           : int unsigned      # descent epoch
+#     checkpoint                                      : blob@external     # descent checkpoint
+#     descent_checkpoint_ts = CURRENT_TIMESTAMP       : timestamp         # automatic timestamp
+#     """
 
 
-@schema.lookup
-class VisualUnitDescentDone:
-    definition = """
-    -> fnn.NetworkModel
-    -> fnn.NetworkUnit
-    -> fnn.Descent
-    -> fnn.Stimulus
-    -> fnn.Optimizer
-    -> fnn.Scheduler
-    -> fnn.DescentSteps
-    -> utility.Resolution
-    ---
-    epoch                                           : int unsigned      # descent epoch
-    descent_done_ts = CURRENT_TIMESTAMP             : timestamp         # automatic timestamp
-    """
+# @schema.lookup
+# class VisualUnitDescentDone:
+#     definition = """
+#     -> fnn.NetworkModel
+#     -> fnn.NetworkUnit
+#     -> fnn.Descent
+#     -> fnn.Stimulus
+#     -> fnn.Optimizer
+#     -> fnn.Scheduler
+#     -> fnn.DescentSteps
+#     -> utility.Resolution
+#     ---
+#     epoch                                           : int unsigned      # descent epoch
+#     descent_done_ts = CURRENT_TIMESTAMP             : timestamp         # automatic timestamp
+#     """

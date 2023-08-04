@@ -1,4 +1,4 @@
-from djutils import merge, rowproperty, U
+from djutils import merge, rowproperty
 from foundation.virtual import utility, stimulus, recording
 from foundation.schemas import fnn as schema
 

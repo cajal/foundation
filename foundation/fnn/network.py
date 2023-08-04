@@ -1,4 +1,4 @@
-from djutils import rowmethod
+from djutils import rowproperty, rowmethod
 from foundation.fnn.core import Core
 from foundation.fnn.perspective import Perspective
 from foundation.fnn.modulation import Modulation
@@ -6,6 +6,23 @@ from foundation.fnn.readout import Readout, Unit
 from foundation.fnn.shared import Reduce
 from foundation.fnn.data import Data
 from foundation.schemas import fnn as schema
+
+
+# ----------------------------- Module -----------------------------
+
+
+@schema.lookup
+class Module:
+    definition = """
+    module      : varchar(128)  # module name
+    """
+
+
+@schema.set
+class ModuleSet:
+    keys = [Module]
+    name = "moduleset"
+    comment = "module set"
 
 
 # ----------------------------- Network -----------------------------
@@ -16,8 +33,18 @@ from foundation.schemas import fnn as schema
 class NetworkType:
     """Neural Network"""
 
+    @rowproperty
+    def modules(self):
+        """
+        Returns
+        -------
+        List[str]
+            list of module names
+        """
+        raise NotImplementedError()
+
     @rowmethod
-    def module(self, data_id):
+    def network(self, data_id):
         """
         Parameters
         ----------
@@ -47,8 +74,12 @@ class VisualNetwork(NetworkType):
     streams     : int unsigned  # network streams
     """
 
+    @rowproperty
+    def modules(self):
+        return ["core", "perspective", "modulation", "readout", "reduce", "unit"]
+
     @rowmethod
-    def module(self, data_id):
+    def network(self, data_id):
         from fnn.model.networks import Visual
 
         module = Visual(
@@ -80,3 +111,31 @@ class Network:
     links = [VisualNetwork]
     name = "network"
     comment = "fnn network"
+
+
+# -- Computed Network --
+
+
+@schema.computed
+class NetworkModule:
+    definition = """
+    -> Network
+    -> Module
+    """
+
+    @property
+    def key_source(self):
+        return Network.proj()
+
+    def make(self, key):
+        # modules
+        modules = (Network & key).link.modules
+
+        # keys
+        keys = [dict(key, module=m) for m in modules]
+
+        # insert module
+        Module.insert(keys, skip_duplicates=True, ignore_extra_fields=True)
+
+        # insert network module
+        self.insert(keys)
