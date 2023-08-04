@@ -152,7 +152,7 @@ class ParallelCycle(InstanceType):
 
         if main_rank:
             # register done
-            ModelDone.insert1(dict(key, epoch=epoch))
+            ModelDone.insert1(key)
 
 
 @keys

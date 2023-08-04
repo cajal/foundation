@@ -137,11 +137,7 @@ class ModelCheckpoint(Checkpoint):
 @schema.lookup
 class ModelDone:
     definition = """
-    -> fnn.Data
-    -> fnn.Network
-    -> fnn.Instance
-    ---
-    epoch           : int unsigned      # training epoch
+    -> ModelCheckpoint
     """
 
 
