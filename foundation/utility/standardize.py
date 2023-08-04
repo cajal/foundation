@@ -45,7 +45,7 @@ class StandardizeType:
 
 
 @schema.lookup
-class Affine(StandardizeType):
+class ShiftScale(StandardizeType):
     definition = """
     -> Summary.proj(summary_id_shift="summary_id")
     -> Summary.proj(summary_id_scale="summary_id")
@@ -91,6 +91,6 @@ class Scale(StandardizeType):
 
 @schema.link
 class Standardize:
-    links = [Affine, Scale]
+    links = [ShiftScale, Scale]
     name = "standardize"
     comment = "standardization method"

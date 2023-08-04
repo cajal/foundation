@@ -2,100 +2,6 @@ from djutils import rowproperty
 from foundation.schemas import fnn as schema
 
 
-# ----------------------------- Loader -----------------------------
-
-# -- Loader Interface --
-
-
-class LoaderType:
-    """Loader"""
-
-    @rowproperty
-    def loader(self):
-        """
-        Returns
-        -------
-        fnn.train.loaders.DatasetLoader
-            data loader
-        """
-        raise NotImplementedError()
-
-
-# -- Loader Types --
-
-
-@schema.lookup
-class Batches(LoaderType):
-    definition = """
-    sample_size     : int unsigned  # samples in a datapoint
-    batch_size      : int unsigned  # datapoints in a batch
-    training_size   : int unsigned  # training batches in an epoch
-    validation_size : int unsigned  # validation batches in an epoch
-    """
-
-    @rowproperty
-    def loader(self):
-        from fnn.train.loaders import Batches
-
-        return Batches(**self.fetch1())
-
-
-# -- Loader --
-
-
-@schema.link
-class Loader:
-    links = [Batches]
-    name = "loader"
-    comment = "data loader"
-
-
-# ----------------------------- Objective -----------------------------
-
-# -- Objective Interface --
-
-
-class ObjectiveType:
-    """Network Objective"""
-
-    @rowproperty
-    def objective(self):
-        """
-        Returns
-        -------
-        fnn.train.objectives.NetworkObjective
-            network objective
-        """
-        raise NotImplementedError()
-
-
-# -- Objective Types --
-
-
-@schema.lookup
-class NetworkLoss(ObjectiveType):
-    definition = """
-    sample_stream   : bool          # sample stream during training
-    burnin_frames   : int unsigned  # initial losses discarded
-    """
-
-    @rowproperty
-    def objective(self):
-        from fnn.train.objectives import NetworkLoss
-
-        return NetworkLoss(**self.fetch1())
-
-
-# -- Objective --
-
-
-@schema.link
-class Objective:
-    links = [NetworkLoss]
-    name = "objective"
-    comment = "training objective"
-
-
 # ----------------------------- Optimizer -----------------------------
 
 # -- Optimizer Interface --
@@ -194,62 +100,137 @@ class Scheduler:
     comment = "hyperparameter scheduler"
 
 
-# ----------------------------- State -----------------------------
+# ----------------------------- Loader -----------------------------
 
-# -- State Interface --
+# -- Loader Interface --
 
 
-class StateType:
-    """State"""
+class LoaderType:
+    """Loader"""
+
+    @rowproperty
+    def loader(self):
+        """
+        Returns
+        -------
+        fnn.train.loaders.DatasetLoader
+            data loader
+        """
+        raise NotImplementedError()
+
+
+# -- Loader Types --
+
+
+@schema.lookup
+class Batches(LoaderType):
+    definition = """
+    sample_size     : int unsigned  # samples in a datapoint
+    batch_size      : int unsigned  # datapoints in a batch
+    training_size   : int unsigned  # training batches in an epoch
+    validation_size : int unsigned  # validation batches in an epoch
+    """
+
+    @rowproperty
+    def loader(self):
+        from fnn.train.loaders import Batches
+
+        return Batches(**self.fetch1())
+
+
+# -- Loader --
+
+
+@schema.link
+class Loader:
+    links = [Batches]
+    name = "loader"
+    comment = "data loader"
+
+
+# ----------------------------- Objective -----------------------------
+
+# -- Objective Interface --
+
+
+class ObjectiveType:
+    """Network Objective"""
+
+    @rowproperty
+    def objective(self):
+        """
+        Returns
+        -------
+        fnn.train.objectives.NetworkObjective
+            network objective
+        """
+        raise NotImplementedError()
+
+
+# -- Objective Types --
+
+
+@schema.lookup
+class NetworkLoss(ObjectiveType):
+    definition = """
+    sample_stream   : bool          # sample stream during training
+    burnin_frames   : int unsigned  # initial losses discarded
+    """
+
+    @rowproperty
+    def objective(self):
+        from fnn.train.objectives import NetworkLoss
+
+        return NetworkLoss(**self.fetch1())
+
+
+# -- Objective --
+
+
+@schema.link
+class Objective:
+    links = [NetworkLoss]
+    name = "objective"
+    comment = "training objective"
+
+
+# ----------------------------- Train -----------------------------
+
+# -- Train Interface --
+
+
+class TrainType:
+    """Train"""
 
     @rowproperty
     def compute(self):
         """
         Returns
         -------
-        foundation.fnn.compute_state.NetworkState (row)
-           compute state
+        foundation.fnn.compute_train.TrainType (row)
+            compute train
         """
         raise NotImplementedError()
 
 
-# -- State Types --
+# -- Train Types --
 
 
 @schema.lookup
-class Initial(StateType):
+class Optimize(TrainType):
     definition = """
-    seed            : int unsigned      # seed for initialization
+    -> Optimizer
+    -> Scheduler
+    -> Loader
+    -> Objective
     """
 
-    @rowproperty
-    def compute(self):
-        from foundation.fnn.compute_state import Initial
 
-        return Initial & self
-
-
-@schema.lookup
-class SharedCore(StateType):
-    definition = """
-    networkset_id       : char(32)      # key (foundation.fnn.network.NetworkSet)
-    model_id            : char(32)      # key (foundation.fnn.model.Model)
-    freeze              : bool          # freeze core
-    seed                : int unsigned  # seed for non-core initialization
-    """
-
-    @rowproperty
-    def compute(self):
-        from foundation.fnn.compute_state import SharedCore
-
-        return SharedCore & self
-
-
-# -- State --
+# -- Train --
 
 
 @schema.link
-class State:
-    links = [Initial, SharedCore]
-    name = "state"
-    comment = "network state"
+class Train:
+    links = [Optimize]
+    name = "train"
+    comment = "fnn training"

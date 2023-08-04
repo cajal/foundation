@@ -12,14 +12,14 @@ class StateType:
     """Network State"""
 
     @rowmethod
-    def state(self, network_id, initialize=True):
+    def state(self, network_id, data_id):
         """
         Parameters
         ----------
         network_id : str
             key (foundation.fnn.network.Network)
-        initialize : bool
-            initialize network parameters
+        data_id : str
+            key (foundation.fnn.data.Data)
 
         Returns
         -------
@@ -43,7 +43,7 @@ class Initial(StateType):
         ]
 
     @rowmethod
-    def state(self, network_id):
+    def state(self, network_id, data_id):
         from foundation.utils import torch_rng
         from foundation.fnn.network import Network
 
@@ -52,52 +52,52 @@ class Initial(StateType):
             logger.info(f"Initializing parameters with random seed {self.item['seed']}")
 
             # build module
-            return (Network & {"network_id": network_id}).link.module
+            return (Network & {"network_id": network_id}).link.module(data_id=data_id)
 
 
-@keys
-class SharedCore(StateType):
-    """Shared Core"""
+# @keys
+# class SharedCore(StateType):
+#     """Shared Core"""
 
-    @property
-    def keys(self):
-        models = fnn.NetworkSetModel & {"module": "core", "shared": True}
-        return [
-            fnn.SharedCore & models & fnn.NetworkSetCore,
-        ]
+#     @property
+#     def keys(self):
+#         models = fnn.NetworkSetModel & {"module": "core", "shared": True}
+#         return [
+#             fnn.SharedCore & models & fnn.NetworkSetCore,
+#         ]
 
-    @rowmethod
-    def state(self, network_id):
-        from foundation.utils import torch_rng
-        from foundation.fnn.model import NetworkModel
-        from foundation.fnn.network import Network, NetworkSet, NetworkSetCore
+#     @rowmethod
+#     def state(self, network_id):
+#         from foundation.utils import torch_rng
+#         from foundation.fnn.model import NetworkModel
+#         from foundation.fnn.network import Network, NetworkSet, NetworkSetCore
 
-        # network
-        net = (Network & {"network_id": network_id}).link
+#         # network
+#         net = (Network & {"network_id": network_id}).link
 
-        # ensure core_id and streams match
-        assert net.fetch1("core_id", "streams") == (NetworkSetCore & self.item).fetch1("core_id", "streams")
+#         # ensure core_id and streams match
+#         assert net.fetch1("core_id", "streams") == (NetworkSetCore & self.item).fetch1("core_id", "streams")
 
-        with torch_rng(seed=self.item["seed"]):
-            logger.info(f"Initializing non-core parameters with random seed {self.item['seed']}")
+#         with torch_rng(seed=self.item["seed"]):
+#             logger.info(f"Initializing non-core parameters with random seed {self.item['seed']}")
 
-            # build module
-            network = net.module
+#             # build module
+#             network = net.module
 
-        logger.info(f"Transferring core parameters from {self.item['networkset_id']}")
+#         logger.info(f"Transferring core parameters from {self.item['networkset_id']}")
 
-        # load model
-        nets = (NetworkSet & self.item).members
-        key = nets & {"networkset_index": 0}
-        model = (NetworkModel & key & self.item).model
+#         # load model
+#         nets = (NetworkSet & self.item).members
+#         key = nets & {"networkset_index": 0}
+#         model = (NetworkModel & key & self.item).model
 
-        # transfer parameters
-        network.core.load_state_dict(model.core.state_dict())
+#         # transfer parameters
+#         network.core.load_state_dict(model.core.state_dict())
 
-        if self.item["freeze"]:
-            logger.info("Freezing core")
+#         if self.item["freeze"]:
+#             logger.info("Freezing core")
 
-            # freeze core
-            network.core.freeze(True)
+#             # freeze core
+#             network.core.freeze(True)
 
-        return network
+#         return network

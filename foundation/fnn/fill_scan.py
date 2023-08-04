@@ -39,8 +39,8 @@ class VisualScanData:
             # data specification
             spec = fnn.Spec.VisualSpec & key
 
-            def proj_spec(projection):
-                proj = {f"{x}_id": f"{projection}_{x}_id" for x in ["resample", "offset", "standardize"]}
+            def proj_spec(datatype):
+                proj = {f"{_}_id": f"{_}_id_{datatype}" for _ in ["resample", "offset", "standardize"]}
                 return spec.proj(..., **proj)
 
             # all trials

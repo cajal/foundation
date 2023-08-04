@@ -233,7 +233,7 @@ class VisualScan(VisualRecordingType):
         return (fnn.Spec.VisualSpec & self.item).proj("height", "width", "resize_id", "rate_id").fetch1()
 
     def _key_traces(self, datatype):
-        keymap = {f"{_}_id": f"{datatype}_{_}_id" for _ in ["resample", "offset", "standardize"]}
+        keymap = {f"{_}_id": f"{_}_id_{datatype}" for _ in ["resample", "offset", "standardize"]}
         return (recording.ScanTrials * fnn.Spec.VisualSpec).proj("rate_id", "trialset_id", **keymap)
 
     @rowproperty

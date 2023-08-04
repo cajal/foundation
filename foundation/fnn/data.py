@@ -14,15 +14,15 @@ class VisualSpec:
     -> utility.Resolution
     -> utility.Resize
     -> utility.Rate
-    -> utility.Resample.proj(perspective_resample_id="resample_id")
-    -> utility.Resample.proj(modulation_resample_id="resample_id")
-    -> utility.Resample.proj(unit_resample_id="resample_id")
-    -> utility.Offset.proj(perspective_offset_id="offset_id")
-    -> utility.Offset.proj(modulation_offset_id="offset_id")
-    -> utility.Offset.proj(unit_offset_id="offset_id")
-    -> utility.Standardize.proj(perspective_standardize_id="standardize_id")
-    -> utility.Standardize.proj(modulation_standardize_id="standardize_id")
-    -> utility.Standardize.proj(unit_standardize_id="standardize_id")
+    -> utility.Resample.proj(resample_id_perspective="resample_id")
+    -> utility.Resample.proj(resample_id_modulation="resample_id")
+    -> utility.Resample.proj(resample_id_unit="resample_id")
+    -> utility.Offset.proj(offset_id_perspective="offset_id")
+    -> utility.Offset.proj(offset_id_modulation="offset_id")
+    -> utility.Offset.proj(offset_id_unit="offset_id")
+    -> utility.Standardize.proj(standardize_id_perspective="standardize_id")
+    -> utility.Standardize.proj(standardize_id_modulation="standardize_id")
+    -> utility.Standardize.proj(standardize_id_unit="standardize_id")
     """
 
 
@@ -85,4 +85,11 @@ class VisualScan(DataType):
 class Data:
     links = [VisualScan]
     name = "data"
-    comment = "network data"
+    comment = "fnn data"
+
+
+@schema.linkset
+class DataSet:
+    link = Data
+    name = "dataset"
+    comment = "fnn data set"
