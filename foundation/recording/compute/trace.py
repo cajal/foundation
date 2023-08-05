@@ -153,18 +153,28 @@ class Trace:
         ]
 
     @rowproperty
-    def valid_trials(self):
+    def trials(self):
         """
         Returns
         -------
         foundation.recording.Trial (rows)
-            valid trials
+            all trials associated with the trace
         """
         from foundation.recording.trial import Trial, TrialSet
 
         # trace trials
         key = merge(self.key, recording.TraceTrials)
         return Trial & (TrialSet & key).members
+
+    @rowproperty
+    def trial_ids(self):
+        """
+        Returns
+        -------
+        Set[str]
+            keys (foundation.recording.Trials)
+        """
+        return set(self.trials.fetch("trial_id"))
 
 
 @keys
@@ -178,12 +188,12 @@ class Traces:
         ]
 
     @rowproperty
-    def valid_trials(self):
+    def trials(self):
         """
         Returns
         -------
         foundation.recording.Trial (rows)
-            valid trials
+            all trials associated with the trace set
         """
         from foundation.recording.trace import TraceSet
         from foundation.recording.trial import Trial, TrialSet
@@ -193,179 +203,15 @@ class Traces:
         key = merge(key, recording.TraceTrials)
         return Trial & (TrialSet & key).members
 
-
-# ----------------------------- Resampling -----------------------------
-
-
-@keys
-class ResampledTrace:
-    """Resampled Trace"""
-
-    @property
-    def keys(self):
-        return [
-            recording.Trace,
-            utility.Resample,
-            utility.Offset,
-            utility.Rate,
-        ]
-
     @rowproperty
-    def resampler(self):
+    def trial_ids(self):
         """
         Returns
         -------
-        foundation.utils.resample.Resample
-            callable, trace resampler
+        Set[str]
+            keys (foundation.recording.Trials)
         """
-        from foundation.utility.resample import Rate, Offset, Resample
-        from foundation.recording.trace import Trace
-
-        # resampling period, offset, method
-        period = (Rate & self.item).link.period
-        offset = (Offset & self.item).link.offset
-        resample = (Resample & self.item).link.resample
-
-        # trace resampler
-        trace = (Trace & self.item).link.compute
-        return resample(times=trace.times, values=trace.values, target_period=period, target_offset=offset)
-
-    @rowmethod
-    def trial(self, trial_id):
-        """
-        Parameters
-        ----------
-        trial_id : str
-            key (foundation.recording.trial.Trial)
-
-        Returns
-        -------
-        1D array
-            [samples] -- resampled trace
-        """
-        # verify trial_id
-        valid_ids = (Trace & self.item).valid_trials.fetch("trial_id")
-        assert trial_id in valid_ids, "Invalid trial_id"
-
-        # trial start and end times
-        start, end = (recording.TrialBounds & {"trial_id": trial_id}).fetch1("start", "end")
-
-        # resampled trace
-        return self.resampler(start, end)
-
-    @rowmethod
-    def trials(self, trial_ids):
-        """
-        Parameters
-        ----------
-        trial_id : Sequence[str]
-            sequence of keys (foundation.recording.trial.Trial)
-
-        Yields
-        ------
-        1D array
-            [samples] -- resampled trace
-        """
-        # verify trial_ids
-        valid_ids = (Trace & self.item).valid_trials.fetch("trial_id")
-        assert not set(trial_ids) - set(valid_ids), "Invalid trial_ids"
-
-        # trace resampler
-        resampler = self.resampler
-
-        for trial_id in trial_ids:
-            # trial start and end times
-            start, end = (recording.TrialBounds & {"trial_id": trial_id}).fetch1("start", "end")
-
-            # resampled trace
-            yield resampler(start, end)
-
-
-@keys
-class ResampledTraces:
-    """Resampled Trace Set"""
-
-    @property
-    def keys(self):
-        return [
-            recording.TraceSet,
-            utility.Resample,
-            utility.Offset,
-            utility.Rate,
-        ]
-
-    @rowproperty
-    def resamplers(self):
-        """
-        Returns
-        -------
-        tuple[foundation.utils.resample.Resample]
-            tuple of callables, trace resamplers, ordered by traceset_index
-        """
-        from foundation.recording.trace import TraceSet
-
-        # trace set
-        traces = (TraceSet & self.item).members
-        traces = traces.fetch("trace_id", order_by="traceset_index", as_dict=True)
-        traces = tqdm(traces, desc="Traces")
-
-        # trace resamplers
-        resamplers = []
-        for trace in traces:
-            resampler = (ResampledTrace & trace & self.item).resampler
-            resamplers.append(resampler)
-
-        return tuple(resamplers)
-
-    @rowmethod
-    def trial(self, trial_id):
-        """
-        Parameters
-        ----------
-        trial_id : str
-            key (foundation.recording.trial.Trial)
-
-        Returns
-        -------
-        2D array
-            [samples, traces] -- resampled traces, ordered by traceset index
-        """
-        # verify trial_id
-        valid_ids = (Traces & self.item).valid_trials.fetch("trial_id")
-        assert trial_id in valid_ids, "Invalid trial_id"
-
-        # trial start and end times
-        start, end = (recording.TrialBounds & {"trial_id": trial_id}).fetch1("start", "end")
-
-        # resampled traces
-        return np.stack([r(start, end) for r in self.resamplers], axis=1)
-
-    @rowmethod
-    def trials(self, trial_ids):
-        """
-        Parameters
-        ----------
-        trial_id : Sequence[str]
-            sequence of keys (foundation.recording.trial.Trial)
-
-        Yields
-        ------
-        2D array
-            [samples, traces] -- resampled traces (ordered by traceset index)
-        """
-        # verify trial_ids
-        valid_ids = (Traces & self.item).valid_trials.fetch("trial_id")
-        assert not set(trial_ids) - set(valid_ids), "Invalid trial_ids"
-
-        # trace resamplers
-        resamplers = self.resamplers
-
-        for trial_id in trial_ids:
-            # trial start and end times
-            start, end = (recording.TrialBounds & {"trial_id": trial_id}).fetch1("start", "end")
-
-            # resampled traces
-            yield np.stack([r(start, end) for r in resamplers], axis=1)
+        return set(self.trials.fetch("trial_id"))
 
 
 # ----------------------------- Statistics -----------------------------
