@@ -5,6 +5,9 @@ from foundation.recording.trace import TraceSet
 from foundation.schemas import recording as schema
 
 
+# ----------------------------- Resample -----------------------------
+
+
 @schema.computed
 class TrialSamples:
     definition = """

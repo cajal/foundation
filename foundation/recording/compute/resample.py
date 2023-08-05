@@ -2,7 +2,7 @@ from djutils import keys, merge, rowproperty
 from foundation.virtual import utility, recording
 
 
-# ----------------------------- Resampling -----------------------------
+# ----------------------------- Resample -----------------------------
 
 
 @keys

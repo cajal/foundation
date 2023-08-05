@@ -3,6 +3,9 @@ from foundation.stimulus.video import Video
 from foundation.schemas import stimulus as schema
 
 
+# ---------------------------- Resize ----------------------------
+
+
 @schema.computed
 class ResizedVideo:
     definition = """
