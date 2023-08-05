@@ -31,7 +31,7 @@ class TraceSummary:
         """
         from foundation.utility.stat import Summary
         from foundation.recording.trial import TrialSet
-        from foundation.recording.compute import ResampledTrace
+        from foundation.recording.compute.resample import ResampledTrace
 
         # recording trials
         trial_ids = (TrialSet & self.item).members.fetch("trial_id", order_by="trialset_index")
