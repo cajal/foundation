@@ -107,25 +107,23 @@ class VisualScanFoundationModel:
     def fill(self):
         from foundation.fnn.model import Model
 
-        if __name__ == "__main__":
+        for key in self.key:
 
-            for key in self.key:
+            # instance parameters
+            instance = (fnn.Instance.Foundation & key).fetch1()
+            instance.pop("instance_id")
 
-                # instance parameters
-                instance = (fnn.Instance.Foundation & key).fetch1()
-                instance.pop("instance_id")
+            # train each cycle sequentially
+            for cycle in range(instance["cycle"] + 1):
 
-                # train each cycle sequentially
-                for cycle in range(instance["cycle"] + 1):
+                # break if previous model cycle has not been trained
+                if cycle and not Model & _key:
+                    break
 
-                    # break if previous model cycle has not been trained
-                    if cycle and not Model & _key:
-                        break
+                # cycle instance
+                _instance = dict(instance, cycle=cycle)
+                _instance_id = (fnn.Instance.Foundation & _instance).fetch1("instance_id")
 
-                    # cycle instance
-                    _instance = dict(instance, cycle=cycle)
-                    _instance_id = (fnn.Instance.Foundation & _instance).fetch1("instance_id")
-
-                    # populate model
-                    _key = dict(key, instance_id=_instance_id)
-                    Model.populate(_key, reserve_jobs=True)
+                # populate model
+                _key = dict(key, instance_id=_instance_id)
+                Model.populate(_key, reserve_jobs=True)
