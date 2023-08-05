@@ -303,7 +303,7 @@ class VisualScan(VisualRecordingType):
     def dataset(self):
         from fnn.data import NpyFile, Dataset
         from foundation.recording.trace import TraceSet
-        from foundation.recording.compute_trace import StandardizedTraces
+        from foundation.recording.compute.standardize import StandardizedTraces
         from foundation.recording.scan import ScanUnitOrder, ScanVisualPerspectiveOrder, ScanVisualModulationOrder
 
         # keys
@@ -384,7 +384,7 @@ class VisualScan(VisualRecordingType):
 
     def _trial_traces(self, trial_ids, datatype):
         from foundation.recording.trace import TraceSet
-        from foundation.recording.compute_trace import StandardizedTraces
+        from foundation.recording.compute.standardize import StandardizedTraces
         from foundation.recording.scan import ScanVisualPerspectiveOrder, ScanVisualModulationOrder, ScanUnitOrder
 
         if datatype == "perspective":

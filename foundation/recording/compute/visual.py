@@ -62,7 +62,7 @@ class VisualResponse:
         foundation.utils.response.Trials
             visual response trials -- ordered by trial start time
         """
-        from foundation.recording.compute_trace import ResampledTrace
+        from foundation.recording.compute.resample import ResampledTrace
         from foundation.utils.response import Trials
 
         # visual trials

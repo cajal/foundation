@@ -18,7 +18,7 @@ class TraceType:
         """
         Returns
         -------
-        foundation.recording.compute_trace.TraceType (row)
+        foundation.recording.compute.trace.TraceType (row)
             compute trace
         """
         raise NotImplementedError()
@@ -37,7 +37,7 @@ class ScanUnit(TraceType):
 
     @rowproperty
     def compute(self):
-        from foundation.recording.compute_trace import ScanUnit
+        from foundation.recording.compute.trace import ScanUnit
 
         return ScanUnit & self
 
@@ -50,7 +50,7 @@ class ScanPupil(TraceType):
 
     @rowproperty
     def compute(self):
-        from foundation.recording.compute_trace import ScanPupil
+        from foundation.recording.compute.trace import ScanPupil
 
         return ScanPupil & self
 
@@ -64,7 +64,7 @@ class ScanTreadmill(TraceType):
 
     @rowproperty
     def compute(self):
-        from foundation.recording.compute_trace import ScanTreadmill
+        from foundation.recording.compute.trace import ScanTreadmill
 
         return ScanTreadmill & self
 
