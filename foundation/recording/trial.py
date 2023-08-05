@@ -17,7 +17,7 @@ class TrialType:
         """
         Returns
         -------
-        foundation.recording.compute_trial.TrialType (row)
+        foundation.recording.compute.trial.TrialType (row)
             compute trial
         """
         raise NotImplementedError()
@@ -34,7 +34,7 @@ class ScanTrial(TrialType):
 
     @rowproperty
     def compute(self):
-        from foundation.recording.compute_trial import ScanTrial
+        from foundation.recording.compute.trial import ScanTrial
 
         return ScanTrial & self
 
@@ -83,22 +83,6 @@ class TrialVideo:
 
     def make(self, key):
         key["video_id"] = (Trial & key).link.compute.video_id
-        self.insert1(key)
-
-
-@schema.computed
-class TrialSamples:
-    definition = """
-    -> Trial
-    -> utility.Rate
-    ---
-    samples     : int unsigned      # number of samples
-    """
-
-    def make(self, key):
-        from foundation.recording.compute_trial import ResampledTrial
-
-        key["samples"] = (ResampledTrial & key).samples
         self.insert1(key)
 
 

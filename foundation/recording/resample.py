@@ -1,8 +1,27 @@
 import numpy as np
 from foundation.virtual import utility
-from foundation.recording.trial import Trial, TrialSet
-from foundation.recording.trace import Trace, TraceSet
+from foundation.recording.trial import Trial
+from foundation.recording.trace import TraceSet
 from foundation.schemas import recording as schema
+
+
+@schema.computed
+class TrialSamples:
+    definition = """
+    -> Trial
+    -> utility.Rate
+    ---
+    samples     : int unsigned      # number of samples
+    """
+
+    def make(self, key):
+        from foundation.recording.compute.resample import ResampledTrial
+
+        # number of samples
+        key["samples"] = (ResampledTrial & key).samples
+
+        # insert
+        self.insert1(key)
 
 
 @schema.computed
@@ -15,12 +34,12 @@ class ResampledTrial:
     """
 
     def make(self, key):
-        from foundation.recording.compute_trial import ResampledTrial
+        from foundation.recording.compute.resample import ResampledTrial
 
         # resampled flip indices
         index = (ResampledTrial & key).flip_index
 
-        # insert key
+        # insert
         self.insert1(dict(key, index=index))
 
 
@@ -38,7 +57,7 @@ class ResampledTraces:
     """
 
     def make(self, key):
-        from foundation.recording.compute_trace import ResampledTraces
+        from foundation.recording.compute.resample import ResampledTraces
 
         # resampled traces
         traces = (ResampledTraces & key).trial(trial_id=key["trial_id"])
@@ -46,5 +65,5 @@ class ResampledTraces:
         # trace values finite
         finite = np.isfinite(traces).all()
 
-        # insert key
+        # insert
         self.insert1(dict(key, traces=traces, finite=bool(finite)))
