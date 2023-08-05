@@ -1,4 +1,4 @@
-from djutils import rowproperty, rowmethod
+from djutils import rowmethod
 from foundation.fnn.data import Data
 from foundation.fnn.network import Network
 from foundation.fnn.instance import Instance
@@ -50,16 +50,21 @@ class Model:
         Returns
         -------
         dict[str, torch.Tensor]
-            pytorch state dict
+            network parameters
         """
         raise NotImplementedError()
 
-    @rowproperty
-    def model(self):
+    @rowmethod
+    def model(self, device="cpu"):
         """
+        Parameters
+        ----------
+        device : "cpu" | "cuda" | torch.device
+            device to allocate tensors
+
         Returns
         -------
         fnn.networks.Network
-            trained network model
+            trained network
         """
         raise NotImplementedError()

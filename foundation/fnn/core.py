@@ -86,14 +86,16 @@ class RecurrentType:
 @schema.lookup
 class Rvt(RecurrentType):
     definition = """
+    in_channels         : int unsigned  # in channels per stream
+    out_channels        : int unsigned  # out channels per stream
+    hidden_channels     : int unsigned  # hidden channels per stream
     attention_channels  : int unsigned  # attention channels per stream
     projection_channels : int unsigned  # projection channels per stream
-    recurrent_channels  : int unsigned  # recurrent channels per stream
-    out_channels        : int unsigned  # out channels per stream
     groups              : int unsigned  # groups per stream
     heads               : int unsigned  # heads per stream
     spatial             : int unsigned  # spatial kernel size
     init_gate           : decimal(6, 4) # initial gate bias
+    nonlinear           : varchar(128)  # nonlinearity
     dropout             : decimal(6, 6) # dropout probability
     """
 
@@ -107,8 +109,9 @@ class Rvt(RecurrentType):
 @schema.lookup
 class ConvLstm(RecurrentType):
     definition = """
-    recurrent_channels  : int unsigned  # recurrent channels per stream
+    in_channels         : int unsigned  # in channels per stream
     out_channels        : int unsigned  # out channels per stream
+    hidden_channels     : int unsigned  # hidden channels per stream
     groups              : int unsigned  # groups per stream
     spatial             : int unsigned  # spatial kernel size
     init_input          : decimal(6, 4) # initial input gate bias
