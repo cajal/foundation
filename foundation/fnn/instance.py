@@ -1,7 +1,8 @@
 from djutils import rowproperty
-from foundation.fnn.train import Train
-from foundation.fnn.network import ModuleSet
 from foundation.fnn.transfer import TransferList
+from foundation.fnn.network import ModuleSet
+from foundation.fnn.data import DataSet
+from foundation.fnn.train import Train
 from foundation.schemas import fnn as schema
 
 
@@ -44,11 +45,30 @@ class Individual:
         return Individual & self
 
 
+@schema.lookup
+class Foundation:
+    definition = """
+    -> TransferList
+    -> ModuleSet
+    -> DataSet
+    -> Train
+    parallel        : int unsigned      # parallel group size
+    cycle           : int unsigned      # training cycle
+    seed            : int unsigned      # seed for initialization
+    """
+
+    @rowproperty
+    def compute(self):
+        from foundation.fnn.compute.instance import Foundation
+
+        return Foundation & self
+
+
 # -- Instance --
 
 
 @schema.link
 class Instance:
-    links = [Individual]
+    links = [Individual, Foundation]
     name = "instance"
     comment = "fnn instance"

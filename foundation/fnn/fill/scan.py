@@ -4,7 +4,7 @@ from foundation.virtual import recording, fnn
 
 @keys
 class VisualScanData:
-    """Scan Data"""
+    """Visual Scan Data"""
 
     @property
     def keys(self):
@@ -91,3 +91,41 @@ class VisualScanData:
 
         # fill
         Data.fill()
+
+
+@keys
+class VisualScanFoundationModel:
+    """Visual Scan Foundation Model"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.Network,
+            fnn.Instance.Foundation,
+        ]
+
+    def fill(self):
+        from foundation.fnn.model import Model
+
+        if __name__ == "__main__":
+
+            for key in self.key:
+
+                # instance parameters
+                instance = (fnn.Instance.Foundation & key).fetch1()
+                instance.pop("instance_id")
+
+                # train each cycle sequentially
+                for cycle in range(instance["cycle"] + 1):
+
+                    # break if previous model cycle has not been trained
+                    if cycle and not Model & _key:
+                        break
+
+                    # cycle instance
+                    _instance = dict(instance, cycle=cycle)
+                    _instance_id = (fnn.Instance.Foundation & _instance).fetch1("instance_id")
+
+                    # populate model
+                    _key = dict(key, instance_id=_instance_id)
+                    Model.populate(_key, reserve_jobs=True)

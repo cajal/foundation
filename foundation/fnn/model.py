@@ -1,5 +1,5 @@
 from djutils import rowmethod
-from foundation.fnn.data import Data
+from foundation.fnn.data import Data, DataSet
 from foundation.fnn.network import Network
 from foundation.fnn.instance import Instance
 from foundation.fnn.progress import ModelDone
@@ -21,7 +21,11 @@ class Model:
 
     @property
     def key_source(self):
-        return Data.proj() * Network.proj() * Instance.proj()
+        key = [
+            Instance.Individual,
+            Instance.Foundation * DataSet.Member & "dataset_index=0",
+        ]
+        return (Data * Network * Instance).proj() & key
 
     def make(self, key):
         # data

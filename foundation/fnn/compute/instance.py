@@ -1,4 +1,4 @@
-from djutils import keys, rowmethod
+from djutils import keys, rowmethod, rowproperty
 from foundation.utils import logger
 from foundation.virtual import fnn
 
@@ -47,7 +47,7 @@ class ParallelCycle(InstanceType):
         """
         raise NotImplementedError()
 
-    @property
+    @rowproperty
     def shared(self):
         """
         Returns
@@ -181,8 +181,8 @@ class Individual(ParallelCycle):
             key (foundation.fnn.data.Data)
         network_id : str
             key (foundation.fnn.network.Network)
-        network_id : str
-            key (foundation.fnn.network.Network)
+        instance_id : str
+            key (foundation.fnn.instance.Instance)
         port : int
             tcp port
         backend : str
@@ -240,3 +240,117 @@ class Individual(ParallelCycle):
 
         # yield model
         yield data_id, network_id
+
+
+@keys
+class Foundation(ParallelCycle):
+    """Foundation"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.Foundation,
+        ]
+
+    @property
+    def instance_type(self):
+        return fnn.Instance.Foundation
+
+    @rowproperty
+    def shared(self):
+        from foundation.fnn.network import ModuleSet
+
+        # shared modules
+        modules = (ModuleSet & self.item).members
+
+        # module names
+        return modules.fetch("module", order_by="moduleset_index").tolist()
+
+    @staticmethod
+    def _spawn(rank, size, data_ids, network_id, instance_id, port=23456, backend="nccl"):
+        """
+        Parameters
+        ----------
+        rank : int
+            distributed rank
+        size : int
+            distributed size
+        data_ids : List[str]
+            key (foundation.fnn.data.Data)
+        network_id : str
+            key (foundation.fnn.network.Network)
+        instance_id : str
+            key (foundation.fnn.instance.Instance)
+        port : int
+            tcp port
+        backend : str
+            'nccl' | 'mpi' | 'gloo' | 'ucc'
+        """
+        from torch.cuda import device
+        from torch.distributed import init_process_group
+
+        # main rank
+        main = rank % self.item["parallel"] == 0
+
+        # cuda device
+        with device(rank):
+
+            # distributed process group
+            init_process_group(
+                backend=backend,
+                init_method=f"tcp://0.0.0.0:{port}",
+                rank=rank,
+                world_size=size,
+            )
+
+            # model instance
+            key = fnn.Instance.Foundation & {"instance_id": instance_id}
+            instance = Foundation & key
+
+            # instantiate model
+            instance._instantiate(data_id=data_ids[rank], network_id=network_id, main=main)
+
+    @rowmethod
+    def instantiate(self, data_id, network_id):
+        from random import randint
+        from torch.cuda import device_count
+        from torch.multiprocessing import spawn
+        from foundation.fnn.data import DataSet
+        from foundation.fnn.progress import ModelCheckpoint
+
+        # tcp port
+        port = randint(10000, 60000)
+
+        # data set
+        data_ids = set((DataSet & self.item).members.fetch("data_id"))
+        assert data_id in data_ids, "Invalid data_id"
+
+        # parallel group size, instance_id
+        parallel, instance_id = (fnn.Instance.Foundation & self.item).fetch1("parallel", "instance_id")
+        size = parallel * len(data_ids)
+
+        # verify cuda devices
+        assert device_count() >= size, "Insufficient cuda devices"
+
+        # verify checkpoints
+        checkpoint = ModelCheckpoint & {"network_id": network_id, "instance_id": instance_id}
+        if checkpoint:
+            epochs, _data_ids = map(set, checkpoint.fetch("epoch", "data_id"))
+            assert data_ids == _data_ids, "Invalid checkpoint data_ids"
+            assert len(epochs) == 1, "Invalid checkpoint epochs"
+
+        # instantiate with multiprocessing
+        conn = self.key.connection
+        conn.close()
+        spawn(
+            Individual._spawn,
+            args=(size, sorted(data_ids), network_id, instance_id, port),
+            nprocs=size,
+            join=True,
+        )
+        conn.connect()
+
+        # yield models
+        for data_id in sorted(data_ids):
+
+            yield data_id, network_id
