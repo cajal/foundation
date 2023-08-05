@@ -94,6 +94,43 @@ class VisualScanData:
 
 
 @keys
+class VisualScanIndividualModel:
+    """Visual Scan Individual Model"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.Data,
+            fnn.Network,
+            fnn.Instance.Individual,
+        ]
+
+    def fill(self):
+        from foundation.fnn.model import Model
+
+        for key in self.key:
+
+            # instance parameters
+            instance = (fnn.Instance.Individual & key).fetch1()
+            instance.pop("instance_id")
+
+            # train each cycle sequentially
+            for cycle in range(instance["cycle"] + 1):
+
+                # break if previous model cycle has not been trained
+                if cycle and not Model & _key:
+                    break
+
+                # cycle instance
+                _instance = dict(instance, cycle=cycle)
+                _instance_id = (fnn.Instance.Individual & _instance).fetch1("instance_id")
+
+                # populate model
+                _key = dict(key, instance_id=_instance_id)
+                Model.populate(_key, reserve_jobs=True)
+
+
+@keys
 class VisualScanFoundationModel:
     """Visual Scan Foundation Model"""
 
