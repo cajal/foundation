@@ -290,7 +290,8 @@ class Foundation(ParallelCycle):
         from torch.distributed import init_process_group
 
         # main rank
-        main = rank % self.item["parallel"] == 0
+        parallel = (fnn.Instance.Foundation & {"instance_id": instance_id}).fetch1("parallel")
+        main = rank % parallel == 0
 
         # cuda device
         with device(rank):
