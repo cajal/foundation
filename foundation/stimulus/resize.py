@@ -1,4 +1,3 @@
-import numpy as np
 from foundation.virtual import utility
 from foundation.stimulus.video import Video
 from foundation.schemas import stimulus as schema
@@ -17,7 +16,7 @@ class ResizedVideo:
     def make(self, key):
         from foundation.stimulus.compute.resize import ResizedVideo
 
-        # resize video
+        # resized video
         video = (ResizedVideo & key).video
 
         # insert key
