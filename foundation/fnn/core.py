@@ -95,7 +95,6 @@ class Rvt(RecurrentType):
     heads               : int unsigned  # heads per stream
     spatial             : int unsigned  # spatial kernel size
     init_gate           : decimal(6, 4) # initial gate bias
-    nonlinear           : varchar(128)  # nonlinearity
     dropout             : decimal(6, 6) # dropout probability
     """
 
