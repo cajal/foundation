@@ -1,4 +1,4 @@
-from djutils import keys, rowproperty, rowmethod
+from djutils import keys, rowproperty
 from foundation.virtual import utility, stimulus
 
 
