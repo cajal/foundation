@@ -58,7 +58,7 @@ class Optimize(TrainType):
     def train(self, dataset, network, groups=None, checkpoint=None, cycle=0):
         from foundation.fnn.train import Optimizer, Scheduler, Loader, Objective
 
-        if optimizer is None:
+        if checkpoint is None:
             # scheduler
             scheduler = (Scheduler & self.item).link.scheduler
             scheduler._init(epoch=0, cycle=cycle)
@@ -66,6 +66,10 @@ class Optimize(TrainType):
             # optimizer
             optimizer = (Optimizer & self.item).link.optimizer
             optimizer._init(scheduler=scheduler)
+
+        else:
+            # optimizer
+            optimizer = checkpoint["optimizer"]
 
         # data loader
         loader = (Loader & self.item).link.loader
