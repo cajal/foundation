@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from djutils import keys, merge, rowproperty, rowmethod, cache_rowproperty, unique, MissingError
+from djutils import keys, merge, unique, rowproperty, rowmethod
 from foundation.utils import tqdm
 from foundation.virtual import stimulus, recording, fnn
 

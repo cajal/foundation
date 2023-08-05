@@ -207,7 +207,7 @@ class TrainType:
         """
         Returns
         -------
-        foundation.fnn.compute_train.TrainType (row)
+        foundation.fnn.compute.train.TrainType (row)
             compute train
         """
         raise NotImplementedError()
@@ -227,7 +227,7 @@ class Optimize(TrainType):
 
     @rowproperty
     def compute(self):
-        from foundation.fnn.compute_train import Optimize
+        from foundation.fnn.compute.train import Optimize
 
         return Optimize & self
 

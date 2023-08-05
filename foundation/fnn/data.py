@@ -49,7 +49,7 @@ class DataType:
         """
         Returns
         -------
-        foundation.fnn.compute_data.DataType (row)
+        foundation.fnn.compute.data.DataType (row)
             compute data
         """
         raise NotImplementedError()
@@ -73,7 +73,7 @@ class VisualScan(DataType):
 
     @rowproperty
     def compute(self):
-        from foundation.fnn.compute_data import VisualScan
+        from foundation.fnn.compute.data import VisualScan
 
         return VisualScan & self
 

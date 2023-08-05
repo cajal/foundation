@@ -18,7 +18,7 @@ class InstanceType:
         """
         Returns
         -------
-        foundation.fnn.compute_instance.InstanceType (row)
+        foundation.fnn.compute.instance.InstanceType (row)
             compute instance
         """
         raise NotImplementedError()
@@ -39,7 +39,7 @@ class Individual:
 
     @rowproperty
     def compute(self):
-        from foundation.fnn.compute_instance import Individual
+        from foundation.fnn.compute.instance import Individual
 
         return Individual & self
 
