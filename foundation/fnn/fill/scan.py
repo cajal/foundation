@@ -28,9 +28,10 @@ class VisualScanData:
         """
         from foundation.utility.standardize import Standardize
         from foundation.stimulus.resize import ResizedVideo
-        from foundation.recording.tier import TrialTier
         from foundation.recording.trial import TrialSet, TrialVideo
-        from foundation.recording.trace import TraceSet, TraceSummary
+        from foundation.recording.trace import TraceSet
+        from foundation.recording.tier import TrialTier
+        from foundation.recording.stat import TraceSummary
         from foundation.recording.resample import TrialSamples, ResampledTrial, ResampledTraces
         from foundation.fnn.data import VisualScan, Data
 

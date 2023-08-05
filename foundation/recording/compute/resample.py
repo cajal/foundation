@@ -1,5 +1,6 @@
 import numpy as np
-from djutils import keys, rowproperty
+from tqdm import tqdm
+from djutils import keys, rowproperty, rowmethod
 from foundation.virtual import utility, recording
 
 
