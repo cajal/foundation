@@ -142,7 +142,7 @@ class ParallelCycle(InstanceType):
             groups=groups,
             cycle=self.item["cycle"],
         ):
-            if main_rank:
+            if main:
                 # save info
                 ModelInfo.fill(dict(key, epoch=epoch, info=info))
 
@@ -150,7 +150,7 @@ class ParallelCycle(InstanceType):
                 parameters = network.state_dict()
                 ModelCheckpoint.fill(dict(key, epoch=epoch, optimizer=optimizer, parameters=parameters))
 
-        if main_rank:
+        if main:
             # register done
             ModelDone.insert1(key)
 
