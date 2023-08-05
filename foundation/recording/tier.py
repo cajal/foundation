@@ -16,7 +16,7 @@ class TierType:
         """
         Returns
         -------
-        foundation.recording.compute_tier.Tier (row)
+        foundation.recording.compute.tier.Tier (row)
             trial tier
         """
         raise NotImplementedError()
@@ -34,7 +34,7 @@ class RandomSplit(TierType):
 
     @rowproperty
     def tier(self):
-        from foundation.recording.compute_tier import RandomSplit
+        from foundation.recording.compute.tier import RandomSplit
 
         return RandomSplit & self
 
