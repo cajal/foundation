@@ -95,8 +95,8 @@ class ParallelCycle(InstanceType):
             parameters = (ModelCheckpoint & key).parameters(device="cuda")
             network.load_state_dict(parameters)
 
-            # reload optimizer
-            optimizer = (ModelCheckpoint & key).optimizer(device="cuda")
+            # reload checkpoint
+            checkpoint = (ModelCheckpoint & key).checkpoint(device="cuda")
 
         elif self.item["cycle"]:
             logger.info("Reloading from previous cycle")
@@ -111,22 +111,22 @@ class ParallelCycle(InstanceType):
             parameters = (Model & prev).parameters(device="cuda")
             network.load_state_dict(parameters)
 
-            # new optimizer
-            optimizer = None
+            # no checkpoint
+            checkpoint = None
 
         elif (TransferList & self.item).fetch1("members"):
             logger.info("Transferring from other model")
 
             raise NotImplementedError()  # TODO
 
-            # new optimizer
-            optimizer = None
+            # no checkpoint
+            checkpoint = None
 
         else:
             logger.info("Starting from init")
 
-            # new optimizer
-            optimizer = None
+            # no checkpoint
+            checkpoint = None
 
         # dataset
         dataset = (Data & {"data_id": data_id}).link.compute.dataset
@@ -135,11 +135,11 @@ class ParallelCycle(InstanceType):
         groups = network.parallel_groups(group_size=self.item["parallel"])
 
         # train
-        for epoch, info, network, optimizer in (Train & self.item).link.compute.train(
+        for epoch, info, checkpoint, parameters in (Train & self.item).link.compute.train(
             network=network,
-            optimizer=optimizer,
             dataset=dataset,
             groups=groups,
+            checkpoint=checkpoint,
             cycle=self.item["cycle"],
         ):
             if main:
@@ -147,8 +147,7 @@ class ParallelCycle(InstanceType):
                 ModelInfo.fill(dict(key, epoch=epoch, info=info))
 
                 # save checkpoint
-                parameters = network.state_dict()
-                ModelCheckpoint.fill(dict(key, epoch=epoch, optimizer=optimizer, parameters=parameters))
+                ModelCheckpoint.fill(dict(key, epoch=epoch, checkpoint=checkpoint, parameters=parameters))
 
         if main:
             # register done

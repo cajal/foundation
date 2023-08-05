@@ -12,7 +12,7 @@ class TrainType:
     """Train"""
 
     @rowmethod
-    def train(self, dataset, network, optimizer=None, groups=None, cycle=0):
+    def train(self, dataset, network, groups=None, checkpoint=None, cycle=0):
         """
         Parameters
         ----------
@@ -20,23 +20,23 @@ class TrainType:
             fnn dataset
         network : fnn.model.networks.Network
             fnn network
-        optimizer : None | fnn.train.optimizers.Optimizer
-            fnn optimizer
-        groups : None | Iterable[fnn.train.parallel.ParameterGroup]
-            None | parameter groups
+        groups : Iterable[fnn.train.parallel.ParameterGroup] | None
+            parallel groups
+        checkpoint : dict[str, Serializable] | None
+            training checkpoint
         cycle : int
             training cycle
 
         Yields
         ------
         int
-            epoch
-        dict
-            info
-        fnn.model.networks.Network
-            network
-        fnn.train.optimizers.Optimizer
-            optimizer
+            training epoch
+        dict[str, Serializable]
+            training info
+        dict[str, Serializable]
+            training checkpoint
+        dict[str, torch.Tensor]
+            model parameters
         """
         raise NotImplementedError()
 
@@ -46,6 +46,8 @@ class TrainType:
 
 @keys
 class Optimize(TrainType):
+    """Optimize"""
+
     @property
     def keys(self):
         return [
@@ -53,7 +55,7 @@ class Optimize(TrainType):
         ]
 
     @rowmethod
-    def train(self, dataset, network, optimizer=None, groups=None, cycle=0):
+    def train(self, dataset, network, groups=None, checkpoint=None, cycle=0):
         from foundation.fnn.train import Optimizer, Scheduler, Loader, Objective
 
         if optimizer is None:
@@ -80,4 +82,4 @@ class Optimize(TrainType):
             parameters=network.named_parameters(),
             groups=groups,
         ):
-            yield epoch, info, network, optimizer
+            yield epoch, info, {"optimizer": optimizer}, network.state_dict()

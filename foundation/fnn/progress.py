@@ -66,13 +66,13 @@ class Checkpoint:
         """
         from foundation.utils.serialize import torch_save
 
-        key["optimizer"] = torch_save(key["optimizer"])
+        key["checkpoint"] = torch_save(key["checkpoint"])
         key["parameters"] = torch_save(key["parameters"])
 
         cls.insert1(key, replace=True)
 
     @rowmethod
-    def optimizer(self, device="cpu"):
+    def checkpoint(self, device="cpu"):
         """
         Parameters
         ----------
@@ -81,12 +81,12 @@ class Checkpoint:
 
         Returns
         -------
-        fnn.train.optimizers.Optimizer
-            optimizer
+        dict[str, Serializable]
+            training checkpoint
         """
         from foundation.utils.serialize import torch_load
 
-        return torch_load(self.fetch1("optimizer"), map_location=device)
+        return torch_load(self.fetch1("checkpoint"), map_location=device)
 
     @rowmethod
     def parameters(self, device="cpu"):
@@ -99,7 +99,7 @@ class Checkpoint:
         Returns
         -------
         dict[str, torch.Tensor]
-            parameters
+            model parameters
         """
         from foundation.utils.serialize import torch_load
 
@@ -129,8 +129,8 @@ class ModelCheckpoint(Checkpoint):
     -> fnn.Instance
     ---
     epoch           : int unsigned      # training epoch
-    optimizer       : blob@external     # fnn optimizer
-    parameters      : blob@external     # fnn parameters
+    checkpoint      : blob@external     # training checkpoint
+    parameters      : blob@external     # model parameters
     """
 
 
