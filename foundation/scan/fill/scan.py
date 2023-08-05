@@ -1,6 +1,5 @@
 from djutils import keys
 from foundation.virtual.bridge import pipe_exp, pipe_eye
-from foundation.virtual import scan
 
 
 @keys
