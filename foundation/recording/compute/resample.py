@@ -1,6 +1,6 @@
 import numpy as np
-from tqdm import tqdm
 from djutils import keys, rowproperty, rowmethod
+from foundation.utils import tqdm
 from foundation.virtual import utility, recording
 
 
