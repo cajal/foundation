@@ -4,7 +4,6 @@ import numpy as np
 from djutils import keys, rowproperty, rowmethod
 from foundation.utils import video
 from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
-from foundation.virtual import utility, stimulus
 
 
 # ---------------------------- Video ----------------------------
@@ -236,33 +235,3 @@ class Frame(VideoType):
             return video.Video([blank, image, blank], times=[0, pre_blank, pre_blank + duration])
         else:
             return video.Video([image, blank], [0, duration])
-
-
-# ---------------------------- Resizing ----------------------------
-
-
-@keys
-class ResizedVideo:
-    """Resized Video"""
-
-    @property
-    def keys(self):
-        return [
-            stimulus.Video,
-            utility.Resize,
-            utility.Resolution,
-        ]
-
-    @rowproperty
-    def video(self):
-        from foundation.utility.resize import Resize, Resolution
-        from foundation.stimulus.video import Video
-
-        # load video
-        video = (Video & self.item).link.compute.video
-
-        # target size
-        height, width = (Resolution & self.item).fetch1("height", "width")
-
-        # resize video
-        return (Resize & self.item).link.resize(video, height, width)

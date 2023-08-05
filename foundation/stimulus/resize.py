@@ -15,7 +15,7 @@ class ResizedVideo:
     """
 
     def make(self, key):
-        from foundation.stimulus.compute_video import ResizedVideo
+        from foundation.stimulus.compute.resize import ResizedVideo
 
         # resize video
         video = (ResizedVideo & key).video

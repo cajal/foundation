@@ -27,7 +27,7 @@ class VisualScanData:
             validation tier index
         """
         from foundation.utility.standardize import Standardize
-        from foundation.stimulus.cache import ResizedVideo
+        from foundation.stimulus.resize import ResizedVideo
         from foundation.recording.cache import ResampledTrial, ResampledTraces
         from foundation.recording.tier import TrialTier
         from foundation.recording.trial import TrialSet, TrialVideo, TrialSamples

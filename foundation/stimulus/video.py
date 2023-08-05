@@ -16,7 +16,7 @@ class VideoType:
         """
         Returns
         -------
-        foundation.stimulus.compute_video.VideoType (row)
+        foundation.stimulus.compute.video.VideoType (row)
             compute video
         """
         raise NotImplementedError()
@@ -33,7 +33,7 @@ class Clip(VideoType):
 
     @rowproperty
     def compute(self):
-        from foundation.stimulus.compute_video import Clip
+        from foundation.stimulus.compute.video import Clip
 
         return Clip & self
 
@@ -46,7 +46,7 @@ class Monet2(VideoType):
 
     @rowproperty
     def compute(self):
-        from foundation.stimulus.compute_video import Monet2
+        from foundation.stimulus.compute.video import Monet2
 
         return Monet2 & self
 
@@ -59,7 +59,7 @@ class Trippy(VideoType):
 
     @rowproperty
     def compute(self):
-        from foundation.stimulus.compute_video import Trippy
+        from foundation.stimulus.compute.video import Trippy
 
         return Trippy & self
 
@@ -72,7 +72,7 @@ class GaborSequence(VideoType):
 
     @rowproperty
     def compute(self):
-        from foundation.stimulus.compute_video import GaborSequence
+        from foundation.stimulus.compute.video import GaborSequence
 
         return GaborSequence & self
 
@@ -85,7 +85,7 @@ class DotSequence(VideoType):
 
     @rowproperty
     def compute(self):
-        from foundation.stimulus.compute_video import DotSequence
+        from foundation.stimulus.compute.video import DotSequence
 
         return DotSequence & self
 
@@ -98,7 +98,7 @@ class RdkSequence(VideoType):
 
     @rowproperty
     def compute(self):
-        from foundation.stimulus.compute_video import RdkSequence
+        from foundation.stimulus.compute.video import RdkSequence
 
         return RdkSequence & self
 
@@ -111,7 +111,7 @@ class Frame(VideoType):
 
     @rowproperty
     def compute(self):
-        from foundation.stimulus.compute_video import Frame
+        from foundation.stimulus.compute.video import Frame
 
         return Frame & self
 

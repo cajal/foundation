@@ -445,7 +445,7 @@ class VisualScan(VisualRecordingType):
 
     @rowmethod
     def visual_trial_stimulus(self, video_id):
-        from foundation.stimulus.compute_video import ResizedVideo
+        from foundation.stimulus.compute.resize import ResizedVideo
         from foundation.utility.resample import Rate
         from foundation.utils.resample import flip_index
 
