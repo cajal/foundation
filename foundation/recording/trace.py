@@ -1,7 +1,7 @@
 from djutils import merge, rowproperty, rowmethod
-from foundation.virtual import utility, scan
+from foundation.virtual import scan
 from foundation.virtual.bridge import pipe_fuse, pipe_shared, pipe_stim, pipe_tread, resolve_pipe
-from foundation.recording.trial import Trial, TrialSet, TrialBounds
+from foundation.recording.trial import TrialSet
 from foundation.schemas import recording as schema
 
 
@@ -112,26 +112,6 @@ class TraceHomogeneous:
 
     def make(self, key):
         key["homogeneous"] = (Trace & key).link.compute.homogeneous
-        self.insert1(key)
-
-
-@schema.computed
-class TraceSummary:
-    definition = """
-    -> Trace
-    -> TrialSet
-    -> utility.Summary
-    -> utility.Resample
-    -> utility.Offset
-    -> utility.Rate
-    ---
-    summary = NULL      : float     # summary statistic
-    """
-
-    def make(self, key):
-        from foundation.recording.compute_trace import TraceSummary
-
-        key["summary"] = (TraceSummary & key).statistic
         self.insert1(key)
 
 
