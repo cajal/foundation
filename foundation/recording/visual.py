@@ -21,12 +21,12 @@ class VisualMeasure:
 
     @property
     def key_source(self):
-        from foundation.recording.compute_visual import VisualMeasure
+        from foundation.recording.compute.visual import VisualMeasure
 
         return VisualMeasure.key_source
 
     def make(self, key):
-        from foundation.recording.compute_visual import VisualMeasure
+        from foundation.recording.compute.visual import VisualMeasure
 
         key["measure"] = (VisualMeasure & key).measure
         self.insert1(key)

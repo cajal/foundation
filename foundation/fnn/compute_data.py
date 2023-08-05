@@ -432,7 +432,7 @@ class VisualScan(VisualRecordingType):
 
     @rowmethod
     def visual_trial_ids(self, video_id, trial_filterset_id):
-        from foundation.recording.compute_visual import VisualTrials
+        from foundation.recording.compute.visual import VisualTrials
 
         # visual trialset key
         key = {
