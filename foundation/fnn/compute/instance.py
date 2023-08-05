@@ -343,7 +343,7 @@ class Foundation(ParallelCycle):
         conn = self.key.connection
         conn.close()
         spawn(
-            Individual._spawn,
+            Foundation._spawn,
             args=(size, sorted(data_ids), network_id, instance_id, port),
             nprocs=size,
             join=True,
