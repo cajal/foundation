@@ -132,7 +132,7 @@ class ParallelCycle(InstanceType):
         dataset = (Data & {"data_id": data_id}).link.compute.dataset
 
         # parallel groups
-        groups = network.parallel_groups(group_size=self.item["parallel"])
+        groups = network.parallel_groups(group_size=self.item["parallel"], shared=self.shared)
 
         # train
         for epoch, info, checkpoint, parameters in (Train & self.item).link.compute.train(
