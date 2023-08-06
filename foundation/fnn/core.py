@@ -92,7 +92,6 @@ class Rvt(RecurrentType):
     attention_channels  : int unsigned  # attention channels per stream
     projection_channels : int unsigned  # projection channels per stream
     groups              : int unsigned  # groups per stream
-    heads               : int unsigned  # heads per stream
     spatial             : int unsigned  # spatial kernel size
     init_gate           : decimal(6, 4) # initial gate bias
     dropout             : decimal(6, 6) # dropout probability

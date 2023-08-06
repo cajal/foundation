@@ -62,7 +62,7 @@ class VisualScanData:
             # populate videos
             ResizedVideo.populate(videos, spec, display_progress=True, reserve_jobs=True)
 
-            for table, proj in [
+            for table, datatype in [
                 [recording.ScanVisualPerspectives, "perspective"],
                 [recording.ScanVisualModulations, "modulation"],
                 [recording.ScanUnits, "unit"],
@@ -71,7 +71,7 @@ class VisualScanData:
                 with cache_rowproperty():
 
                     # trace spec
-                    _spec = proj_spec(proj)
+                    _spec = proj_spec(datatype)
 
                     # traces
                     traceset = table & key
