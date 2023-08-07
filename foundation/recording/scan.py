@@ -48,6 +48,28 @@ class ScanRecording:
 
 
 @schema.computed
+class ScanVideoTimeScale:
+    definition = """
+    -> scan.Scan
+    ---
+    time_scale      : double    # video time scale
+    """
+
+    def make(self, key):
+        # trials merged with video info
+        trials = TrialSet & merge(scan.Scan & key, ScanRecording)
+        trials = merge(trials.members, Trial.ScanTrial, TrialBounds, TrialVideo, stimulus.VideoInfo)
+
+        # trial and video timing
+        start, end, frames, period = trials.fetch("start", "end", "frames", "period")
+        rperiod = (end - start) / (frames - 1)
+
+        # median time scale
+        key["time_scale"] = np.nanmedian(rperiod / period)
+        self.insert1(key)
+
+
+@schema.computed
 class ScanTrials:
     definition = """
     -> scan.Scan
@@ -159,28 +181,6 @@ class ScanVisualModulations:
 
         # insert
         self.insert1(dict(key, **traces))
-
-
-@schema.computed
-class ScanVideoTimeScale:
-    definition = """
-    -> scan.Scan
-    ---
-    time_scale      : double    # video time scale
-    """
-
-    def make(self, key):
-        # trials merged with video info
-        trials = (pipe_stim.Trial & key).proj()
-        trials = merge(trials, Trial.ScanTrial, TrialBounds, TrialVideo, stimulus.VideoInfo)
-
-        # trial and video timing
-        start, end, frames, period = trials.fetch("start", "end", "frames", "period")
-        rperiod = (end - start) / (frames - 1)
-
-        # median time scale
-        key["time_scale"] = np.nanmedian(rperiod / period)
-        self.insert1(key)
 
 
 @schema.computed

@@ -1,4 +1,5 @@
 from djutils import keys, merge, cache_rowproperty
+from foundation.virtual.bridge import pipe_fuse
 from foundation.virtual import recording, fnn
 
 
@@ -10,10 +11,11 @@ class VisualScanData:
     def keys(self):
         return [
             fnn.Spec.VisualSpec,
+            pipe_fuse.ScanDone,
             recording.ScanVisualPerspectives,
             recording.ScanVisualModulations,
-            recording.ScanUnits,
-            recording.ScanTrials,
+            recording.TraceFilterSet,
+            recording.TrialFilterSet,
             recording.Tier,
         ]
 
@@ -26,14 +28,19 @@ class VisualScanData:
         validation_tier : int
             validation tier index
         """
-        from foundation.utility.standardize import Standardize
-        from foundation.stimulus.resize import ResizedVideo
-        from foundation.recording.trial import TrialSet, TrialVideo
-        from foundation.recording.trace import TraceSet
-        from foundation.recording.tier import TrialTier
-        from foundation.recording.stat import TraceSummary
-        from foundation.recording.resample import TrialSamples, ResampledTrial, ResampledTraces
+        from foundation.utility import standardize
+        from foundation.stimulus import resize
+        from foundation.recording import trial, trace, scan, tier, stat, resample
         from foundation.fnn.data import VisualScan, Data
+
+        # filtered trials and traces
+        scan.ScanTrials.populate(self.key, display_progress=True, reserve_jobs=True)
+        scan.ScanUnits.populate(self.key, display_progress=True, reserve_jobs=True)
+
+        # trace orders
+        scan.ScanUnitOrder.populate(self.key, display_progress=True, reserve_jobs=True)
+        scan.ScanVisualPerspectiveOrder.populate(self.key, display_progress=True, reserve_jobs=True)
+        scan.ScanVisualModulationOrder.populate(self.key, display_progress=True, reserve_jobs=True)
 
         for key in self.key:
 
@@ -45,22 +52,22 @@ class VisualScanData:
                 return spec.proj(..., **proj)
 
             # all trials
-            all_trials = recording.ScanRecording & key
-            all_trials = (TrialSet & all_trials).members
+            all_trials = scan.ScanRecording & key
+            all_trials = (trial.TrialSet & all_trials).members
 
             # filtered trials
-            filt_trials = recording.ScanTrials & key
+            filt_trials = scan.ScanTrials & key
 
             # populate trials
-            TrialSamples.populate(all_trials, spec, display_progress=True, reserve_jobs=True)
-            ResampledTrial.populate(all_trials, spec, display_progress=True, reserve_jobs=True)
-            TrialTier.populate(filt_trials, key, display_progress=True, reserve_jobs=True)
+            resample.TrialSamples.populate(all_trials, spec, display_progress=True, reserve_jobs=True)
+            resample.ResampledTrial.populate(all_trials, spec, display_progress=True, reserve_jobs=True)
+            tier.TrialTier.populate(filt_trials, key, display_progress=True, reserve_jobs=True)
 
             # videos
-            videos = merge(all_trials, TrialVideo)
+            videos = merge(all_trials, trial.TrialVideo)
 
             # populate videos
-            ResizedVideo.populate(videos, spec, display_progress=True, reserve_jobs=True)
+            resize.ResizedVideo.populate(videos, spec, display_progress=True, reserve_jobs=True)
 
             for table, datatype in [
                 [recording.ScanVisualPerspectives, "perspective"],
@@ -75,15 +82,19 @@ class VisualScanData:
 
                     # traces
                     traceset = table & key
-                    traces = (TraceSet & traceset).members
+                    traces = (trace.TraceSet & traceset).members
 
                     # stats
-                    stats = (Standardize & _spec).link.summary_ids
+                    stats = (standardize.Standardize & _spec).link.summary_ids
                     stats = [{"summary_id": _} for _ in stats]
 
                     # populate traces
-                    TraceSummary.populate(traces, filt_trials, stats, _spec, display_progress=True, reserve_jobs=True)
-                    ResampledTraces.populate(traceset, all_trials, _spec, display_progress=True, reserve_jobs=True)
+                    stat.TraceSummary.populate(
+                        traces, filt_trials, stats, _spec, display_progress=True, reserve_jobs=True
+                    )
+                    resample.ResampledTraces.populate(
+                        traceset, all_trials, _spec, display_progress=True, reserve_jobs=True
+                    )
 
             # insert
             key = dict(key, training_tier=training_tier, validation_tier=validation_tier)

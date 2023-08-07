@@ -30,6 +30,9 @@ class VisualScanRecording:
             trial.TrialBounds.populate(trials, display_progress=True, reserve_jobs=True)
             trial.TrialVideo.populate(trials, display_progress=True, reserve_jobs=True)
 
+        # scan time scale
+        scan.ScanVideoTimeScale.populate(self.key, display_progress=True, reserve_jobs=True)
+
         # empty filter sets
         trial_filt = (recording.TrialFilterSet & "not members").proj()
         trace_filt = (recording.TraceFilterSet & "not members").proj()
