@@ -40,46 +40,6 @@ class VisualTrials:
 
 
 @keys
-class VisualResponse:
-    """Visual Response"""
-
-    @property
-    def keys(self):
-        return [
-            recording.Trace,
-            recording.TrialFilterSet,
-            stimulus.Video,
-            utility.Resample,
-            utility.Offset,
-            utility.Rate,
-        ]
-
-    @rowproperty
-    def trials(self):
-        """
-        Returns
-        -------
-        foundation.utils.response.Trials
-            visual response trials -- ordered by trial start time
-        """
-        from foundation.recording.compute.resample import ResampledTrace
-        from foundation.utils.response import Trials
-
-        # visual trials
-        key = merge(self.key, recording.TraceTrials)
-        trial_ids = (VisualTrials & key).trial_ids
-
-        if trial_ids:
-            # trial responses
-            responses = (ResampledTrace & self.item).trials(trial_ids)
-            return Trials(responses, index=trial_ids, tolerance=1)
-
-        else:
-            # no trials
-            raise MissingError("No trials found")
-
-
-@keys
 class VisualMeasure:
     """Visual Measure"""
 
@@ -104,18 +64,47 @@ class VisualMeasure:
         float
             visual response measure
         """
+        from foundation.recording.compute.resample import ResampledTrace
         from foundation.stimulus.video import VideoSet
         from foundation.utility.response import Measure
-        from foundation.utils.response import concatenate
+        from foundation.utils.response import Trials, concatenate
+
+        # trial set
+        trialset = (recording.TraceTrials & self.item).fetch1()
 
         # videos
-        videos = (VideoSet & self.item).members.fetch("video_id", order_by="video_id", as_dict=True)
-        videos = tqdm(videos, desc="Videos")
+        videos = (VideoSet & self.item).members
+        videos = videos.fetch("KEY", order_by=videos.primary_key)
 
-        # trial responses
         with cache_rowproperty():
-            responses = [(VisualResponse & self.item & video).trials for video in videos]
-            responses = concatenate(*responses, burnin=self.item["burnin"])
+
+            # visual responses
+            responses = []
+
+            for video in tqdm(videos, desc="Videos"):
+
+                # trial ids
+                trial_ids = (VisualTrials & trialset & video & self.item).trial_ids
+
+                # no trials for video
+                if not trial_ids:
+                    logger.warning(f"No trials found for video_id `{video['video_id']}`")
+                    continue
+
+                # trial responses
+                trials = (ResampledTrace & self.item).trials(trial_ids=trial_ids)
+                trials = Trials(trials, index=trial_ids, tolerance=1)
+
+                # append
+                responses.append(trials)
+
+        # no trials at all
+        if not responses:
+            logger.warning(f"No trials found")
+            return
+
+        # concatenated responses
+        responses = concatenate(*responses, burnin=self.item["burnin"])
 
         # response measure
         return (Measure & self.item).link.measure(responses)
