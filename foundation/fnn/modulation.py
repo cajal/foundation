@@ -27,11 +27,12 @@ class ModulationType:
 @schema.lookup
 class FlatLstm(ModulationType):
     definition = """
-    lstm_features   : int unsigned      # lstm features per stream
-    out_features    : int unsigned      # out features per stream
-    init_input      : decimal(6, 4)     # initial input gate bias
-    init_forget     : decimal(6, 4)     # initial forget gate bias
-    dropout         : decimal(6, 6)     # dropout probability
+    in_features         : int unsigned      # in features per stream
+    out_features        : int unsigned      # out features per stream
+    hidden_features     : int unsigned      # hidden features per stream
+    init_input          : decimal(6, 4)     # initial input gate bias
+    init_forget         : decimal(6, 4)     # initial forget gate bias
+    dropout             : decimal(6, 6)     # dropout probability
     """
 
     @rowproperty
