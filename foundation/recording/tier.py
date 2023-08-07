@@ -16,8 +16,8 @@ class TierType:
         """
         Returns
         -------
-        foundation.recording.compute.tier.Tier (row)
-            trial tier
+        foundation.recording.compute.tier.TierType (row)
+            compute tier
         """
         raise NotImplementedError()
 
