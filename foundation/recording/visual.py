@@ -28,5 +28,8 @@ class VisualMeasure:
     def make(self, key):
         from foundation.recording.compute.visual import VisualMeasure
 
+        # visual measure
         key["measure"] = (VisualMeasure & key).measure
+
+        # insert
         self.insert1(key)
