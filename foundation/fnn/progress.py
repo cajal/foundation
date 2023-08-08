@@ -135,6 +135,19 @@ class ModelCheckpoint(Checkpoint):
 
 
 @schema.lookup
+class ModelLag:
+    definition = """
+    -> fnn.Data
+    -> fnn.Network
+    -> fnn.Instance
+    ---
+    epoch           : int unsigned      # training epoch
+    checkpoint      : blob@external     # training checkpoint
+    parameters      : blob@external     # model parameters
+    """
+
+
+@schema.lookup
 class ModelDone:
     definition = """
     -> ModelCheckpoint

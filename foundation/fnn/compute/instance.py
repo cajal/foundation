@@ -69,7 +69,7 @@ class ParallelCycle(InstanceType):
         main : bool
             main rank
         """
-        from foundation.fnn.progress import ModelInfo, ModelCheckpoint, ModelDone
+        from foundation.fnn.progress import ModelInfo, ModelCheckpoint, ModelLag, ModelDone
         from foundation.fnn.transfer import Transfer, TransferList
         from foundation.fnn.network import Network
         from foundation.fnn.train import Train
@@ -143,6 +143,10 @@ class ParallelCycle(InstanceType):
             cycle=self.item["cycle"],
         ):
             if main:
+                # save lag
+                lag = (ModelCheckpoint & key).fetch1()
+                ModelLag.insert1(lag, replace=True)
+
                 # save info
                 ModelInfo.fill(dict(key, epoch=epoch, info=info))
 
