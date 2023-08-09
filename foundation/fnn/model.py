@@ -2,7 +2,7 @@ from djutils import rowmethod
 from foundation.fnn.data import Data, DataSet
 from foundation.fnn.network import Network
 from foundation.fnn.instance import Instance
-from foundation.fnn.progress import ModelDone
+from foundation.fnn.progress import ModelDone, ModelCheckpoint
 from foundation.schemas import fnn as schema
 
 
@@ -56,7 +56,7 @@ class Model:
         dict[str, torch.Tensor]
             network parameters
         """
-        raise NotImplementedError()
+        return (ModelCheckpoint & self).parameters(device)
 
     @rowmethod
     def model(self, device="cpu"):
@@ -71,4 +71,11 @@ class Model:
         fnn.networks.Network
             trained network
         """
-        raise NotImplementedError()
+        # load network
+        net = (Network & key).link.network(data_id=key["data_id"]).freeze(True)
+
+        # load parameters
+        params = self.parameters(device=device)
+        net.load_state_dict(params)
+
+        return net
