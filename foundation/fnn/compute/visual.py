@@ -94,13 +94,13 @@ class ModelRecordingCorrelations:
                     _targs.append(u)
                     _preds.append(r)
 
-                assert len(_targs) == len(trial_ids)
+                assert len(_targs) == len(_preds) == len(trial_ids)
 
                 # append video targets and predictions
                 targs.append(_targs)
                 preds.append(_preds)
 
-            assert len(targs) == len(videos)
+            assert len(targs) == len(preds) == len(videos)
 
         # correlations
         cc = (Correlation & key).link.correlation
