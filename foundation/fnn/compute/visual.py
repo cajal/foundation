@@ -6,7 +6,7 @@ from foundation.virtual import utility, stimulus, recording, fnn
 
 
 @keys
-class ModelRecordingCorrelations:
+class ModelRecordingCorrelation:
     """Model Recording"""
 
     @property
@@ -22,7 +22,7 @@ class ModelRecordingCorrelations:
         ]
 
     @rowproperty
-    def correlations(self):
+    def units(self):
         """
         Returns
         -------
