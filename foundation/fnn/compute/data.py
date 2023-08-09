@@ -134,6 +134,21 @@ class RecordingType(DataType):
     """Recording Data"""
 
     @rowmethod
+    def trial_stimuli(self, trial_ids):
+        """
+        Parameters
+        ----------
+        trial_id : Sequence[str]
+            sequence of keys (foundation.recording.trial.Trial)
+
+        Yields
+        ------
+        ND array
+            [samples, ...]
+        """
+        raise NotImplementedError()
+
+    @rowmethod
     def trial_perspectives(self, trial_ids):
         """
         Parameters
@@ -179,47 +194,11 @@ class RecordingType(DataType):
         raise NotImplementedError()
 
 
-class VisualRecordingType(VisualType, RecordingType):
-    """Visual Recording"""
-
-    @rowmethod
-    def visual_trial_ids(self, video_id, trial_filterset_id):
-        """
-        Parameters
-        ----------
-        video_id : str
-            key (foundation.stimulus.video.Video)
-        trial_filterset_id : str
-            key (foundation.recording.TrialFilterSet)
-
-        Returns
-        -------
-        Tuple[str]
-            tuple of keys (foundation.recording.trial.Trial) -- ordered by trial start time
-        """
-        raise NotImplementedError()
-
-    @rowmethod
-    def visual_trial_stimulus(self, video_id):
-        """
-        Parameters
-        ----------
-        video_id : str
-            key (foundation.stimulus.video.Video)
-
-        Returns
-        -------
-        4D array
-            [samples, height, width, channels] (uint8) -- video frames
-        """
-        raise NotImplementedError()
-
-
 # -- Data Types --
 
 
 @keys
-class VisualScan(VisualRecordingType):
+class VisualScan(VisualType, RecordingType):
     """Visual Scan Data"""
 
     @property
@@ -299,88 +278,15 @@ class VisualScan(VisualRecordingType):
     def resize_id(self):
         return self.key_video["resize_id"]
 
-    @rowproperty
-    def dataset(self):
-        from fnn.data import NpyFile, Dataset
-        from foundation.recording.trace import TraceSet
-        from foundation.recording.compute.standardize import StandardizedTraces
-        from foundation.recording.scan import ScanUnitOrder, ScanVisualPerspectiveOrder, ScanVisualModulationOrder
-
-        # keys
-        key_v = self.key_video
-        key_p = self.key_perspective
-        key_m = self.key_modulation
-        key_u = self.key_unit
-
-        # transforms
-        transform_p = (StandardizedTraces & key_p).transform
-        transform_m = (StandardizedTraces & key_m).transform
-        transform_u = (StandardizedTraces & key_u).transform
-
-        # traces
-        traces_p = merge((TraceSet & key_p).members, ScanVisualPerspectiveOrder & key_p)
-        traces_m = merge((TraceSet & key_m).members, ScanVisualModulationOrder & key_m)
-        traces_u = merge((TraceSet & key_u).members, ScanUnitOrder & key_u)
-
-        # orders
-        order_p = traces_p.fetch("traceset_index", order_by="trace_order")
-        order_m = traces_m.fetch("traceset_index", order_by="trace_order")
-        order_u = traces_u.fetch("traceset_index", order_by="trace_order")
-
-        # data lists
-        stimuli, perspectives, modulations, units = [], [], [], []
-
-        # data tiers
-        training_tier, validation_tier = self.key.fetch1("training_tier", "validation_tier")
-        tier_keys = [{"tier_index": index} for index in [training_tier, validation_tier]]
-
-        # trials
-        trials = merge(
-            recording.ScanTrials & self.item,
-            recording.TrialTier & self.item & tier_keys,
-            recording.TrialBounds,
-            recording.TrialSamples,
-            recording.TrialVideo,
-            stimulus.Video,
-        )
-        trials, ids, tiers, samples = trials.fetch("KEY", "trial_id", "tier_index", "samples", order_by="start")
+    @rowmethod
+    def trial_stimuli(self, trial_ids):
+        key = self.key_video
+        rows = stimulus.ResizedVideo * recording.TrialVideo * recording.ResampledTrial
 
         # load trials
-        for trial in tqdm(trials, desc="Trials"):
-
-            # stimuli
-            video, index = (stimulus.ResizedVideo * recording.ResampledTrial & trial & key_v).fetch1("video", "index")
-            trial_stimuli = video[index].astype(np.uint8)
-
-            # perspectives
-            traces = (recording.ResampledTraces & trial & key_p).fetch1("traces")
-            trial_perspectives = transform_p(traces).astype(np.float32)[:, order_p]
-
-            # modulations
-            traces = (recording.ResampledTraces & trial & key_m).fetch1("traces")
-            trial_modulations = transform_m(traces).astype(np.float32)[:, order_m]
-
-            # units
-            traces = (recording.ResampledTraces & trial & key_u).fetch1("traces")
-            trial_units = transform_u(traces).astype(np.float32)[:, order_u]
-
-            # append
-            stimuli.append(NpyFile(trial_stimuli))
-            perspectives.append(NpyFile(trial_perspectives))
-            modulations.append(NpyFile(trial_modulations))
-            units.append(NpyFile(trial_units))
-
-        # dataset
-        data = {
-            "training": tiers == training_tier,
-            "samples": samples,
-            "stimuli": stimuli,
-            "perspectives": perspectives,
-            "modulations": modulations,
-            "units": units,
-        }
-        data = pd.DataFrame(data, index=pd.Index(ids, name="trial_id"))
-        return Dataset(data)
+        for trial_id in trial_ids:
+            video, index = (rows & key & {"trial_id": trial_id}).fetch1("video", "index")
+            yield video[index].astype(np.uint8)
 
     def _trial_traces(self, trial_ids, datatype):
         from foundation.recording.trace import TraceSet
@@ -430,39 +336,48 @@ class VisualScan(VisualRecordingType):
         # unit trace(s)
         return self._trial_traces(trial_ids, "unit")
 
-    @rowmethod
-    def visual_trial_ids(self, video_id, trial_filterset_id):
-        from foundation.recording.compute.visual import VisualTrials
+    @rowproperty
+    def dataset(self):
+        from fnn.data import NpyFile, Dataset
 
-        # visual trialset key
-        key = {
-            "trialset_id": (recording.ScanRecording & self.item).fetch1("trialset_id"),
-            "trial_filterset_id": trial_filterset_id,
-            "video_id": video_id,
+        # tiers
+        training_tier, validation_tier = self.key.fetch1("training_tier", "validation_tier")
+        tier_keys = [{"tier_index": index} for index in [training_tier, validation_tier]]
+
+        # trials
+        trials = merge(
+            recording.ScanTrials & self.item,
+            recording.TrialTier & self.item & tier_keys,
+            recording.TrialBounds,
+            recording.TrialSamples,
+        )
+        trial_ids, tiers, samples = trials.fetch("trial_id", "tier_index", "samples", order_by="start")
+
+        # load trials
+        stimuli, perspectives, modulations, units = [], [], [], []
+
+        for s, p, m, u in zip(
+            self.trial_stimuli(tqdm(trial_ids, desc="Trials")),
+            self.trial_perspectives(trial_ids),
+            self.trial_modulations(trial_ids),
+            self.trial_units(trial_ids),
+        ):
+
+            stimuli.append(NpyFile(s))
+            perspectives.append(NpyFile(p))
+            modulations.append(NpyFile(m))
+            units.append(NpyFile(u))
+
+        assert len(stimuli) == len(trial_ids)
+
+        # dataset
+        data = {
+            "training": tiers == training_tier,
+            "samples": samples,
+            "stimuli": stimuli,
+            "perspectives": perspectives,
+            "modulations": modulations,
+            "units": units,
         }
-        # visual trial_ids
-        return (VisualTrials & key).trial_ids
-
-    @rowmethod
-    def visual_trial_stimulus(self, video_id):
-        from foundation.stimulus.compute.resize import ResizedVideo
-        from foundation.utility.resample import Rate
-        from foundation.utils.resample import flip_index
-
-        # video key
-        key = {"video_id": video_id, **self.key_video}
-
-        # resized video
-        video = (ResizedVideo & key).video
-
-        # time scale of recording
-        time_scale = (recording.ScanVideoTimeScale & self.item).fetch1("time_scale")
-
-        # resampling period
-        period = (Rate & key).link.period
-
-        # resampling flip index
-        index = flip_index(video.times * time_scale, period)
-
-        # resampled and resized video
-        return video.array[index]
+        data = pd.DataFrame(data, index=pd.Index(trial_ids, name="trial_id"))
+        return Dataset(data)
