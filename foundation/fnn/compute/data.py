@@ -133,6 +133,16 @@ class VisualType(DataType):
 class RecordingType(DataType):
     """Recording Data"""
 
+    @rowproperty
+    def trialset_id(self):
+        """
+        Returns
+        -------
+        str
+            key (foundation.recording.trial.TrialSet)
+        """
+        raise NotImplementedError()
+
     @rowmethod
     def trial_stimuli(self, trial_ids):
         """
@@ -277,6 +287,10 @@ class VisualScan(VisualType, RecordingType):
     @rowproperty
     def resize_id(self):
         return self.key_video["resize_id"]
+
+    @rowproperty
+    def trialset_id(self):
+        return (recording.ScanRecording & self.item).fetch1("trialset_id")
 
     @rowmethod
     def trial_stimuli(self, trial_ids):

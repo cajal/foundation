@@ -72,7 +72,8 @@ class Model:
             trained network
         """
         # load network
-        net = (Network & self).link.network(data_id=self.fetch1("data_id")).freeze(True)
+        net = (Network & self).link.network(data_id=self.fetch1("data_id"))
+        net = net.to(device=device).freeze(True)
 
         # load parameters
         params = self.parameters(device=device)

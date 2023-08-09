@@ -1,158 +1,128 @@
 import numpy as np
-from djutils import keys, rowproperty, cache_rowproperty, MissingError
+from itertools import repeat
+from djutils import keys, rowproperty, cache_rowproperty
 from foundation.utils import tqdm
 from foundation.virtual import utility, stimulus, recording, fnn
 
 
-# @keys
-# class VisualNetworkRecording:
-#     """Visual Network Model using data from Recording"""
+@keys
+class ModelRecordingCorrelations:
+    """Model Recording"""
 
-#     @property
-#     def keys(self):
-#         return [
-#             fnn.NetworkModel,  # network model
-#             recording.TrialFilterSet,  # trial filter
-#             utility.Bool.proj(trial_perspective="bool"),  # trial | default perspective
-#             utility.Bool.proj(trial_modulation="bool"),  # trial | default modulation
-#             stimulus.Video,  # visual stimulus
-#         ]
+    @property
+    def keys(self):
+        return [
+            fnn.Model,
+            recording.TrialFilterSet,
+            stimulus.VideoSet,
+            utility.Correlation,
+            utility.Burnin,
+            utility.Bool.proj(perspective="bool"),
+            utility.Bool.proj(modulation="bool"),
+        ]
 
-#     @rowproperty
-#     def trial_responses(self):
-#         """
-#         Returns
-#         -------
-#         3D array
-#             [trials, samples, units] -- visual response
-#         Tuple[str] | None
-#             tuple of trial_ids -- key (foundation.recording.trial.Trial)
-#         """
-#         from foundation.fnn.data import Data
-#         from foundation.fnn.network import Network
-#         from foundation.fnn.model import NetworkModel
-#         from foundation.utils.resample import truncate
+    @rowproperty
+    def correlations(self):
+        """
+        Returns
+        -------
+        1D array
+            [units] -- visual response correlation
+        """
+        from foundation.recording.compute.visual import VisualTrials
+        from foundation.utility.response import Correlation
+        from foundation.stimulus.video import VideoSet
+        from foundation.fnn.model import Model
+        from foundation.fnn.data import Data
+        from foundation.utils.response import Trials, concatenate
+        from foundation.utils import cuda_enabled
 
-#         # load data
-#         data_id = (Network & self.item).link.data_id
-#         data = (Data & {"data_id": data_id}).link.compute
+        # load model
+        model = (Model & key).model(device="cuda" if cuda_enabled() else "cpu")
 
-#         # load trials
-#         trial_ids = data.visual_trial_ids(
-#             video_id=self.item["video_id"],
-#             trial_filterset_id=self.item["trial_filterset_id"],
-#         )
+        # load data
+        data = (Data & key).link.compute
 
-#         # raise exception if no trials
-#         if not trial_ids:
-#             raise MissingError("No trials found")
+        # trial set
+        trialset = {"trialset_id": data.trialset_id}
 
-#         # load stimuli
-#         stimuli = data.visual_trial_stimulus(video_id=self.item["video_id"])
+        # videos
+        videos = (VideoSet & key).members.fetch("video_id", order_by="video_id", as_dict=True)
 
-#         # load perspectives
-#         if self.item["trial_perspective"]:
-#             perspectives = data.trial_perspectives(trial_ids=trial_ids)
-#             perspectives = np.stack(truncate(*perspectives, tolerance=1), axis=1)
-#         else:
-#             perspectives = None
+        # trials, targets, predictions
+        trials = []
+        targs = []
+        preds = []
 
-#         # load modulations
-#         if self.item["trial_modulation"]:
-#             modulations = data.trial_modulations(trial_ids=trial_ids)
-#             modulations = np.stack(truncate(*modulations, tolerance=1), axis=1)
-#         else:
-#             modulations = None
+        for video in tqdm(videos, desc="Videos"):
 
-#         # load model
-#         model = (NetworkModel & self.item).model
+            # trials
+            trial_ids = (VisualTrials & trialset & video & key).trial_ids
+            trials.append(trial_ids)
 
-#         # generate responses
-#         responses = model.generate_response(
-#             stimuli=stimuli,
-#             perspectives=perspectives,
-#             modulations=modulations,
-#         )
-#         responses = tqdm(responses, desc="Responses")
-#         responses = np.stack(list(responses), axis=0)
+            # stimuli
+            stimuli = data.trial_stimuli(trial_ids)
 
-#         if perspectives is None and modulations is None:
-#             # [samples, units] -> [trials, samples, units]
-#             responses = np.expand_dims(responses, axis=0)
-#             responses = np.repeat(responses, repeats=len(trial_ids), axis=0)
-#         else:
-#             # [samples, trials, units] -> [trials, samples, units]
-#             responses = np.einsum("S T U -> T S U", responses)
+            # units
+            units = data.trial_units(trial_ids)
 
-#         return responses, trial_ids
+            # perspectives
+            if key["perspective"]:
+                perspectives = data.trial_perspectives(trial_ids)
+            else:
+                perspectives = repeat([None])
 
+            # modulations
+            if key["modulation"]:
+                modulations = data.trial_modulations(trial_ids)
+            else:
+                modulations = repeat([None])
 
-# @keys
-# class VisualUnitCorrelation:
-#     """Correlation between Modeled and Recorded Unit"""
+            # video targets and predictions
+            _targs = []
+            _preds = []
 
-#     @property
-#     def keys(self):
-#         return [
-#             fnn.NetworkModel,  # network model
-#             fnn.NetworkUnit,  # network unit
-#             utility.Bool.proj(trial_perspective="bool"),  # trial | default perspective
-#             utility.Bool.proj(trial_modulation="bool"),  # trial | default modulation
-#             recording.TrialFilterSet,  # trial filter
-#             stimulus.VideoSet,  # visual stimulus set
-#             utility.Correlation,  # correlation between model and recording
-#             utility.Burnin,  # response burnin frames
-#         ]
+            for s, p, m, u in zip(stimuli, perspectives, modulations, units):
 
-#     @rowproperty
-#     def correlation(self):
-#         """
-#         Returns
-#         -------
-#         float
-#             correlation between model and target
-#         """
-#         from foundation.fnn.data import Data
-#         from foundation.fnn.network import Network
-#         from foundation.stimulus.video import VideoSet
-#         from foundation.utility.response import Correlation
-#         from foundation.utils.response import Trials, concatenate
+                # generate prediction
+                r = model.generate_response(stimuli=s, perspectives=p, modulations=m)
+                r = np.stack(list(r), axis=0)
 
-#         # unit index and burnin
-#         unit_index, burnin = self.key.fetch1("unit_index", "burnin")
+                # append target and prediction
+                _targs.append(u)
+                _preds.append(r)
 
-#         # videos
-#         videos = (VideoSet & self.item).members.fetch("video_id", as_dict=True)
+            assert len(_targs) == len(trial_ids)
 
-#         # data
-#         data_id = (Network & self.item).link.data_id
-#         data = (Data & {"data_id": data_id}).link.compute
+            # append video targets and predictions
+            targs.append(_targs)
+            preds.append(_preds)
 
-#         # responses and targets
-#         responses = []
-#         targets = []
+        assert len(targs) == len(videos)
 
-#         with cache_rowproperty():
-#             for video in tqdm(videos, desc="Videos"):
+        # correlations
+        cc = (Correlation & key).link.correlation
+        correlations = []
 
-#                 # response
-#                 response, trial_ids = (VisualNetworkRecording & video & self.item).trial_responses
-#                 response = Trials(response[:, :, unit_index], index=trial_ids, tolerance=0)
+        for i in tqdm(range(data.units), desc="Units"):
 
-#                 # target
-#                 target = data.trial_units(trial_ids, unit_index=unit_index)
-#                 target = Trials(target, index=trial_ids, tolerance=1)
+            # unit targets and predictions
+            unit_targ = []
+            unit_pred = []
 
-#                 # verify response and target match
-#                 assert response.matches(target)
+            for index, t, p in zip(trials, targs, preds):
 
-#                 # append
-#                 responses.append(response)
-#                 targets.append(target)
+                # target and prediction trials
+                unit_targ.append(Trials([_[:, i] for _ in t], index=index))
+                unit_pred.append(Trials([_[:, i] for _ in p], index=index))
 
-#         # concatenate model responses and targets
-#         responses = concatenate(*responses, burnin=burnin)
-#         targets = concatenate(*targets, burnin=burnin)
+                assert unit_targ.matches(unit_pred)
 
-#         # compute correlation
-#         return (Correlation & self.item).link.correlation(responses, targets)
+            # concatenated targets and predictions
+            unit_targ = concatenate(*unit_targ, burnin=key["burnin"])
+            unit_pred = concatenate(*unit_pred, burnin=key["burnin"])
+
+            # unit correlation
+            correlations.append(cc(unit_targ, unit_pred))
+
+        return np.array(correlations)
