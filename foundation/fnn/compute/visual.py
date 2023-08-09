@@ -27,7 +27,7 @@ class ModelRecordingCorrelations:
         Returns
         -------
         1D array
-            [units] -- visual response correlation
+            [units] -- unitwise correlations
         """
         from foundation.recording.compute.visual import VisualTrials
         from foundation.utility.response import Correlation
@@ -54,51 +54,53 @@ class ModelRecordingCorrelations:
         targs = []
         preds = []
 
-        for video in tqdm(videos, desc="Videos"):
+        with cache_rowproperty():
 
-            # trials
-            trial_ids = (VisualTrials & trialset & video & key).trial_ids
-            trials.append(trial_ids)
+            for video in tqdm(videos, desc="Videos"):
 
-            # stimuli
-            stimuli = data.trial_stimuli(trial_ids)
+                # trials
+                trial_ids = (VisualTrials & trialset & video & key).trial_ids
+                trials.append(trial_ids)
 
-            # units
-            units = data.trial_units(trial_ids)
+                # stimuli
+                stimuli = data.trial_stimuli(trial_ids)
 
-            # perspectives
-            if key["perspective"]:
-                perspectives = data.trial_perspectives(trial_ids)
-            else:
-                perspectives = repeat([None])
+                # units
+                units = data.trial_units(trial_ids)
 
-            # modulations
-            if key["modulation"]:
-                modulations = data.trial_modulations(trial_ids)
-            else:
-                modulations = repeat([None])
+                # perspectives
+                if key["perspective"]:
+                    perspectives = data.trial_perspectives(trial_ids)
+                else:
+                    perspectives = repeat([None])
 
-            # video targets and predictions
-            _targs = []
-            _preds = []
+                # modulations
+                if key["modulation"]:
+                    modulations = data.trial_modulations(trial_ids)
+                else:
+                    modulations = repeat([None])
 
-            for s, p, m, u in zip(stimuli, perspectives, modulations, units):
+                # video targets and predictions
+                _targs = []
+                _preds = []
 
-                # generate prediction
-                r = model.generate_response(stimuli=s, perspectives=p, modulations=m)
-                r = np.stack(list(r), axis=0)
+                for s, p, m, u in zip(stimuli, perspectives, modulations, units):
 
-                # append target and prediction
-                _targs.append(u)
-                _preds.append(r)
+                    # generate prediction
+                    r = model.generate_response(stimuli=s, perspectives=p, modulations=m)
+                    r = np.stack(list(r), axis=0)
 
-            assert len(_targs) == len(trial_ids)
+                    # append target and prediction
+                    _targs.append(u)
+                    _preds.append(r)
 
-            # append video targets and predictions
-            targs.append(_targs)
-            preds.append(_preds)
+                assert len(_targs) == len(trial_ids)
 
-        assert len(targs) == len(videos)
+                # append video targets and predictions
+                targs.append(_targs)
+                preds.append(_preds)
+
+            assert len(targs) == len(videos)
 
         # correlations
         cc = (Correlation & key).link.correlation
