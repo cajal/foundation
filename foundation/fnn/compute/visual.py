@@ -47,7 +47,8 @@ class VisualRecordingCorrelation:
         trialset = {"trialset_id": data.trialset_id}
 
         # videos
-        videos = (VideoSet & self.item).members.fetch("video_id", order_by="video_id", as_dict=True)
+        videos = (VideoSet & self.item).members
+        videos = videos.fetch("KEY", order_by=videos.primary_key)
 
         # trials, targets, predictions
         trials = []
@@ -102,8 +103,6 @@ class VisualRecordingCorrelation:
                 trials.append(trial_ids)
                 targs.append(_targs)
                 preds.append(_preds)
-
-            assert len(trials) == len(targs) == len(preds) == len(videos)
 
         # no trials at all
         if not trials:
