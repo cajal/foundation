@@ -214,6 +214,7 @@ class VisualScanCCNorm:
 
             # unit key
             _key = (Data & key).link.compute.key_unit
+            _key.pop("trial_filterset_id")
 
             # unit traces
             traces = (TraceSet & _key).members
