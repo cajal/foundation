@@ -6,8 +6,8 @@ from foundation.virtual import utility, stimulus, recording, fnn
 
 
 @keys
-class ModelRecordingCorrelation:
-    """Model Recording"""
+class VisualRecordingCorrelation:
+    """Visual Recording Correlation"""
 
     @property
     def keys(self):
@@ -72,13 +72,13 @@ class ModelRecordingCorrelation:
                 if key["perspective"]:
                     perspectives = data.trial_perspectives(trial_ids)
                 else:
-                    perspectives = repeat([None])
+                    perspectives = repeat(None)
 
                 # modulations
                 if key["modulation"]:
                     modulations = data.trial_modulations(trial_ids)
                 else:
-                    modulations = repeat([None])
+                    modulations = repeat(None)
 
                 # video targets and predictions
                 _targs = []
