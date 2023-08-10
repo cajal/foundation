@@ -60,7 +60,6 @@ class VisualRecordingCorrelation:
 
                 # trials
                 trial_ids = (VisualTrials & trialset & video & self.item).trial_ids
-                trials.append(trial_ids)
 
                 # stimuli
                 stimuli = data.trial_stimuli(trial_ids)
@@ -93,12 +92,13 @@ class VisualRecordingCorrelation:
                     _targs.append(u)
                     _preds.append(r)
 
-                assert len(_targs) == len(_preds) == len(trial_ids)
+                assert len(trial_ids) == len(_targs) == len(_preds)
 
+                trials.append(trial_ids)
                 targs.append(_targs)
                 preds.append(_preds)
 
-            assert len(targs) == len(preds) == len(videos)
+            assert len(trials) == len(targs) == len(preds) == len(videos)
 
         # correlations
         cc = (Correlation & self.item).link.correlation
