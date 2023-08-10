@@ -72,6 +72,7 @@ class ParallelCycle(InstanceType):
         from foundation.fnn.progress import ModelInfo, ModelCheckpoint, ModelLag, ModelDone
         from foundation.fnn.transfer import Transfer, TransferList
         from foundation.fnn.network import Network
+        from foundation.fnn.model import Model
         from foundation.fnn.train import Train
         from foundation.fnn.data import Data
         from foundation.utils import torch_rng
