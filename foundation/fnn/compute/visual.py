@@ -116,7 +116,7 @@ class VisualRecordingCorrelation:
                 _unit_targ = Trials([_[:, i] for _ in t], index=index)
                 _unit_pred = Trials([_[:, i] for _ in p], index=index)
 
-                assert unit_targ.matches(unit_pred)
+                assert _unit_targ.matches(_unit_pred)
 
                 unit_targ.append(_unit_targ)
                 unit_pred.append(_unit_pred)
