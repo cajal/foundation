@@ -36,5 +36,5 @@ class VisualRecordingCorrelation:
         assert len(correlations) == (Data & key).link.compute.units
 
         # insert
-        keys = [dict(key, unit_index=i, correlation=c) for i, c in enumerate(correlations)]
+        keys = [dict(key, unit=u, correlation=c) for u, c in enumerate(correlations)]
         self.insert(keys)
