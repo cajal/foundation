@@ -37,4 +37,4 @@ class VisualRecordingCorrelation:
 
         # insert
         keys = [dict(key, unit_index=i, correlation=c) for i, c in enumerate(correlations)]
-        self.insert1(keys)
+        self.insert(keys)
