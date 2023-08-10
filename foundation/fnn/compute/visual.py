@@ -38,16 +38,16 @@ class VisualRecordingCorrelation:
         from foundation.utils import cuda_enabled
 
         # load model
-        model = (Model & key).model(device="cuda" if cuda_enabled() else "cpu")
+        model = (Model & self.item).model(device="cuda" if cuda_enabled() else "cpu")
 
         # load data
-        data = (Data & key).link.compute
+        data = (Data & self.item).link.compute
 
         # trial set
         trialset = {"trialset_id": data.trialset_id}
 
         # videos
-        videos = (VideoSet & key).members.fetch("video_id", order_by="video_id", as_dict=True)
+        videos = (VideoSet & self.item).members.fetch("video_id", order_by="video_id", as_dict=True)
 
         # trials, targets, predictions
         trials = []
@@ -59,7 +59,7 @@ class VisualRecordingCorrelation:
             for video in tqdm(videos, desc="Videos"):
 
                 # trials
-                trial_ids = (VisualTrials & trialset & video & key).trial_ids
+                trial_ids = (VisualTrials & trialset & video & self.item).trial_ids
                 trials.append(trial_ids)
 
                 # stimuli
@@ -69,13 +69,13 @@ class VisualRecordingCorrelation:
                 units = data.trial_units(trial_ids)
 
                 # perspectives
-                if key["perspective"]:
+                if self.item["perspective"]:
                     perspectives = data.trial_perspectives(trial_ids)
                 else:
                     perspectives = repeat(None)
 
                 # modulations
-                if key["modulation"]:
+                if self.item["modulation"]:
                     modulations = data.trial_modulations(trial_ids)
                 else:
                     modulations = repeat(None)
@@ -90,20 +90,18 @@ class VisualRecordingCorrelation:
                     r = model.generate_response(stimuli=s, perspectives=p, modulations=m)
                     r = np.stack(list(r), axis=0)
 
-                    # append target and prediction
                     _targs.append(u)
                     _preds.append(r)
 
                 assert len(_targs) == len(_preds) == len(trial_ids)
 
-                # append video targets and predictions
                 targs.append(_targs)
                 preds.append(_preds)
 
             assert len(targs) == len(preds) == len(videos)
 
         # correlations
-        cc = (Correlation & key).link.correlation
+        cc = (Correlation & self.item).link.correlation
         correlations = []
 
         for i in tqdm(range(data.units), desc="Units"):
@@ -115,14 +113,17 @@ class VisualRecordingCorrelation:
             for index, t, p in zip(trials, targs, preds):
 
                 # target and prediction trials
-                unit_targ.append(Trials([_[:, i] for _ in t], index=index))
-                unit_pred.append(Trials([_[:, i] for _ in p], index=index))
+                _unit_targ = Trials([_[:, i] for _ in t], index=index)
+                _unit_pred = Trials([_[:, i] for _ in p], index=index)
 
                 assert unit_targ.matches(unit_pred)
 
+                unit_targ.append(_unit_targ)
+                unit_pred.append(_unit_pred)
+
             # concatenated targets and predictions
-            unit_targ = concatenate(*unit_targ, burnin=key["burnin"])
-            unit_pred = concatenate(*unit_pred, burnin=key["burnin"])
+            unit_targ = concatenate(*unit_targ, burnin=self.item["burnin"])
+            unit_pred = concatenate(*unit_pred, burnin=self.item["burnin"])
 
             # unit correlation
             correlations.append(cc(unit_targ, unit_pred))

@@ -27,7 +27,7 @@ class VisualRecordingCorrelation:
         return VisualRecordingCorrelation.key_source
 
     def make(self, key):
-        from foundation.fnn.compute_visual import VisualRecordingCorrelation
+        from foundation.fnn.compute.visual import VisualRecordingCorrelation
 
         # unit correlations
         correlations = (VisualRecordingCorrelation & key).units

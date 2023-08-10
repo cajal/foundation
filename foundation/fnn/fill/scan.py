@@ -1,6 +1,6 @@
 from djutils import keys, merge, cache_rowproperty
 from foundation.virtual.bridge import pipe_fuse
-from foundation.virtual import recording, fnn
+from foundation.virtual import utility, stimulus, scan, recording, fnn
 
 
 @keys
@@ -175,3 +175,52 @@ class VisualScanFoundationModel:
                 # populate model
                 _key = dict(key, instance_id=_instance_id)
                 Model.populate(_key, reserve_jobs=True)
+
+
+@keys
+class VisualScanCCNorm:
+    """Visual Scan Normalized Correlation Coefficient"""
+
+    @property
+    def keys(self):
+        return [
+            (scan.Scan * fnn.Model) & fnn.Data.VisualScan,
+            recording.TrialFilterSet,
+            stimulus.VideoSet,
+            utility.Burnin,
+            utility.Bool.proj(perspective="bool"),
+            utility.Bool.proj(modulation="bool"),
+        ]
+
+    def fill(self, cuda=True):
+        from foundation.fnn.data import Data
+        from foundation.fnn.visual import VisualRecordingCorrelation
+        from foundation.recording.visual import VisualMeasure
+        from foundation.recording.trace import TraceSet
+        from foundation.utils import use_cuda
+        from contextlib import nullcontext
+
+        # cuda context
+        context = use_cuda if cuda else nullcontext
+
+        with context():
+
+            # unit correlations
+            VisualRecordingCorrelation.populate(
+                self.key, utility.Correlation.CCSignal, reserve_jobs=True, display_progress=True
+            )
+
+        for key in self.key.fetch("data_id", "trial_filterset_id", "videoset_id", "burnin", as_dict=True):
+
+            # unit key
+            _key = (Data & key).link.compute.key_unit
+
+            # unit traces
+            traces = (TraceSet & _key).members
+
+            with cache_rowproperty():
+
+                # unit measures
+                VisualMeasure.populate(
+                    key, _key, traces, utility.Measure.CCMax, reserve_jobs=True, display_progress=True
+                )
