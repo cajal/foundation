@@ -144,9 +144,11 @@ class ParallelCycle(InstanceType):
             cycle=self.item["cycle"],
         ):
             if main:
-                # save lag
-                lag = (ModelCheckpoint & key).fetch1()
-                ModelLag.insert1(lag, replace=True)
+
+                if epoch:
+                    # save lag
+                    lag = (ModelCheckpoint & key).fetch1()
+                    ModelLag.insert1(lag, replace=True)
 
                 # save info
                 ModelInfo.fill(dict(key, epoch=epoch, info=info))
