@@ -1,7 +1,7 @@
 import numpy as np
 from itertools import repeat
 from djutils import keys, rowproperty, cache_rowproperty
-from foundation.utils import tqdm
+from foundation.utils import tqdm, logger
 from foundation.virtual import utility, stimulus, recording, fnn
 
 
@@ -61,6 +61,11 @@ class VisualRecordingCorrelation:
                 # trials
                 trial_ids = (VisualTrials & trialset & video & self.item).trial_ids
 
+                # no trials for video
+                if not trial_ids:
+                    logger.warning(f"No trials found for video_id `{video['video_id']}`")
+                    continue
+
                 # stimuli
                 stimuli = data.trial_stimuli(trial_ids)
 
@@ -99,6 +104,11 @@ class VisualRecordingCorrelation:
                 preds.append(_preds)
 
             assert len(trials) == len(targs) == len(preds) == len(videos)
+
+        # no trials at all
+        if not trials:
+            logger.warning(f"No trials found")
+            return
 
         # correlations
         cc = (Correlation & self.item).link.correlation
