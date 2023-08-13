@@ -92,6 +92,7 @@ class Rvt(RecurrentType):
     common_channels     : int unsigned  # common channels per stream
     groups              : int unsigned  # groups per stream
     spatial             : int unsigned  # spatial kernel size
+    nonlinear           : varchar(128)  # nonlinearity
     init_gate           : decimal(6, 4) # initial gate bias
     dropout             : decimal(6, 6) # dropout probability
     """
