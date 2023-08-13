@@ -84,6 +84,26 @@ class RecurrentType:
 
 
 @schema.lookup
+class Rvt(RecurrentType):
+    definition = """
+    in_channels         : int unsigned  # in channels per stream
+    out_channels        : int unsigned  # out channels per stream
+    hidden_channels     : int unsigned  # hidden channels per stream
+    common_channels     : int unsigned  # common channels per stream
+    groups              : int unsigned  # groups per stream
+    spatial             : int unsigned  # spatial kernel size
+    init_gate           : decimal(6, 4) # initial gate bias
+    dropout             : decimal(6, 6) # dropout probability
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.recurrents import Rvt
+
+        return Rvt(**self.fetch1())
+
+
+@schema.lookup
 class CvtLstm(RecurrentType):
     definition = """
     in_channels         : int unsigned  # in channels per stream
@@ -129,7 +149,7 @@ class ConvLstm(RecurrentType):
 
 @schema.link
 class Recurrent:
-    links = [CvtLstm, ConvLstm]
+    links = [Rvt, CvtLstm, ConvLstm]
     name = "recurrent"
 
 
