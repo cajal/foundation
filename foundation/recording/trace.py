@@ -41,6 +41,7 @@ class ScanUnit(TraceType):
 
         return ScanUnit & self
 
+
 @schema.lookup
 class ScanUnitRaw(TraceType):
     definition = """
@@ -92,13 +93,11 @@ class Trace:
     comment = "recording trace"
 
 
-
 @schema.linkset
 class TraceSet:
     link = Trace
     name = "traceset"
     comment = "trace set"
-
 
 
 # -- Computed Trace --
@@ -115,7 +114,6 @@ class TraceTrials:
     def make(self, key):
         key["trialset_id"] = (Trace & key).link.compute.trialset_id
         self.insert1(key)
-
 
 
 @schema.computed
@@ -153,7 +151,6 @@ class ScanUnitFilter:
         return traces & key.proj()
 
 
-
 @schema.lookupfilter
 class TraceSetFilter:
     filtertype = Trace
@@ -172,7 +169,6 @@ class TraceSetFilter:
             return traces - key.proj()
 
 
-
 # -- Trace Filter --
 
 
@@ -183,10 +179,8 @@ class TraceFilter:
     comment = "trace filter"
 
 
-
 @schema.filterlinkset
 class TraceFilterSet:
     link = TraceFilter
     name = "trace_filterset"
     comment = "trace filter set"
-

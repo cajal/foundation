@@ -110,11 +110,14 @@ class ScanUnitRaw(ScanTraceType):
 
     @rowproperty
     def values(self):
-        return (resolve_pipe(self.item).Fluorescence.Trace & self.item).fetch1("trace").clip(0) 
+        pipe = resolve_pipe(self.item)
+        unit = pipe.ScanSet.Unit & self.item
+        trace = (pipe.Fluorescence.Trace & unit).fetch1("trace")
+        return trace
 
     @rowproperty
     def homogeneous(self):
-        return True
+        return False
 
 
 @keys
