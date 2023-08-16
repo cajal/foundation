@@ -92,6 +92,32 @@ class ScanUnit(ScanTraceType):
 
 
 @keys
+class ScanUnitRaw(ScanTraceType):
+    """Scan Unit Trace-fluorescence"""
+
+    @property
+    def keys(self):
+        return [
+            scan.Scan,
+            pipe_fuse.ScanSet.Unit,
+        ]
+
+    @rowproperty
+    def times(self):
+        times = (scan.Scan & self.item).fetch1("scan_times")
+        delay = (resolve_pipe(self.item).ScanSet.UnitInfo & self.item).fetch1("ms_delay") / 1000
+        return times + delay
+
+    @rowproperty
+    def values(self):
+        return (resolve_pipe(self.item).Fluorescence.Trace & self.item).fetch1("trace").clip(0) 
+
+    @rowproperty
+    def homogeneous(self):
+        return True
+
+
+@keys
 class ScanPupil(ScanTraceType):
     """Scan Pupil Trace"""
 

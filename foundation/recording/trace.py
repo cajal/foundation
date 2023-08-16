@@ -41,6 +41,19 @@ class ScanUnit(TraceType):
 
         return ScanUnit & self
 
+@schema.lookup
+class ScanUnitRaw(TraceType):
+    definition = """
+    -> scan.Scan
+    -> pipe_fuse.ScanSet.Unit
+    """
+
+    @rowproperty
+    def compute(self):
+        from foundation.recording.compute.trace import ScanUnitRaw
+
+        return ScanUnitRaw & self
+
 
 @schema.lookup
 class ScanPupil(TraceType):
@@ -74,9 +87,10 @@ class ScanTreadmill(TraceType):
 
 @schema.link
 class Trace:
-    links = [ScanUnit, ScanPupil, ScanTreadmill]
+    links = [ScanUnit, ScanUnitRaw, ScanPupil, ScanTreadmill]
     name = "trace"
     comment = "recording trace"
+
 
 
 @schema.linkset
@@ -84,6 +98,7 @@ class TraceSet:
     link = Trace
     name = "traceset"
     comment = "trace set"
+
 
 
 # -- Computed Trace --
@@ -100,6 +115,7 @@ class TraceTrials:
     def make(self, key):
         key["trialset_id"] = (Trace & key).link.compute.trialset_id
         self.insert1(key)
+
 
 
 @schema.computed
@@ -137,6 +153,7 @@ class ScanUnitFilter:
         return traces & key.proj()
 
 
+
 @schema.lookupfilter
 class TraceSetFilter:
     filtertype = Trace
@@ -155,6 +172,7 @@ class TraceSetFilter:
             return traces - key.proj()
 
 
+
 # -- Trace Filter --
 
 
@@ -165,8 +183,10 @@ class TraceFilter:
     comment = "trace filter"
 
 
+
 @schema.filterlinkset
 class TraceFilterSet:
     link = TraceFilter
     name = "trace_filterset"
     comment = "trace filter set"
+
