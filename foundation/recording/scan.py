@@ -277,9 +277,6 @@ class ScanUnitRawOrder:
 
         # insert
         self.insert(keys)
-    
-    def test(self):
-        print(self)
 
 
 @schema.computed
