@@ -26,6 +26,16 @@ class SummaryType:
 
 
 @schema.method
+class Minimum(SummaryType):
+    name = "minimum"
+    comment = "minimum"
+
+    @rowproperty
+    def summary(self):
+        return np.min
+
+
+@schema.method
 class Mean(SummaryType):
     name = "mean"
     comment = "arithmetic mean"
@@ -52,6 +62,6 @@ class Std(SummaryType):
 
 @schema.link
 class Summary:
-    links = [Mean, Std]
+    links = [Minimum, Mean, Std]
     name = "summary"
     comment = "summary statistic"
