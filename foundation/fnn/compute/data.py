@@ -207,15 +207,16 @@ class RecordingType(DataType):
 # -- Data Types --
 
 
-@keys
-class VisualScan(VisualType, RecordingType):
-    """Visual Scan Data"""
+class _VisualScan(VisualType, RecordingType):
+    """Visual Scan Data -- Base"""
 
     @property
-    def keys(self):
-        return [
-            fnn.VisualScan,
-        ]
+    def unit_set(self):
+        raise NotImplementedError()
+
+    @property
+    def unit_order(self):
+        raise NotImplementedError()
 
     @rowproperty
     def key_video(self):
@@ -235,7 +236,7 @@ class VisualScan(VisualType, RecordingType):
 
     @rowproperty
     def key_unit(self):
-        return (self._key_traces("unit") * recording.ScanUnits & self.item).fetch1()
+        return (self._key_traces("unit") * self.unit_set & self.item).fetch1()
 
     @rowproperty
     def stimuli(self):
@@ -305,19 +306,18 @@ class VisualScan(VisualType, RecordingType):
     def _trial_traces(self, trial_ids, datatype):
         from foundation.recording.trace import TraceSet
         from foundation.recording.compute.standardize import StandardizedTraces
-        from foundation.recording.scan import ScanVisualPerspectiveOrder, ScanVisualModulationOrder, ScanUnitOrder
 
         if datatype == "perspective":
             key = self.key_perspective
-            order = ScanVisualPerspectiveOrder
+            order = recording.ScanVisualPerspectiveOrder
 
         elif datatype == "modulation":
             key = self.key_modulation
-            order = ScanVisualModulationOrder
+            order = recording.ScanVisualModulationOrder
 
         elif datatype == "unit":
             key = self.key_unit
-            order = ScanUnitOrder
+            order = self.unit_order
 
         else:
             raise ValueError(f"datatype `{datatype}` not recognized")
@@ -395,3 +395,41 @@ class VisualScan(VisualType, RecordingType):
         }
         data = pd.DataFrame(data, index=pd.Index(trial_ids, name="trial_id"))
         return Dataset(data)
+
+
+@keys
+class VisualScan(_VisualScan):
+    """Visual Scan Data -- Activity"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.VisualScan,
+        ]
+
+    @property
+    def unit_set(self):
+        return recording.ScanUnits
+
+    @property
+    def unit_order(self):
+        return recording.ScanUnitOrder
+
+
+@keys
+class VisualScanRaw(_VisualScan):
+    """Visual Scan Data -- Fluorescence"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.VisualScanRaw,
+        ]
+
+    @property
+    def unit_set(self):
+        return recording.ScanUnitsRaw
+
+    @property
+    def unit_order(self):
+        return recording.ScanUnitRawOrder

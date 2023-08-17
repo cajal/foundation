@@ -78,12 +78,32 @@ class VisualScan(DataType):
         return VisualScan & self
 
 
+@schema.lookup
+class VisualScanRaw(DataType):
+    definition = """
+    -> Spec.VisualSpec
+    -> recording.ScanVisualPerspectives
+    -> recording.ScanVisualModulations
+    -> recording.ScanUnitsRaw
+    -> recording.ScanTrials
+    -> recording.Tier
+    training_tier       : int unsigned  # training tier index
+    validation_tier     : int unsigned  # validation tier index
+    """
+
+    @rowproperty
+    def compute(self):
+        from foundation.fnn.compute.data import VisualScanRaw
+
+        return VisualScanRaw & self
+
+
 # -- Data --
 
 
 @schema.link
 class Data:
-    links = [VisualScan]
+    links = [VisualScan, VisualScanRaw]
     name = "data"
     comment = "fnn data"
 

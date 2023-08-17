@@ -1,23 +1,18 @@
 from djutils import keys, merge, cache_rowproperty
-from foundation.virtual.bridge import pipe_fuse
+from foundation.virtual.bridge import pipe_fuse, pipe_shared
 from foundation.virtual import utility, stimulus, scan, recording, fnn
 
 
-@keys
-class VisualScanData:
-    """Visual Scan Data"""
+class _VisualScanData:
+    """Visual Scan Data -- Base"""
 
     @property
-    def keys(self):
-        return [
-            fnn.Spec.VisualSpec,
-            pipe_fuse.ScanDone,
-            recording.ScanVisualPerspectives,
-            recording.ScanVisualModulations,
-            recording.TraceFilterSet,
-            recording.TrialFilterSet,
-            recording.Tier,
-        ]
+    def units_table(self):
+        raise NotImplementedError()
+
+    @property
+    def units_order(self):
+        raise NotImplementedError()
 
     def fill(self, training_tier=0, validation_tier=1):
         """
@@ -35,10 +30,10 @@ class VisualScanData:
 
         # filtered trials and traces
         scan.ScanTrials.populate(self.key, display_progress=True, reserve_jobs=True)
-        scan.ScanUnits.populate(self.key, display_progress=True, reserve_jobs=True)
+        self.unit_set.populate(self.key, display_progress=True, reserve_jobs=True)
 
         # trace orders
-        scan.ScanUnitOrder.populate(self.key, display_progress=True, reserve_jobs=True)
+        self.unit_order.populate(self.key, display_progress=True, reserve_jobs=True)
         scan.ScanVisualPerspectiveOrder.populate(self.key, display_progress=True, reserve_jobs=True)
         scan.ScanVisualModulationOrder.populate(self.key, display_progress=True, reserve_jobs=True)
 
@@ -72,7 +67,7 @@ class VisualScanData:
             for table, datatype in [
                 [recording.ScanVisualPerspectives, "perspective"],
                 [recording.ScanVisualModulations, "modulation"],
-                [recording.ScanUnits, "unit"],
+                [self.unit_set, "unit"],
             ]:
 
                 with cache_rowproperty():
@@ -102,6 +97,64 @@ class VisualScanData:
 
         # fill
         Data.fill()
+
+
+@keys
+class VisualScanData(_VisualScanData):
+    """Visual Scan Data -- Activity"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.Spec.VisualSpec,
+            pipe_fuse.ScanDone,
+            recording.ScanVisualPerspectives,
+            recording.ScanVisualModulations,
+            recording.TraceFilterSet,
+            recording.TrialFilterSet,
+            recording.Tier,
+        ]
+
+    @property
+    def unit_set(self):
+        from foundation.recording.scan import ScanUnits
+
+        return ScanUnits
+
+    @property
+    def unit_order(self):
+        from foundation.recording.scan import ScanUnitOrder
+
+        return ScanUnitOrder
+
+
+@keys
+class VisualScanDataRaw(_VisualScanData):
+    """Visual Scan Data -- Fluorescence"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.Spec.VisualSpec,
+            (scan.Scan * pipe_shared.PipelineVersion * pipe_shared.SegmentationMethod).proj() & pipe_fuse.ScanDone,
+            recording.ScanVisualPerspectives,
+            recording.ScanVisualModulations,
+            recording.TraceFilterSet,
+            recording.TrialFilterSet,
+            recording.Tier,
+        ]
+
+    @property
+    def unit_set(self):
+        from foundation.recording.scan import ScanUnitsRaw
+
+        return ScanUnitsRaw
+
+    @property
+    def unit_order(self):
+        from foundation.recording.scan import ScanUnitRawOrder
+
+        return ScanUnitRawOrder
 
 
 @keys
