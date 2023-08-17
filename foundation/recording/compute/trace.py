@@ -93,7 +93,7 @@ class ScanUnit(ScanTraceType):
 
 @keys
 class ScanUnitRaw(ScanTraceType):
-    """Scan Unit Trace-fluorescence"""
+    """Scan Unit Trace -- Fluorescence"""
 
     @property
     def keys(self):

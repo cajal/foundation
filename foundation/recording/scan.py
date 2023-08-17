@@ -124,6 +124,7 @@ class ScanUnits:
         # insert
         self.insert1(dict(key, **traces))
 
+
 @schema.computed
 class ScanUnitsRaw:
     definition = """
@@ -134,7 +135,7 @@ class ScanUnitsRaw:
     ---
     -> TraceSet
     """
-    
+
     @property
     def key_source(self):
         keys = (scan.Scan * pipe_shared.PipelineVersion * pipe_shared.SegmentationMethod * TraceFilterSet).proj()
@@ -145,11 +146,11 @@ class ScanUnitsRaw:
         units = pipe_fuse.ScanSet.Unit & key
 
         # insert traces
-        ScanUnit.insert(units - ScanUnit, ignore_extra_fields=True)
+        ScanUnitRaw.insert(units - ScanUnitRaw, ignore_extra_fields=True)
         Trace.fill()
 
         # trace keys
-        traces = Trace & (Trace.ScanUnit & key)
+        traces = Trace & (Trace.ScanUnitRaw & key)
 
         # filter traces
         traces = (TraceFilterSet & key).filter(traces)

@@ -3,17 +3,16 @@ from foundation.virtual.bridge import pipe_fuse, pipe_shared
 from foundation.virtual import scan, recording
 
 
-@keys
-class VisualScanRecording:
-    """Visual Scan Recording"""
+class _VisualScanRecording:
+    """Visual Scan Recording -- Base"""
 
     @property
-    def keys(self):
-        return [
-            scan.Scan,
-            pipe_fuse.ScanDone,
-            pipe_shared.TrackingMethod & scan.PupilTrace,
-        ]
+    def units_table(self):
+        raise NotImplementedError()
+
+    @property
+    def units_homogeneous(self):
+        raise NotImplementedError()
 
     def fill(self):
         from foundation.recording import trial, trace, scan
@@ -39,7 +38,7 @@ class VisualScanRecording:
 
         # scan sets
         scan.ScanTrials.populate(self.key, trial_filt, display_progress=True, reserve_jobs=True)
-        scan.ScanUnits.populate(self.key, trace_filt, display_progress=True, reserve_jobs=True)
+        self.units_table.populate(self.key, trace_filt, display_progress=True, reserve_jobs=True)
         scan.ScanVisualPerspectives.populate(self.key, display_progress=True, reserve_jobs=True)
         scan.ScanVisualModulations.populate(self.key, display_progress=True, reserve_jobs=True)
         scan.ScanVideoTimeScale.populate(self.key, display_progress=True, reserve_jobs=True)
@@ -57,8 +56,10 @@ class VisualScanRecording:
                 trace.TraceHomogeneous.populate(traces, display_progress=True, reserve_jobs=True)
                 trace.TraceTrials.populate(traces, display_progress=True, reserve_jobs=True)
 
-            # unit traces (shortcut)
-            traces = scan.ScanUnits & key & trace_filt
+            # ---- shortcut for units ----
+
+            # traces
+            traces = self.units_table & key & trace_filt
             traces = (trace.TraceSet & traces).members
 
             # trials
@@ -66,7 +67,7 @@ class VisualScanRecording:
 
             # keys
             keys = traces.fetch("trace_id", order_by="trace_id", as_dict=True)
-            keys = [dict(key, trialset_id=trials, homogeneous=True) for key in keys]
+            keys = [dict(key, trialset_id=trials, homogeneous=self.units_homogeneous) for key in keys]
 
             # insert unit traces
             trace.TraceTrials.insert(
@@ -81,3 +82,48 @@ class VisualScanRecording:
                 allow_direct_insert=True,
                 ignore_extra_fields=True,
             )
+
+
+@keys
+class VisualScanRecording(_VisualScanRecording):
+    """Visual Scan Recording -- Activity"""
+
+    @property
+    def keys(self):
+        return [
+            scan.Scan,
+            pipe_fuse.ScanDone,
+            pipe_shared.TrackingMethod & scan.PupilTrace,
+        ]
+
+    @property
+    def units_table(self):
+        from foundation.recording.scan import ScanUnits
+
+        return ScanUnits
+
+    @property
+    def units_homogeneous(self):
+        return True
+
+
+@keys
+class VisualScanRawRecording(_VisualScanRecording):
+    """Visual Scan Recording -- Fluorescence"""
+
+    @property
+    def keys(self):
+        return [
+            (scan.Scan * pipe_shared.PipelineVersion * pipe_shared.SegmentationMethod).proj() & pipe_fuse.ScanDone,
+            pipe_shared.TrackingMethod & scan.PupilTrace,
+        ]
+
+    @property
+    def units_table(self):
+        from foundation.recording.scan import ScanUnitsRaw
+
+        return ScanUnitsRaw
+
+    @property
+    def units_homogeneous(self):
+        return False
