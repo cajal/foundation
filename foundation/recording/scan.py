@@ -1,7 +1,7 @@
 import numpy as np
 from djutils import merge
 from foundation.virtual import scan, stimulus
-from foundation.virtual.bridge import pipe_stim, pipe_fuse, pipe_eye, pipe_tread
+from foundation.virtual.bridge import pipe_stim, pipe_fuse, pipe_eye, pipe_tread, pipe_shared
 from foundation.recording.trial import (
     ScanTrial,
     Trial,
@@ -12,6 +12,7 @@ from foundation.recording.trial import (
 )
 from foundation.recording.trace import (
     ScanUnit,
+    ScanUnitRaw,
     ScanPupil,
     ScanTreadmill,
     Trace,
@@ -106,6 +107,42 @@ class ScanUnits:
     def make(self, key):
         # scan units
         units = pipe_fuse.Activity.Trace & key
+
+        # insert traces
+        ScanUnit.insert(units - ScanUnit, ignore_extra_fields=True)
+        Trace.fill()
+
+        # trace keys
+        traces = Trace & (Trace.ScanUnit & key)
+
+        # filter traces
+        traces = (TraceFilterSet & key).filter(traces)
+
+        # trace set
+        traces = TraceSet.fill(traces, prompt=False)
+
+        # insert
+        self.insert1(dict(key, **traces))
+
+@schema.computed
+class ScanUnitsRaw:
+    definition = """
+    -> scan.Scan
+    -> pipe_shared.PipelineVersion
+    -> pipe_shared.SegmentationMethod
+    -> TraceFilterSet
+    ---
+    -> TraceSet
+    """
+    
+    @property
+    def key_source(self):
+        keys = (scan.Scan * pipe_shared.PipelineVersion * pipe_shared.SegmentationMethod * TraceFilterSet).proj()
+        return keys & pipe_fuse.ScanDone
+
+    def make(self, key):
+        # scan units
+        units = pipe_fuse.ScanSet.Unit & key
 
         # insert traces
         ScanUnit.insert(units - ScanUnit, ignore_extra_fields=True)

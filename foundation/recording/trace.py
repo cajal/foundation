@@ -43,6 +43,20 @@ class ScanUnit(TraceType):
 
 
 @schema.lookup
+class ScanUnitRaw(TraceType):
+    definition = """
+    -> scan.Scan
+    -> pipe_fuse.ScanSet.Unit
+    """
+
+    @rowproperty
+    def compute(self):
+        from foundation.recording.compute.trace import ScanUnitRaw
+
+        return ScanUnitRaw & self
+
+
+@schema.lookup
 class ScanPupil(TraceType):
     definition = """
     -> scan.PupilTrace
@@ -74,7 +88,7 @@ class ScanTreadmill(TraceType):
 
 @schema.link
 class Trace:
-    links = [ScanUnit, ScanPupil, ScanTreadmill]
+    links = [ScanUnit, ScanUnitRaw, ScanPupil, ScanTreadmill]
     name = "trace"
     comment = "recording trace"
 
