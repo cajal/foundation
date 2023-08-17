@@ -14,6 +14,10 @@ class _VisualScanData:
     def units_order(self):
         raise NotImplementedError()
 
+    @property
+    def datatype(self):
+        raise NotImplementedError()
+
     def fill(self, training_tier=0, validation_tier=1):
         """
         Parameters
@@ -93,7 +97,7 @@ class _VisualScanData:
 
             # insert
             key = dict(key, training_tier=training_tier, validation_tier=validation_tier)
-            VisualScan.insert1(key, skip_duplicates=True)
+            self.datatype.insert1(key, skip_duplicates=True)
 
         # fill
         Data.fill()
@@ -127,6 +131,10 @@ class VisualScanData(_VisualScanData):
 
         return ScanUnitOrder
 
+    @property
+    def datatype(self):
+        return fnn.VisualScan
+
 
 @keys
 class VisualScanDataRaw(_VisualScanData):
@@ -155,6 +163,10 @@ class VisualScanDataRaw(_VisualScanData):
         from foundation.recording.scan import ScanUnitRawOrder
 
         return ScanUnitRawOrder
+
+    @property
+    def datatype(self):
+        return fnn.VisualScanRaw
 
 
 @keys
