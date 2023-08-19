@@ -7,11 +7,11 @@ class _VisualScanData:
     """Visual Scan Data -- Base"""
 
     @property
-    def units_table(self):
+    def unit_set(self):
         raise NotImplementedError()
 
     @property
-    def units_order(self):
+    def unit_order(self):
         raise NotImplementedError()
 
     @property
