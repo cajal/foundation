@@ -146,8 +146,7 @@ class ScanUnitFilter:
     def filter(self, traces):
         units = merge(traces, Trace.ScanUnit)
         pipe = resolve_pipe(units)
-        key = units * pipe.ScanSet.Unit * pipe.MaskClassification.Type & self.fetch1()
-
+        key = merge(units, pipe.ScanSet.Unit, pipe.MaskClassification.Type) & self.fetch1()
         return traces & key.proj()
 
 
