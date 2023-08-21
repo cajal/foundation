@@ -98,6 +98,16 @@ class VisualScanRaw(DataType):
         return VisualScanRaw & self
 
 
+@schema.lookup
+class Sensorium2023(DataType):
+    definition = """
+    sensorium_dataset   : varchar(512)  # sensorium dataset
+    trainval_tiers      : varchar(512)  # training & validation tiers (csv)
+    split_fraction      : decimal(6, 6) # split fraction
+    split_seed          : int unsigned  # split seed
+    """
+
+
 # -- Data --
 
 

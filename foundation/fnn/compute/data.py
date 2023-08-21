@@ -433,3 +433,24 @@ class VisualScanRaw(_VisualScan):
     @property
     def unit_order(self):
         return recording.ScanUnitRawOrder
+
+
+@keys
+class Sensorium2023(DataType):
+    """Sensorium 2023"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.Sensorium2023,
+        ]
+
+    @rowproperty
+    def root(self):
+        from os.path import join
+
+        return join("/mnt", "scratch09", "sensorium_2023", self.item["sensorium_dataset"])
+
+    def trim(self, x, axis):
+        end = np.where(np.isnan(x))[axis].min()
+        return np.take(x, np.arange(end), axis=axis)
