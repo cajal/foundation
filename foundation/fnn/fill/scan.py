@@ -1,4 +1,4 @@
-from djutils import keys, merge, cache_rowproperty
+from djutils import keys, merge, cache_rowproperty, U
 from foundation.virtual.bridge import pipe_fuse, pipe_shared
 from foundation.virtual import utility, stimulus, scan, recording, fnn
 
@@ -243,8 +243,8 @@ class VisualScanFoundationModel:
 
 
 @keys
-class VisualScanCCNorm:
-    """Visual Scan Normalized Correlation Coefficient"""
+class VisualScanRecording:
+    """Visual Scan Recording"""
 
     @property
     def keys(self):
@@ -257,11 +257,8 @@ class VisualScanCCNorm:
             utility.Bool.proj(modulation="bool"),
         ]
 
-    def fill(self, cuda=True):
-        from foundation.fnn.data import Data
+    def fill_cc_abs(self, cuda=True):
         from foundation.fnn.visual import VisualRecordingCorrelation
-        from foundation.recording.visual import VisualMeasure
-        from foundation.recording.trace import TraceSet
         from foundation.utils import use_cuda
         from contextlib import nullcontext
 
@@ -275,7 +272,14 @@ class VisualScanCCNorm:
                 self.key, utility.Correlation.CCSignal, reserve_jobs=True, display_progress=True
             )
 
-        for key in self.key.fetch("data_id", "trial_filterset_id", "videoset_id", "burnin", as_dict=True):
+    def fill_cc_max(self):
+        from foundation.fnn.data import Data
+        from foundation.recording.visual import VisualMeasure
+        from foundation.recording.trace import TraceSet
+
+        keys = U("data_id", "trial_filterset_id", "videoset_id", "burnin") & self.key
+
+        for key in keys:
 
             # unit key
             _key = (Data & key).link.compute.key_unit

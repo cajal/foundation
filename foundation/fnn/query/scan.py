@@ -3,8 +3,8 @@ from foundation.virtual import utility, stimulus, scan, recording, fnn
 
 
 @keys
-class VisualScanPerformance:
-    """Visual Scan Performance"""
+class VisualScanRecording:
+    """Visual Scan Recording"""
 
     @property
     def keys(self):
