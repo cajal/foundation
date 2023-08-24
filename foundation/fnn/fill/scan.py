@@ -243,8 +243,8 @@ class VisualScanFoundationModel:
 
 
 @keys
-class VisualScanRecording:
-    """Visual Scan Recording"""
+class VisualScanCorrelation:
+    """Visual Scan Correlation"""
 
     @property
     def keys(self):
