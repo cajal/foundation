@@ -229,9 +229,9 @@ class Frame(VideoType):
             blank = np.full([image.height, image.width], 128, dtype=np.uint8)
             blank = video.Frame.fromarray(blank)
         else:
-            raise NotImplementedError(f"Frame mode {mode} not implemented")
+            raise NotImplementedError(f"Frame mode {image.mode} not implemented")
 
         if pre_blank > 0:
             return video.Video([blank, image, blank], times=[0, pre_blank, pre_blank + duration])
         else:
-            return video.Video([image, blank], [0, duration])
+            return video.Video([image, blank], times=[0, duration])
