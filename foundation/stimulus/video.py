@@ -1,7 +1,9 @@
+import numpy as np
 from djutils import rowproperty
-from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
-from foundation.schemas import stimulus as schema
 
+from foundation.schemas import stimulus as schema
+from foundation.utils import video
+from foundation.virtual.bridge import pipe_dot, pipe_gabor, pipe_rdk, pipe_stim
 
 # ---------------------------- Video ----------------------------
 
@@ -114,6 +116,62 @@ class Frame(VideoType):
         from foundation.stimulus.compute.video import Frame
 
         return Frame & self
+
+
+@schema.list
+class FrameList(VideoType):
+    ''' Each entry in the table corresponds to a list of frames.
+    This table can be used to recreate a video of all frames shown in a scan.
+    Example code to fill the table with all frames shown in a scan:
+
+        scan_key = dict(animal_id=26872, session=17, scan_idx=20)
+        keys = (pipe_stim.Frame * pipe_stim.Condition * pipe_stim.Trial & scan_key).fetch(
+            "KEY", order_by="trial_idx ASC"
+        )
+        FrameList.fill(
+            restrictions=keys,
+            note="All stimulus.Frame conditions presented in 26872-17-20, ordered by trial_idx",
+        )
+
+    '''
+    keys = [pipe_stim.Frame]
+    name = "framelist"
+    comment = "an ordered list of frames"
+
+    @rowproperty
+    def compute(self):
+        tups = pipe_stim.StaticImage.Image * pipe_stim.Frame * self.Member() & self
+        images = []
+        times = []
+        current_time = 0
+        for image, pre_blank, duration in zip(
+            *tups.fetch(
+                "image",
+                "pre_blank_period",
+                "presentation_time",
+                order_by="framelist_index",
+            )
+        ):
+            image = video.Frame.fromarray(image)
+
+            if image.mode == "L":
+                blank = np.full([image.height, image.width], 128, dtype=np.uint8)
+                blank = video.Frame.fromarray(blank)
+            else:
+                raise NotImplementedError(f"Frame mode {image.mode} not implemented")
+
+            if pre_blank > 0 and current_time == 0:
+                images += [blank, image, blank]
+                times += [
+                    current_time,
+                    current_time + pre_blank,
+                    current_time + pre_blank + duration,
+                ]
+            else:
+                images += [image, blank]
+                times += [current_time + pre_blank, current_time + pre_blank + duration]
+            current_time = times[-1]
+        return video.Video(images, times=times)
 
 
 # -- Video --
