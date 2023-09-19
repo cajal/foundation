@@ -120,20 +120,34 @@ class Frame(VideoType):
 
 @schema.list
 class FrameList(VideoType):
-    ''' Each entry in the table corresponds to a list of frames.
+    """Each entry in the table corresponds to a list of frames.
     This table can be used to recreate a video of all frames shown in a scan.
-    Example code to fill the table with all frames shown in a scan:
+    Example code to fill the table with all frames shown in a scan and test the result:
 
         scan_key = dict(animal_id=26872, session=17, scan_idx=20)
         keys = (pipe_stim.Frame * pipe_stim.Condition * pipe_stim.Trial & scan_key).fetch(
             "KEY", order_by="trial_idx ASC"
         )
-        FrameList.fill(
+        frame_list_key = FrameList.fill(
             restrictions=keys,
             note="All stimulus.Frame conditions presented in 26872-17-20, ordered by trial_idx",
         )
+        v = (video.FrameList() & frame_list_key).compute
+        images, preblank, duration = (
+            pipe_stim.StaticImage.Image
+            * pipe_stim.Trial()
+            * pipe_stim.Condition()
+            * pipe_stim.Frame()
+            & scan_key
+        ).fetch("image", "pre_blank_period", "presentation_time", order_by="trial_idx ASC")
+        for i, j in zip(images, v.frames[1::2]):
+            assert np.all(i == j)
+        v_preblank = np.diff(v.times)[::2]
+        v_duration = np.diff(v.times)[1::2]
+        assert np.allclose(v_preblank, preblank)
+        assert np.allclose(v_duration, duration)
+    """
 
-    '''
     keys = [pipe_stim.Frame]
     name = "framelist"
     comment = "an ordered list of frames"
