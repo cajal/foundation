@@ -3,6 +3,7 @@ import av
 import numpy as np
 from djutils import keys, rowproperty, rowmethod
 from foundation.utils import video
+from foundation.stimulus import video as video_schema
 from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
 
 
@@ -69,7 +70,6 @@ class Clip(VideoType):
         reader = av.open(io.BytesIO(clip.tobytes()), mode="r")
 
         for i, frame in enumerate(reader.decode()):
-
             if i < start:
                 continue
             if i == end:
@@ -235,3 +235,54 @@ class Frame(VideoType):
             return video.Video([blank, image, blank], times=[0, pre_blank, pre_blank + duration])
         else:
             return video.Video([image, blank], times=[0, duration])
+
+
+@keys
+class FrameList(VideoType):
+    """A video composed of an ordered list of stimulus.Frame"""
+
+    @property
+    def keys(self):
+        return [
+            video_schema.FrameList,
+        ]
+
+    @rowproperty
+    def video(self):
+        tups = (
+            pipe_stim.StaticImage.Image
+            * pipe_stim.Frame
+            * video_schema.FrameList.Member()
+            & self.item
+        )
+        images = []
+        times = []
+        current_time = 0
+        for image, pre_blank, duration in zip(
+            *tups.fetch(
+                "image",
+                "pre_blank_period",
+                "presentation_time",
+                order_by="framelist_index",
+            )
+        ):
+            image = video.Frame.fromarray(image)
+
+            if image.mode == "L":
+                blank = np.full([image.height, image.width], 128, dtype=np.uint8)
+                blank = video.Frame.fromarray(blank)
+            else:
+                raise NotImplementedError(f"Frame mode {image.mode} not implemented")
+
+            if pre_blank > 0 and current_time == 0:
+                images += [blank, image, blank]
+                times += [
+                    current_time,
+                    current_time + pre_blank,
+                    current_time + pre_blank + duration,
+                ]
+            else:
+                images += [image, blank]
+                times += [current_time + pre_blank, current_time + pre_blank + duration]
+            current_time = times[-1]
+        return video.Video(images, times=times)

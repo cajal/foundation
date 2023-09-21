@@ -124,28 +124,29 @@ class FrameList(VideoType):
     This table can be used to recreate a video of all frames shown in a scan.
     Example code to fill the table with all frames shown in a scan and test the result:
 
-        scan_key = dict(animal_id=26872, session=17, scan_idx=20)
-        keys = (pipe_stim.Frame * pipe_stim.Condition * pipe_stim.Trial & scan_key).fetch(
-            "KEY", order_by="trial_idx ASC"
-        )
-        frame_list_key = FrameList.fill(
-            restrictions=keys,
-            note="All stimulus.Frame conditions presented in 26872-17-20, ordered by trial_idx",
-        )
-        v = (video.FrameList() & frame_list_key).compute
-        images, preblank, duration = (
-            pipe_stim.StaticImage.Image
-            * pipe_stim.Trial()
-            * pipe_stim.Condition()
-            * pipe_stim.Frame()
-            & scan_key
-        ).fetch("image", "pre_blank_period", "presentation_time", order_by="trial_idx ASC")
-        for i, j in zip(images, v.frames[1::2]):
-            assert np.all(i == j)
-        v_preblank = np.diff(v.times)[::2]
-        v_duration = np.diff(v.times)[1::2]
-        assert np.allclose(v_preblank, preblank)
-        assert np.allclose(v_duration, duration)
+    >>> from foundation.stimulus.video import *
+    ... scan_key = dict(animal_id=26872, session=17, scan_idx=20)
+    ... keys = (pipe_stim.Frame * pipe_stim.Condition * pipe_stim.Trial & scan_key).fetch(
+    ...     "KEY", order_by="trial_idx ASC"
+    ... )
+    ... frame_list_key = FrameList.fill(
+    ...     restrictions=keys,
+    ...     note="All stimulus.Frame conditions presented in 26872-17-20, ordered by trial_idx",
+    ... )
+    ... v = (FrameList() & frame_list_key).compute.video
+    ... images, preblank, duration = (
+    ...     pipe_stim.StaticImage.Image
+    ...     * pipe_stim.Trial()
+    ...     * pipe_stim.Condition()
+    ...     * pipe_stim.Frame()
+    ...     & scan_key
+    ... ).fetch("image", "pre_blank_period", "presentation_time", order_by="trial_idx ASC")
+    ... for i, j in zip(images, v.frames[1::2]):
+    ...     assert np.all(i == j)
+    ... v_preblank = np.diff(v.times)[::2]
+    ... v_duration = np.diff(v.times)[1::2]
+    ... np.allclose(v_preblank, preblank) and np.allclose(v_duration, duration)
+    True
     """
 
     keys = [pipe_stim.Frame]
@@ -154,38 +155,9 @@ class FrameList(VideoType):
 
     @rowproperty
     def compute(self):
-        tups = pipe_stim.StaticImage.Image * pipe_stim.Frame * self.Member() & self
-        images = []
-        times = []
-        current_time = 0
-        for image, pre_blank, duration in zip(
-            *tups.fetch(
-                "image",
-                "pre_blank_period",
-                "presentation_time",
-                order_by="framelist_index",
-            )
-        ):
-            image = video.Frame.fromarray(image)
+        from foundation.stimulus.compute.video import FrameList
 
-            if image.mode == "L":
-                blank = np.full([image.height, image.width], 128, dtype=np.uint8)
-                blank = video.Frame.fromarray(blank)
-            else:
-                raise NotImplementedError(f"Frame mode {image.mode} not implemented")
-
-            if pre_blank > 0 and current_time == 0:
-                images += [blank, image, blank]
-                times += [
-                    current_time,
-                    current_time + pre_blank,
-                    current_time + pre_blank + duration,
-                ]
-            else:
-                images += [image, blank]
-                times += [current_time + pre_blank, current_time + pre_blank + duration]
-            current_time = times[-1]
-        return video.Video(images, times=times)
+        return FrameList & self
 
 
 # -- Video --
