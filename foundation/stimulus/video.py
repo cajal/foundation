@@ -124,13 +124,20 @@ class FrameList(VideoType):
     Example code to fill the table with all frames shown in a scan and test the result:
 
     >>> from foundation.stimulus.video import *
+    ... import datajoint as dj
     ... scan_key = dict(animal_id=26872, session=17, scan_idx=20)
-    ... keys = (pipe_stim.Frame * pipe_stim.Condition * pipe_stim.Trial & scan_key).fetch(
-    ...     "KEY", order_by="trial_idx ASC"
+    ... keys, trial_idx = dj.U('condition_hash').aggr(
+    ...     (pipe_stim.Frame * pipe_stim.Condition * pipe_stim.Trial & scan_key),
+    ...     trial_idx='MIN(trial_idx)'
+    ... ).fetch(
+    ...     "KEY", "trial_idx", order_by="trial_idx ASC"
     ... )
     ... frame_list_key = FrameList.fill(
     ...     restrictions=keys,
-    ...     note="All stimulus.Frame conditions presented in 26872-17-20, ordered by trial_idx",
+    ...     note=(
+    ...         "All unique stimulus.Frame conditions presented in 26872-17-20, "\
+    ...         "ordered by the trial_idx of the first repetition.",
+    ...     ),
     ... )
     ... v = (FrameList() & frame_list_key).compute.video
     ... images, preblank, duration = (
@@ -138,7 +145,7 @@ class FrameList(VideoType):
     ...     * pipe_stim.Trial()
     ...     * pipe_stim.Condition()
     ...     * pipe_stim.Frame()
-    ...     & scan_key
+    ...     & scan_key & f"trial_idx in {tuple(trial_idx)}"
     ... ).fetch("image", "pre_blank_period", "presentation_time", order_by="trial_idx ASC")
     ... for i, j in zip(images, v.frames[1::2]):
     ...     assert np.all(i == j)
