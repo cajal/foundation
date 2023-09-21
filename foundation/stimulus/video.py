@@ -1,9 +1,8 @@
 import numpy as np
 from djutils import rowproperty
 
+from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
 from foundation.schemas import stimulus as schema
-from foundation.utils import video
-from foundation.virtual.bridge import pipe_dot, pipe_gabor, pipe_rdk, pipe_stim
 
 # ---------------------------- Video ----------------------------
 

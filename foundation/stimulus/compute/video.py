@@ -1,9 +1,9 @@
 import io
 import av
 import numpy as np
-from djutils import keys, rowproperty, rowmethod
+from djutils import keys, rowproperty, rowmethod, MissingError, merge
 from foundation.utils import video
-from foundation.stimulus import video as video_schema
+from foundation.virtual import stimulus
 from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
 
 
@@ -244,17 +244,21 @@ class FrameList(VideoType):
     @property
     def keys(self):
         return [
-            video_schema.FrameList,
+            stimulus.FrameList,
         ]
 
     @rowproperty
     def video(self):
-        tups = (
-            pipe_stim.StaticImage.Image
-            * pipe_stim.Frame
-            * video_schema.FrameList.Member()
-            & self.item
+        members = stimulus.FrameList.Member & self.item
+        if len(members) != (stimulus.FrameList & self.item).fetch1('members'):
+            raise MissingError(f"FrameList {self.item} is missing members")
+        
+        tups = merge(
+            members,
+            pipe_stim.StaticImage.Image,
+            pipe_stim.Frame,
         )
+
         images = []
         times = []
         current_time = 0
