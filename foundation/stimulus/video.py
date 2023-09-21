@@ -1,4 +1,5 @@
 import numpy as np
+import datajoint as dj
 from djutils import rowproperty
 
 from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
@@ -119,42 +120,6 @@ class Frame(VideoType):
 
 @schema.list
 class FrameList(VideoType):
-    """Each entry in the table corresponds to a list of frames.
-    This table can be used to recreate a video of all frames shown in a scan.
-    Example code to fill the table with all frames shown in a scan and test the result:
-
-    >>> from foundation.stimulus.video import *
-    ... import datajoint as dj
-    ... scan_key = dict(animal_id=26872, session=17, scan_idx=20)
-    ... keys, trial_idx = dj.U('condition_hash').aggr(
-    ...     (pipe_stim.Frame * pipe_stim.Condition * pipe_stim.Trial & scan_key),
-    ...     trial_idx='MIN(trial_idx)'
-    ... ).fetch(
-    ...     "KEY", "trial_idx", order_by="trial_idx ASC"
-    ... )
-    ... frame_list_key = FrameList.fill(
-    ...     restrictions=keys,
-    ...     note=(
-    ...         "All unique stimulus.Frame conditions presented in 26872-17-20, "\
-    ...         "ordered by the trial_idx of the first repetition.",
-    ...     ),
-    ... )
-    ... v = (FrameList() & frame_list_key).compute.video
-    ... images, preblank, duration = (
-    ...     pipe_stim.StaticImage.Image
-    ...     * pipe_stim.Trial()
-    ...     * pipe_stim.Condition()
-    ...     * pipe_stim.Frame()
-    ...     & scan_key & f"trial_idx in {tuple(trial_idx)}"
-    ... ).fetch("image", "pre_blank_period", "presentation_time", order_by="trial_idx ASC")
-    ... for i, j in zip(images, v.frames[1::2]):
-    ...     assert np.all(i == j)
-    ... v_preblank = np.diff(v.times)[::2]
-    ... v_duration = np.diff(v.times)[1::2]
-    ... np.allclose(v_preblank, preblank) and np.allclose(v_duration, duration)
-    True
-    """
-
     keys = [pipe_stim.Frame]
     name = "framelist"
     comment = "an ordered list of frames"
@@ -165,6 +130,21 @@ class FrameList(VideoType):
 
         return FrameList & self
 
+    def import_from_scan(self, scan_key):
+        keys = dj.U('condition_hash').aggr(
+            (pipe_stim.Frame * pipe_stim.Condition * pipe_stim.Trial & scan_key),
+            trial_idx='MIN(trial_idx)'
+        ).fetch(
+            "KEY", order_by="trial_idx ASC"
+        )
+        return FrameList.fill(
+            restrictions=keys,
+            note=(
+                "All unique stimulus.Frame conditions presented in "\
+                f"{scan_key['animal_id']}-{scan_key['session']}-{scan_key['scan_idx']}, "\
+                "ordered by the trial_idx of the first repetition.",
+            ),
+        )
 
 # -- Video --
 
