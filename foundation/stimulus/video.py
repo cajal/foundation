@@ -193,7 +193,16 @@ class FrameList(VideoType):
 
 @schema.link
 class Video:
-    links = [Clip, Monet2, Trippy, GaborSequence, DotSequence, RdkSequence, Frame]
+    links = [
+        Clip,
+        Monet2,
+        Trippy,
+        GaborSequence,
+        DotSequence,
+        RdkSequence,
+        Frame,
+        FrameList,
+    ]
     name = "video"
     comment = "video stimulus"
 
