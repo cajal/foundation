@@ -127,7 +127,7 @@ class ParallelCycle(InstanceType):
             transfer = (Transfer & transfer_key).link.compute.transfer
 
             # perform transfer
-            transfer(
+            network = transfer(
                 transferlist_id=transferlist_id,
                 network_id=network_id,
                 network=network,
