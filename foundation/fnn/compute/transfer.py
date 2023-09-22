@@ -72,6 +72,10 @@ class FoundationTransfer(TransferType):
             _model = getattr(model, module)
             _network = getattr(network, module)
 
+            # transfer parameters
             _network.load_state_dict(_model.state_dict())
+
+            # freeze parameters
+            _network.freeze(self.item["freeze"])
 
         return network

@@ -36,6 +36,7 @@ class FoundationTransfer:
     parallel        : int unsigned      # parallel group size
     cycle           : int unsigned      # training cycle
     seed            : int unsigned      # seed for initialization
+    freeze          : bool              # freeze parameters
     """
 
     @rowproperty
