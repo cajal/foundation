@@ -14,7 +14,8 @@ class VisualScanRecording:
 
     @property
     def units(self):
-        units = self.key * fnn.Data.VisualScan * recording.ScanUnitOrder * recording.Trace.ScanUnit * recording.ScanUnit
+        key = self.key.fetch("KEY")
+        units = fnn.Data.VisualScan * recording.ScanUnitOrder * recording.Trace.ScanUnit * recording.ScanUnit & key
         return units.proj("trace_order")
 
 
