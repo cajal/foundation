@@ -37,3 +37,34 @@ class VisualScanVideo:
         # compute video
         keys = [Video.query(_, trials).proj() for _ in link_types]
         VideoInfo.populate(keys, reserve_jobs=True, display_progress=True)
+
+
+@keys
+class VisualScanFrameList:
+    """Visual scan with static images presented"""
+
+    @property
+    def keys(self):
+        return [
+            pipe_exp.Scan & (
+                pipe_stim.Trial * pipe_stim.Condition & pipe_stim.Frame
+            ),
+        ]
+    
+    def fill(self):
+        from foundation.stimulus.video import FrameList
+
+        keys = U('condition_hash').aggr(
+            (pipe_stim.Frame * pipe_stim.Condition * pipe_stim.Trial & self.key),
+            trial_idx='MIN(trial_idx)'
+        ).fetch(
+            "KEY", order_by="trial_idx ASC"
+        )
+        return FrameList.fill(
+            restrictions=keys,
+            note=(
+                "All unique stimulus.Frame conditions presented in "\
+                f"{self.item['animal_id']}-{self.item['session']}-{self.item['scan_idx']}, "\
+                "ordered by the trial_idx of the first repetition.",
+            ),
+        )
