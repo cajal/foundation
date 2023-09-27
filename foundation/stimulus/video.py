@@ -130,21 +130,6 @@ class FrameList(VideoType):
 
         return FrameList & self
 
-    def import_from_scan(self, scan_key):
-        keys = dj.U('condition_hash').aggr(
-            (pipe_stim.Frame * pipe_stim.Condition * pipe_stim.Trial & scan_key),
-            trial_idx='MIN(trial_idx)'
-        ).fetch(
-            "KEY", order_by="trial_idx ASC"
-        )
-        return FrameList.fill(
-            restrictions=keys,
-            note=(
-                "All unique stimulus.Frame conditions presented in "\
-                f"{scan_key['animal_id']}-{scan_key['session']}-{scan_key['scan_idx']}, "\
-                "ordered by the trial_idx of the first repetition.",
-            ),
-        )
 
 # -- Video --
 
