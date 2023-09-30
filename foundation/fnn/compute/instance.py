@@ -89,6 +89,25 @@ class ParallelCycle(InstanceType):
             # initial network
             network = (Network & {"network_id": network_id}).link.network(data_id=data_id).to(device="cuda")
 
+            # transfer network
+            if (TransferList & self.item).fetch1("members"):
+                logger.info("Transferring from other model")
+
+                # transfer history
+                transfers = (TransferList & self.item).members.fetch("transfer_id", order_by="transferlist_index")
+                transferlist_id = TransferList.get(transfers[:-1])["transferlist_id"]
+
+                # transfer method
+                transfer_key = {"transfer_id": transfers[-1]}
+                transfer = (Transfer & transfer_key).link.compute.transfer
+
+                # perform transfer
+                network = transfer(
+                    transferlist_id=transferlist_id,
+                    network_id=network_id,
+                    network=network,
+                )
+
         if ModelCheckpoint & key:
             logger.info("Reloading from checkpoint")
 
@@ -111,27 +130,6 @@ class ParallelCycle(InstanceType):
             # reload parameters
             parameters = (Model & prev).parameters(device="cuda")
             network.load_state_dict(parameters)
-
-            # no checkpoint
-            checkpoint = None
-
-        elif (TransferList & self.item).fetch1("members"):
-            logger.info("Transferring from other model")
-
-            # transfer history
-            transfers = (TransferList & self.item).members.fetch("transfer_id", order_by="transferlist_index")
-            transferlist_id = TransferList.get(transfers[:-1])["transferlist_id"]
-
-            # transfer method
-            transfer_key = {"transfer_id": transfers[-1]}
-            transfer = (Transfer & transfer_key).link.compute.transfer
-
-            # perform transfer
-            network = transfer(
-                transferlist_id=transferlist_id,
-                network_id=network_id,
-                network=network,
-            )
 
             # no checkpoint
             checkpoint = None
