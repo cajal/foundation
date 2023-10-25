@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "foundation"
+authors = [
+    {name = "Eric Y. Wang", email = "eric.wang2@bcm.edu"},
+]
+description = "Foundation Pipeline"
+version = '0'
+dependencies = [
+    "datajoint>=0.12.9,<0.13.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.black]
+preview = true
+line-length = 110
+
+[tool.ruff]
+line-length = 110
