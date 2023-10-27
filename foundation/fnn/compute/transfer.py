@@ -69,8 +69,8 @@ class FoundationTransfer(TransferType):
 
         for module in modules:
 
-            _model = getattr(model, module)
-            _network = getattr(network, module)
+            _model = model.module(module)
+            _network = network.module(module)
 
             # transfer parameters
             _network.load_state_dict(_model.state_dict())
