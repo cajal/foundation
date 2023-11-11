@@ -200,7 +200,9 @@ class MonitorRetina(PerspectiveType):
 
         monitor_key = self.proj(pixel_id="monitor_pixel_id")
         retina_key = self.proj(pixel_id="retina_pixel_id")
-        height, width, features, nonlinear, dropout = self.fetch1("height", "width", "features", "nonlinear", "dropout")
+        height, width, features, nonlinear, dropout = self.fetch1(
+            "height", "width", "features", "nonlinear", "dropout"
+        )
 
         return MonitorRetina(
             monitor=(Monitor & self).link.nn,
@@ -215,10 +217,63 @@ class MonitorRetina(PerspectiveType):
         )
 
 
+@schema.lookup
+class MlpMonitorRetina(PerspectiveType):
+    definition = """
+    -> Monitor
+    -> Pixel.proj(monitor_pixel_id="pixel_id")
+    -> Retina
+    -> Pixel.proj(retina_pixel_id="pixel_id")
+    mlp_features    : int unsigned      # mlp features
+    mlp_layers      : int unsigned      # mlp layers
+    mlp_nonlinear   : varchar(128)      # mlp nonlinearity
+    height          : int unsigned      # retina height
+    width           : int unsigned      # retina width
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.perspectives import MlpMonitorRetina
+
+        (
+            mon_id,
+            mon_pix_id,
+            ret_id,
+            ret_pix_id,
+            mlp_features,
+            mlp_layers,
+            mlp_nonlinear,
+            height,
+            width,
+        ) = self.fetch1(
+            "monitor_id",
+            "monitor_pixel_id",
+            "retina_id",
+            "retina_pixel_id",
+            "mlp_features",
+            "mlp_layers",
+            "mlp_nonlinear",
+            "height",
+            "width",
+        )
+
+        return MlpMonitorRetina(
+            monitor=(Monitor & {"monitor_id": mon_id}).link.nn,
+            monitor_pixel=(Pixel & {"pixel_id": mon_pix_id}).link.nn,
+            retina=(Retina & {"retina_id": ret_id}).link.nn,
+            retina_pixel=(Pixel & {"pixel_id": ret_pix_id}).link.nn,
+            mlp_features=mlp_features,
+            mlp_layers=mlp_layers,
+            mlp_nonlinear=mlp_nonlinear,
+            height=height,
+            width=width,
+        )
+
+
 # -- Perspective --
 
 
 @schema.link
 class Perspective:
-    links = [MonitorRetina]
+    links = [MonitorRetina, MlpMonitorRetina]
     name = "perspective"
