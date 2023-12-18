@@ -220,10 +220,33 @@ class FeedforwardRecurrent(CoreType):
         )
 
 
+@schema.lookup
+class FeedforwardRecurrentDecorr(CoreType):
+    definition = """
+    -> Feedforward
+    -> Recurrent
+    decorr_weight       : decimal(9, 6) # decorrelation weight
+    decorr_dropout      : decimal(6, 6) # decorrelation dropout
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.cores import FeedforwardRecurrentDecorr
+
+        weight, dropout = self.fetch1("decorr_weight", "decorr_dropout")
+
+        return FeedforwardRecurrentDecorr(
+            feedforward=(Feedforward & self).link.nn,
+            recurrent=(Recurrent() & self).link.nn,
+            decorr_weight=weight,
+            decorr_dropout=dropout,
+        )
+
+
 # -- Core --
 
 
 @schema.link
 class Core:
-    links = [FeedforwardRecurrent]
+    links = [FeedforwardRecurrent, FeedforwardRecurrentDecorr]
     name = "core"
