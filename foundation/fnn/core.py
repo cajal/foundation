@@ -227,20 +227,20 @@ class FeedforwardRecurrentDecorr(CoreType):
     -> Recurrent
     decorr_length       : int unsigned  # decorrelation length
     decorr_weight       : decimal(9, 6) # decorrelation weight
-    decorr_dropout      : decimal(6, 6) # decorrelation dropout
+    decorr_rate         : decimal(6, 6) # decorrelation dropout
     """
 
     @rowproperty
     def nn(self):
         from fnn.model.cores import FeedforwardRecurrentDecorr
 
-        length, weight, dropout = self.fetch1("decorr_length", "decorr_weight", "decorr_dropout")
+        length, rate, dropout = self.fetch1("decorr_length", "decorr_rate", "decorr_dropout")
 
         return FeedforwardRecurrentDecorr(
             feedforward=(Feedforward & self).link.nn,
             recurrent=(Recurrent() & self).link.nn,
             decorr_length=length,
-            decorr_weight=weight,
+            decorr_rate=rate,
             decorr_dropout=dropout,
         )
 
