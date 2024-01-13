@@ -93,13 +93,16 @@ class ParallelCycle(InstanceType):
             if (TransferList & self.item).fetch1("members"):
                 logger.info("Transferring from other model")
 
+                # transfers
+                transfers = (TransferList & self.item).members.fetch(
+                    "transfer_id", order_by="transferlist_index", as_dict=True
+                )
+
                 # transfer history
-                transfers = (TransferList & self.item).members.fetch("transfer_id", order_by="transferlist_index")
                 transferlist_id = TransferList.get(transfers[:-1])["transferlist_id"]
 
                 # transfer method
-                transfer_key = {"transfer_id": transfers[-1]}
-                transfer = (Transfer & transfer_key).link.compute.transfer
+                transfer = (Transfer & transfers[-1]).link.compute.transfer
 
                 # perform transfer
                 network = transfer(
@@ -155,7 +158,6 @@ class ParallelCycle(InstanceType):
             cycle=self.item["cycle"],
         ):
             if main:
-
                 if epoch:
                     # save lag
                     lag = (ModelCheckpoint & key).fetch1()
@@ -214,7 +216,6 @@ class Individual(ParallelCycle):
 
         # cuda device
         with device(rank):
-
             # distributed process group
             init_process_group(
                 backend=backend,
@@ -313,7 +314,6 @@ class Foundation(ParallelCycle):
 
         # cuda device
         with device(rank):
-
             # distributed process group
             init_process_group(
                 backend=backend,
@@ -371,5 +371,4 @@ class Foundation(ParallelCycle):
 
         # yield models
         for data_id in sorted(data_ids):
-
             yield data_id, network_id
