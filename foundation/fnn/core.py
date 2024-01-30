@@ -52,12 +52,40 @@ class Dense(FeedforwardType):
         return Dense(**kwargs)
 
 
+@schema.lookup
+class InputDense(FeedforwardType):
+    definition = """
+    input_spatial   : int unsigned  # input spatial kernel size
+    input_stride    : int unsigned  # input spatial stride
+    block_channels  : varchar(128)  # block channels per stream (csv)
+    block_groups    : varchar(128)  # block groups per stream (csv)
+    block_layers    : varchar(128)  # block layers (csv)
+    block_temporals : varchar(128)  # block temporal kernel sizes (csv)
+    block_spatials  : varchar(128)  # block spatial kernel sizes (csv)
+    block_pools     : varchar(128)  # block spatial pooling sizes (csv)
+    out_channels    : int unsigned  # output channels per stream
+    nonlinear       : varchar(128)  # nonlinearity
+    dropout         : decimal(6, 6) # dropout probability
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.feedforwards import InputDense
+
+        kwargs = self.fetch1("KEY")
+        for k, v in kwargs.items():
+            if k.startswith("block_"):
+                kwargs[k] = v.split(",")
+
+        return InputDense(**kwargs)
+
+
 # -- Feedforward --
 
 
 @schema.link
 class Feedforward:
-    links = [Dense]
+    links = [Dense, InputDense]
     name = "feedforward"
 
 
@@ -192,10 +220,35 @@ class FeedforwardRecurrent(CoreType):
         )
 
 
+@schema.lookup
+class FeedforwardRecurrentDecorr(CoreType):
+    definition = """
+    -> Feedforward
+    -> Recurrent
+    decorr_length       : int unsigned  # decorrelation length
+    decorr_weight       : decimal(9, 6) # decorrelation weight
+    decorr_rate         : decimal(6, 6) # decorrelation dropout
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.cores import FeedforwardRecurrentDecorr
+
+        length, weight, rate = self.fetch1("decorr_length", "decorr_weight", "decorr_rate")
+
+        return FeedforwardRecurrentDecorr(
+            feedforward=(Feedforward & self).link.nn,
+            recurrent=(Recurrent() & self).link.nn,
+            decorr_length=length,
+            decorr_weight=weight,
+            decorr_rate=rate,
+        )
+
+
 # -- Core --
 
 
 @schema.link
 class Core:
-    links = [FeedforwardRecurrent]
+    links = [FeedforwardRecurrent, FeedforwardRecurrentDecorr]
     name = "core"

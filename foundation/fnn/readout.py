@@ -83,12 +83,24 @@ class Norm(FeatureType):
         return Norm(**self.fetch1())
 
 
+@schema.method
+class Vanilla(FeatureType):
+    name = "vanilla"
+    comment = "vanilla feature"
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.features import Vanilla
+
+        return Vanilla()
+
+
 # -- Feature --
 
 
 @schema.link
 class Feature:
-    links = [Norm]
+    links = [Norm, Vanilla]
     name = "feature"
 
 
