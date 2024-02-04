@@ -188,10 +188,22 @@ class Poisson(UnitType):
         return Poisson()
 
 
+@schema.method
+class MSE(UnitType):
+    name = "mse"
+    comment = "mse unit"
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.units import MSE
+
+        return MSE()
+
+
 # -- Unit --
 
 
 @schema.link
 class Unit:
-    links = [Poisson]
+    links = [Poisson, MSE]
     name = "unit"
