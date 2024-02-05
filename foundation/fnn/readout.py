@@ -188,16 +188,17 @@ class Poisson(UnitType):
         return Poisson()
 
 
-@schema.method
-class MSE(UnitType):
-    name = "mse"
-    comment = "mse unit"
+@schema.lookup
+class EluMse(PositionType):
+    definition = """
+    alpha   : decimal(6, 4)     # alpha value for elu
+    """
 
     @rowproperty
     def nn(self):
-        from fnn.model.units import MSE
+        from fnn.model.units import EluMse
 
-        return MSE()
+        return EluMse(alpha=float(self.fetch1("alpha")))
 
 
 # -- Unit --
@@ -205,5 +206,5 @@ class MSE(UnitType):
 
 @schema.link
 class Unit:
-    links = [Poisson, MSE]
+    links = [Poisson, EluMse]
     name = "unit"
