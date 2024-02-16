@@ -68,33 +68,3 @@ class VisualScanFrameList:
                 "ordered by the trial_idx of the first repetition.",
             ),
         )
-
-@keys
-class VisualScanFrame2List:
-    """Visual scan with static images presented"""
-
-    @property
-    def keys(self):
-        return [
-            pipe_exp.Scan & (
-                pipe_stim.Trial * pipe_stim.Condition & pipe_stim.Frame2
-            ),
-        ]
-    
-    def fill(self):
-        from foundation.stimulus.video import Frame2List
-
-        keys = U('condition_hash').aggr(
-            (pipe_stim.Frame2 * pipe_stim.Condition * pipe_stim.Trial & self.key),
-            trial_idx='MIN(trial_idx)'
-        ).fetch(
-            "KEY", order_by="trial_idx ASC"
-        )
-        return Frame2List.fill(
-            restrictions=keys,
-            note=(
-                "All unique stimulus.Frame2 conditions presented in "\
-                f"{self.item['animal_id']}-{self.item['session']}-{self.item['scan_idx']}, "\
-                "ordered by the trial_idx of the first repetition.",
-            ),
-        )
