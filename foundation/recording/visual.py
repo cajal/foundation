@@ -33,3 +33,26 @@ class VisualMeasure:
 
         # insert
         self.insert1(key)
+
+
+@schema.computed
+class VisualDirectionTuning:
+    definition = """
+    -> Trace
+    -> TrialFilterSet
+    -> stimulus.VideoSet
+    -> utility.Offset
+    -> utility.Impulse
+    -> utility.Precision
+    ---
+    directions               : longblob      # 
+    mean                     : longblob      # 
+    n_trials                 : longblob      # 
+    """
+
+    @property
+    def key_source(self):
+        from foundation.recording.compute.visual import VisualDirectionTuning
+
+        return VisualDirectionTuning.key_source
+
