@@ -56,3 +56,13 @@ class VisualDirectionTuning:
 
         return VisualDirectionTuning.key_source
 
+    def make(self, key):
+        from foundation.recording.compute.visual import VisualDirectionTuning
+
+        # visual direction tuning
+        key["directions"], key["mean"], key["n_trials"] = (
+            VisualDirectionTuning & key
+        ).tuning
+
+        # insert
+        self.insert1(key)

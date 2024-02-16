@@ -137,11 +137,11 @@ class VisualDirectionTuning:
         """
         Returns
         -------
-        np.array
+        list
             direction
-        np.array
+        list
             mean response to direction
-        np.array
+        list
             number of trials per direction
         """
         from foundation.recording.trace import Trace
