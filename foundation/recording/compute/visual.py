@@ -25,13 +25,7 @@ class VisualTrials:
         Tuple[str]
             tuple of keys (foundation.recording.trial.Trial) -- ordered by trial start time
         """
-        from foundation.recording.trial import (
-            Trial,
-            TrialSet,
-            TrialVideo,
-            TrialBounds,
-            TrialFilterSet,
-        )
+        from foundation.recording.trial import Trial, TrialSet, TrialVideo, TrialBounds, TrialFilterSet
 
         # all trials
         trials = Trial & (TrialSet & self.item).members
@@ -142,13 +136,7 @@ class VisualDirectionTuning:
         list
             number of trials per direction
         """
-        from foundation.recording.trial import (
-            Trial,
-            TrialSet,
-            TrialVideo,
-            TrialBounds,
-            TrialFilterSet,
-        )
+        from foundation.recording.trial import Trial, TrialSet, TrialVideo, TrialBounds, TrialFilterSet
         from foundation.recording.trace import Trace
         from foundation.stimulus.video import VideoSet, Video
         from foundation.utility.resample import Offset
