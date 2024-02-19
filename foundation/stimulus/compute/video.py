@@ -114,6 +114,34 @@ class Monet2(DirectionType):
 
 
 @keys
+class Gratezk(DirectionType):
+    """Gratezk Video"""
+
+    @property
+    def keys(self):
+        return [
+            pipe_stim.Gratezk,
+        ]
+
+    @rowproperty
+    def video(self):
+        frames, fps = (pipe_stim.Gratezk & self.item).fetch1("movie", "fps")
+        frames = np.einsum("H W T -> T H W", frames)
+        return video.Video.fromarray(frames, period=1 / float(fps))
+
+    @rowmethod
+    def directions(self):
+        direction, preblank, duration = (pipe_stim.Gratezk & self.item).fetch1(
+            "direction", "preblank", "duration"
+        )
+
+        # 0 degree is right, 90 is up
+        direction = (90 - direction) % 360
+
+        yield direction, preblank, preblank + duration
+
+
+@keys
 class Trippy(VideoType):
     """Trippy Video"""
 
