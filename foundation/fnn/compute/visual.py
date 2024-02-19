@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from itertools import repeat
 from djutils import keys, rowproperty, cache_rowproperty
 from foundation.utils import tqdm, logger
@@ -138,3 +139,137 @@ class VisualRecordingCorrelation:
             correlations.append(cc(unit_targ, unit_pred))
 
         return np.array(correlations)
+
+
+@keys
+class VisualDirectionTuning:
+    """Visual Direction"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.Model,
+            stimulus.VideoSet,
+            utility.Burnin,
+            utility.Offset,
+            utility.Impulse,
+            utility.Precision,
+        ]
+
+    @rowproperty
+    def tunings(self):
+        """
+        Returns
+        -------
+        numpy.ndarray
+            directions presented (degrees), sorted
+        numpy.ndarray
+            list of unit-wise mean responses to directions, direction x units
+        numpy.ndarray
+            number of trials per direction
+        """
+        from foundation.utility.resample import Offset
+        from foundation.utility.resize import Resize
+        from foundation.utility.impulse import Impulse
+        from foundation.stimulus.video import VideoSet, Video
+        from foundation.stimulus.compute.video import DirectionType
+        from foundation.fnn.model import Model
+        from foundation.fnn.data import Data
+        from foundation.utils import cuda_enabled
+        from tqdm import tqdm
+
+        # load model
+        model = (Model & self.item).model(device="cuda" if cuda_enabled() else "cpu")
+
+        # load data
+        data = (Data & self.item).link.compute
+
+        # model offset
+        model_offset = data.unit_offset
+        target_offset = (Offset & self.item).link.offset
+        offset_correction = target_offset - model_offset
+
+        # model period
+        period = data.sampling_period
+
+        # model response burnin
+        burnin = self.item["burnin"]
+
+        # videos
+        video_ids = (VideoSet & self.item).members
+        video_ids = video_ids.fetch("KEY", order_by=video_ids.primary_key)
+
+
+        with cache_rowproperty():
+            df = []
+            stimuli = []
+            current_time = 0
+
+            # resize all stimuli and concatenate
+            for video_id in tqdm(video_ids, desc="Videos"):
+                
+                # check if video is a direction type
+                video = (Video & video_id).link.compute
+                assert isinstance(video, DirectionType), "Video is not a direction type"
+
+                # get direction onset and offset times within a single trial
+                df.extend(
+                    (round(_dir), current_time + _start, current_time + _end) for _dir, _start, _end in video.directions()
+                )
+
+                # get resized stimulus
+                rvideo = (
+                    Resize & {'resize_id': data.resize_id}
+                ).link.resize(video.video, *data.resolution)
+                stimuli.append(list(rvideo.generate(period=period, display_progress=False)))
+
+                current_time += rvideo.period * len(rvideo)
+                
+            df = pd.DataFrame(df, columns=["direction", "start", "end"])
+            stimuli = np.concatenate(stimuli, axis=0)
+
+            # generate prediction
+            r = model.generate_response(tqdm(stimuli))
+
+            r = np.stack(list(r), axis=0)  # (frame, units)
+
+            # compute time from period
+            t = np.arange(len(r)) * period
+
+            # impulse
+            impulse = (Impulse & self.item).link.impulse(
+                t[burnin:], r[burnin:], offset_correction
+            )
+            tqdm.pandas()
+            df["response"] = df.progress_apply(
+                lambda x: impulse(x["start"], x["end"]), axis=1
+            )
+
+        df = df.groupby("direction")['response'].agg(
+            mean=lambda x: np.mean(x, axis=0),
+            count=lambda x: len(x),
+        )
+        df.index = df.index.astype(float)
+        df = df.reset_index()
+        df = df.sort_values("direction")
+        return df.index.to_numpy(), np.stack(df["mean"].to_numpy(), axis=0), df["count"].to_numpy()
+    
+
+if __name__ == "__main__":
+
+    def test_visual_direction_tuning():
+        from foundation.virtual import recording, stimulus, utility
+        from foundation.fnn.compute.visual import VisualDirectionTuning
+        import os
+        os.environ['FOUNDATION_CUDA'] = '1'
+
+        model_key = {
+            'data_id': '11e7be67a39d58be8a10202f654af2b3',
+            'network_id': 'c17d459afa99a88b3e48a32fbabc21e4',
+            'instance_id': '6600970e9cfe7860b80a70375cb6f20c'
+        }
+        video_set = stimulus.VideoSet & 'videoset_id="9df3d6b96304c6ed9807c27e0d46966c"'  # random 10 Monet2 video
+        offset = utility.Offset.MsOffset & "ms_offset=150"
+        burnin = utility.Burnin & "burnin=10"
+        test = VisualDirectionTuning & model_key & video_set & offset & burnin
+        return test.tunings

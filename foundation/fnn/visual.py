@@ -38,3 +38,37 @@ class VisualRecordingCorrelation:
         # insert
         keys = [dict(key, unit=u, correlation=c) for u, c in enumerate(correlations)]
         self.insert(keys)
+
+
+@schema.computed
+class VisualDirectionTuning:
+    definition = """
+    -> Model
+    -> stimulus.VideoSet
+    -> utility.Burnin
+    -> utility.Offset
+    -> utility.Impulse
+    -> utility.Precision
+    ---
+    direction                : longblob      # directions presented (degrees), sorted 
+    mean                     : longblob      # list of unit-wise mean responses to directions, direction x units
+    n_trials                 : longblob      # number of trials per direction
+    """
+
+    @property
+    def key_source(self):
+        from foundation.fnn.compute.visual import VisualDirectionTuning
+
+        return VisualDirectionTuning.key_source
+
+    def make(self, key):
+        from foundation.fnn.compute.visual import VisualDirectionTuning
+
+        # unit tunings
+        direction, mean, n_trials = (VisualDirectionTuning & key).tunings
+
+        # verify units
+        assert mean.shape[1] == (Data & key).link.compute.units
+
+        # insert
+        self.insert({**key, 'direction': direction, 'mean': mean, 'n_trials': n_trials})
