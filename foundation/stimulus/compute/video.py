@@ -131,14 +131,17 @@ class Gratezk(DirectionType):
 
     @rowmethod
     def directions(self):
-        direction, preblank, duration = (pipe_stim.Gratezk & self.item).fetch1(
-            "direction", "preblank", "duration"
+        direction, pre_blank, duration = (pipe_stim.Gratezk & self.item).fetch1(
+            "direction", "pre_blank", "duration"
         )
+        direction = float(direction)
+        pre_blank = float(pre_blank)
+        duration = float(duration)
 
         # 0 degree is right, 90 is up
         direction = (90 - direction) % 360
 
-        yield direction, preblank, preblank + duration
+        yield direction, pre_blank, pre_blank + duration
 
 
 @keys
