@@ -41,13 +41,13 @@ class VisualDirectionTuning:
     -> Trace
     -> TrialFilterSet
     -> stimulus.VideoSet
-    -> utility.Offset
     -> utility.Impulse
     -> utility.Precision
+    -> utility.Offset
     ---
-    directions               : longblob      # 
-    mean                     : longblob      # 
-    n_trials                 : longblob      # 
+    direction                : longblob         # presented directions (degrees, sorted) 
+    response                 : longblob         # repsonse to presented directions
+    density                  : longblob         # density of presented directions
     """
 
     @property
@@ -60,9 +60,7 @@ class VisualDirectionTuning:
         from foundation.recording.compute.visual import VisualDirectionTuning
 
         # visual direction tuning
-        key["directions"], key["mean"], key["n_trials"] = (
-            VisualDirectionTuning & key
-        ).tuning
+        key["directions"], key["mean"], key["n_trials"] = (VisualDirectionTuning & key).tuning
 
         # insert
         self.insert1(key)

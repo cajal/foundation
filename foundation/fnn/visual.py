@@ -45,15 +45,15 @@ class VisualDirectionTuning:
     definition = """
     -> Model
     -> stimulus.VideoSet
-    -> utility.Burnin
-    -> utility.Offset
     -> utility.Impulse
     -> utility.Precision
-    unit                     : int unsigned      # unit index    
+    -> utility.Offset
+    -> utility.Burnin
+    unit                     : int unsigned     # unit index    
     ---
-    direction                : longblob      # directions presented (degrees), sorted 
-    mean                     : longblob      # list of unit-wise mean responses to directions
-    n_trials                 : longblob      # number of trials per direction
+    direction                : longblob         # presented directions (degrees, sorted) 
+    response                 : longblob         # repsonse to presented directions
+    density                  : longblob         # density of presented directions
     """
 
     @property
@@ -75,7 +75,5 @@ class VisualDirectionTuning:
         # insert
         self.insert(
             {**key, "direction": d, "mean": m, "n_trials": n, "unit": u}
-            for u, (d, m, n) in enumerate(
-                zip(repeat(direction), mean.T, repeat(n_trials))
-            )
+            for u, (d, m, n) in enumerate(zip(repeat(direction), mean.T, repeat(n_trials)))
         )
