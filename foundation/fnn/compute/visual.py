@@ -240,8 +240,7 @@ class VisualDirectionTuning:
             impulse = (Impulse & self.item).link.impulse(
                 t[burnin:], r[burnin:], offset_correction
             )
-            tqdm.pandas()
-            df["response"] = df.progress_apply(
+            df["response"] = df.apply(
                 lambda x: impulse(x["start"], x["end"]), axis=1
             )
 
@@ -252,7 +251,11 @@ class VisualDirectionTuning:
         df.index = df.index.astype(float)
         df = df.reset_index()
         df = df.sort_values("direction")
-        return df.index.to_numpy(), np.stack(df["mean"].to_numpy(), axis=0), df["count"].to_numpy()
+        return (
+            df['direction'].to_numpy(), 
+            np.stack(df["mean"].to_numpy(), axis=0),  # direction x units
+            df["count"].to_numpy()
+        )
     
 
 if __name__ == "__main__":
