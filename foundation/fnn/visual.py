@@ -49,9 +49,10 @@ class VisualDirectionTuning:
     -> utility.Offset
     -> utility.Impulse
     -> utility.Precision
+    unit                     : int unsigned      # unit index    
     ---
     direction                : longblob      # directions presented (degrees), sorted 
-    mean                     : longblob      # list of unit-wise mean responses to directions, direction x units
+    mean                     : longblob      # list of unit-wise mean responses to directions
     n_trials                 : longblob      # number of trials per direction
     """
 
@@ -63,6 +64,7 @@ class VisualDirectionTuning:
 
     def make(self, key):
         from foundation.fnn.compute.visual import VisualDirectionTuning
+        from itertools import repeat
 
         # unit tunings
         direction, mean, n_trials = (VisualDirectionTuning & key).tunings
@@ -71,4 +73,9 @@ class VisualDirectionTuning:
         assert mean.shape[1] == (Data & key).link.compute.units
 
         # insert
-        self.insert({**key, 'direction': direction, 'mean': mean, 'n_trials': n_trials})
+        self.insert(
+            {**key, "direction": d, "mean": m, "n_trials": n, "unit": u}
+            for u, (d, m, n) in enumerate(
+                zip(repeat(direction), mean.T, repeat(n_trials))
+            )
+        )
