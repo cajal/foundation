@@ -44,6 +44,26 @@ class DirectionType(VideoType):
         raise NotImplementedError()
 
 
+class SpatialType(VideoType):
+    """Spatial Video"""
+
+    @rowmethod
+    def spatials(self):
+        """
+        Yields
+        ------
+        str
+            spatial type
+        2D array
+            spatial grid, float, between 0 and 1
+        float
+            start time of grid (seconds)
+        float
+            end time of grid (seconds)
+        """
+        raise NotImplementedError()
+
+
 # -- Video Types --
 
 
@@ -208,6 +228,26 @@ class DotSequence(VideoType):
 
         return video.Video.fromarray(frames, period=1 / fps)
 
+    @rowmethod
+    def spatials(self):
+        sequence = (pipe_stim.DotSequence & self.item).fetch1()
+        fps = (pipe_dot.Display & sequence).fetch1("fps")
+
+        dots = pipe_dot.Dot * pipe_dot.Sequence.Dot * pipe_dot.Display & sequence
+        dots, ons = dots.fetch("mask", "dot_on", order_by="dot_id ASC")
+
+        id_trace = (pipe_dot.Trace * pipe_dot.Display & sequence).fetch1("id_trace")
+        breaks = np.where(np.diff(id_trace, prepend=np.nan, append=np.nan))[0]
+        times = breaks / fps
+
+        assert len(dots) == len(ons) == len(times) - 1
+
+        for dot, on, start, end in zip(dots, ons, times[:-1], times[1:]):
+
+            yield "on_off", dot, start, end
+
+            yield "on" if on else "off", dot, start, end
+
 
 @keys
 class RdkSequence(VideoType):
@@ -281,9 +321,9 @@ class FrameList(VideoType):
     @rowproperty
     def video(self):
         members = stimulus.FrameList.Member & self.item
-        if len(members) != (stimulus.FrameList & self.item).fetch1('members'):
+        if len(members) != (stimulus.FrameList & self.item).fetch1("members"):
             raise MissingError(f"FrameList {self.item} is missing members")
-        
+
         tups = merge(
             members,
             pipe_stim.StaticImage.Image,
