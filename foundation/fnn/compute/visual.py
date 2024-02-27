@@ -151,9 +151,9 @@ class VisualDirectionTuning:
             fnn.Model,
             stimulus.VideoSet,
             utility.Burnin,
-            utility.Offset,
             utility.Impulse,
             utility.Precision,
+            utility.Offset,
         ]
 
     @rowproperty

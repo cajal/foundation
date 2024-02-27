@@ -119,9 +119,9 @@ class VisualDirectionTuning:
             recording.Trace,
             recording.TrialFilterSet,
             stimulus.VideoSet,
-            utility.Offset,
             utility.Impulse,
             utility.Precision,
+            utility.Offset,
         ]
 
     @rowproperty
