@@ -45,9 +45,9 @@ class VisualDirectionTuning:
     definition = """
     -> Model
     -> stimulus.VideoSet
+    -> utility.Offset
     -> utility.Impulse
     -> utility.Precision
-    -> utility.Offset
     -> utility.Burnin
     unit                     : int unsigned     # unit index    
     ---

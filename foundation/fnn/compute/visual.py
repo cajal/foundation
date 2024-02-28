@@ -150,10 +150,10 @@ class VisualDirectionTuning:
         return [
             fnn.Model,
             stimulus.VideoSet,
-            utility.Burnin,
+            utility.Offset,
             utility.Impulse,
             utility.Precision,
-            utility.Offset,
+            utility.Burnin,
         ]
 
     @rowproperty

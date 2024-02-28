@@ -41,9 +41,9 @@ class VisualDirectionTuning:
     -> Trace
     -> TrialFilterSet
     -> stimulus.VideoSet
+    -> utility.Offset
     -> utility.Impulse
     -> utility.Precision
-    -> utility.Offset
     ---
     direction                : longblob         # presented directions (degrees, sorted) 
     response                 : longblob         # repsonse to presented directions

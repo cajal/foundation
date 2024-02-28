@@ -135,7 +135,7 @@ class VisualMeasure:
 
 @keys
 class VisualDirectionTuning:
-    """Visual Direction"""
+    """Visual Direction Tuning"""
 
     @property
     def keys(self):
@@ -143,9 +143,9 @@ class VisualDirectionTuning:
             recording.Trace,
             recording.TrialFilterSet,
             stimulus.VideoSet,
+            utility.Offset,
             utility.Impulse,
             utility.Precision,
-            utility.Offset,
         ]
 
     @rowproperty
@@ -160,13 +160,12 @@ class VisualDirectionTuning:
         list
             number of trials per direction
         """
-        from foundation.recording.trial import Trial, TrialSet, TrialVideo, TrialBounds, TrialFilterSet
         from foundation.recording.trace import Trace
         from foundation.stimulus.video import VideoSet, Video
+        from foundation.stimulus.compute.video import DirectionType
         from foundation.utility.resample import Offset
         from foundation.utility.impulse import Impulse
         from foundation.utility.numeric import Precision
-        from foundation.stimulus.compute.video import DirectionType
 
         # trace times and values
         trace = (Trace & self.item).link.compute
@@ -181,14 +180,14 @@ class VisualDirectionTuning:
         # precision
         pstr = (Precision & self.item).link.string
 
-        # videos
-        videos = (VideoSet & self.item).members
-
         # trialset
         trialset = (recording.TraceTrials & self.item).fetch1()
 
+        # videos
+        videos = (VideoSet & self.item).members
+
         # trials restricted by videos
-        trials = (VisualTrials & self.item & videos & trialset).trial_videos
+        trials = (VisualTrials & self.item & trialset & videos).trial_videos
 
         # fetch trials
         video_ids, starts = trials.fetch("video_id", "start", order_by="start")
@@ -226,6 +225,22 @@ class VisualDirectionTuning:
         rdf = rdf.sort_values("direction")
 
         return rdf["direction"].values, rdf["response"]["mean"].values, rdf["response"]["count"].values
+
+
+@keys
+class VisualSpatialTuning:
+    """Visual Spatial Tuning"""
+
+    @property
+    def keys(self):
+        return [
+            recording.Trace,
+            recording.TrialFilterSet,
+            stimulus.VideoSet,
+            utility.Impulse,
+            utility.Precision,
+            utility.Offset,
+        ]
 
 
 if __name__ == "__main__":
