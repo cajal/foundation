@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from djutils import keys, merge, rowproperty, cache_rowproperty, MissingError
+from djutils import keys, merge, rowproperty, cache_rowproperty, keyproperty, U
 from foundation.utils import tqdm, logger
 from foundation.virtual import utility, stimulus, recording
 
@@ -38,6 +38,30 @@ class VisualTrials:
 
         # trial ids, ordered by trial start
         return tuple(trials.fetch("trial_id", order_by="start"))
+
+    @keyproperty(recording.TrialSet, recording.TrialFilterSet)
+    def trial_videos(self):
+        """
+        Returns
+        -------
+        datajoint.Table
+            trial_id | start, end, video_id
+        """
+        from foundation.recording.trial import Trial, TrialSet, TrialVideo, TrialBounds, TrialFilterSet
+
+        # trials key
+        key = (U("trialset_id", "trial_filterset_id") & self.key).fetch1("KEY")
+
+        # all trials
+        trials = Trial & (TrialSet & key).members
+
+        # filtered trials
+        trials = (TrialFilterSet & key).filter(trials)
+
+        # video trials
+        trials = merge(trials.proj(), TrialBounds, TrialVideo) & self.key
+
+        return trials
 
 
 @keys
@@ -160,20 +184,11 @@ class VisualDirectionTuning:
         # videos
         videos = (VideoSet & self.item).members
 
-        # trial set
+        # trialset
         trialset = (recording.TraceTrials & self.item).fetch1()
 
-        # all trials
-        trials = Trial & (TrialSet & trialset).members
-
-        # filtered trials
-        trials = (TrialFilterSet & self.item).filter(trials)
-
-        # trial info
-        trials = merge(trials, TrialBounds, TrialVideo)
-
         # trials restricted by videos
-        trials = trials & videos
+        trials = (VisualTrials & self.item & videos & trialset).trial_videos
 
         # fetch trials
         video_ids, starts = trials.fetch("video_id", "start", order_by="start")
