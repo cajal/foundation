@@ -229,8 +229,8 @@ class VisualDirectionTuning:
 
 
 @keys
-class VisualSpatialGrid:
-    """Visual Spatial Grid"""
+class VisualSpatialSet:
+    """Visual Spatial Set"""
 
     @property
     def keys(self):
@@ -252,8 +252,8 @@ class VisualSpatialGrid:
             start -- time of trial start (seconds)
             onset -- time of spatial onset (seconds relative to start)
             offset -- time of spatial offset (seconds relative to start)
-            spatial_type -- spatial type
-            spatial_grid -- spatial grid
+            spatial_type -- spatial type (str)
+            spatial_grid -- spatial grid (2D array)
         """
         from foundation.stimulus.video import VideoSet, Video
         from foundation.stimulus.compute.video import SpatialType
@@ -348,7 +348,7 @@ class VisualSpatialTuning:
         trialset = (recording.TraceTrials & self.item).fetch1()
 
         # trial and video dataframe
-        df = (VisualSpatialGrid & trialset & self.item).df.copy()
+        df = (VisualSpatialSet & trialset & self.item).df.copy()
 
         # spatial response
         df["response"] = df.apply(lambda x: impulse(x.start + x.onset, x.start + x.offset), axis=1)
