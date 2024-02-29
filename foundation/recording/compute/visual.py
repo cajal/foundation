@@ -250,8 +250,8 @@ class VisualSpatialGrid:
             trial_id -- foundation.recording.trial.Trial
             video_id -- foundation.stimulus.video.Video
             start -- time of trial start (seconds)
-            on -- time of spatial onset (seconds relative to start)
-            off -- time of spatial offset (seconds relative to start)
+            onset -- time of spatial onset (seconds relative to start)
+            offset -- time of spatial offset (seconds relative to start)
             spatial_type -- spatial type
             spatial_grid -- spatial grid
         """
@@ -280,19 +280,19 @@ class VisualSpatialGrid:
             assert isinstance(video, SpatialType)
 
             # spatial info
-            stypes, sgrids, ons, offs = zip(*video.spatials())
+            stypes, sgrids, onsets, offsets = zip(*video.spatials())
 
             # resize spatial grids
             sgrids = tensor(np.stack(sgrids)[None])
             sgrids = nn.functional.interpolate(sgrids, [self.item["height"], self.item["width"]], mode="area")
             sgrids = sgrids[0].numpy()
 
-            for stype, sgrid, on, off in zip(stypes, sgrids, ons, offs):
+            for stype, sgrid, onset, offset in zip(stypes, sgrids, onsets, offsets):
 
                 row = {
                     "video_id": video_id,
-                    "on": on,
-                    "off": off,
+                    "onset": onset,
+                    "offset": offset,
                     "spatial_type": stype,
                     "spatial_grid": sgrid,
                 }
@@ -351,7 +351,7 @@ class VisualSpatialTuning:
         df = (VisualSpatialGrid & trialset & self.item).df.copy()
 
         # spatial response
-        df["response"] = df.apply(lambda x: impulse(x.start + x.on, x.start + x.off), axis=1)
+        df["response"] = df.apply(lambda x: impulse(x.start + x.onset, x.start + x.offset), axis=1)
 
         # drop NA response and sort by spatial type
         df = df[df.response.notna()].sort_values("spatial_type")
