@@ -46,8 +46,8 @@ class VisualDirectionTuning:
     -> utility.Precision
     ---
     direction                : longblob         # presented directions (degrees, sorted) 
-    response                 : longblob         # repsonse to presented directions
-    density                  : longblob         # density of presented directions
+    response                 : longblob         # response (STA) to directions
+    density                  : longblob         # density of directions
     """
 
     @property
@@ -64,3 +64,34 @@ class VisualDirectionTuning:
 
         # insert
         self.insert1(key)
+
+
+@schema.computed
+class VisualSpatialTuning:
+    definition = """
+    -> Trace
+    -> TrialFilterSet
+    -> stimulus.VideoSet
+    -> utility.Offset
+    -> utility.Impulse
+    -> utility.Resolution
+    spatial_type            : varchar(128)      # spatial type
+    ---
+    response                : longblob         # response (STA) to spatial locations -- 2D array
+    density                 : longblob         # density of spatial locations -- 2D array
+    """
+
+    @property
+    def key_source(self):
+        from foundation.recording.compute.visual import VisualSpatialTuning
+
+        return VisualSpatialTuning.key_source
+
+    def make(self, key):
+        from foundation.recording.compute.visual import VisualSpatialTuning
+
+        # spatial tuning
+        for spatial_type, response, density in (VisualSpatialTuning & key).tuning:
+
+            # insert
+            self.insert1(dict(key, spatial_type, response=response, density=density))

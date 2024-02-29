@@ -52,8 +52,8 @@ class VisualDirectionTuning:
     unit                     : int unsigned     # unit index    
     ---
     direction                : longblob         # presented directions (degrees, sorted) 
-    response                 : longblob         # repsonse to presented directions
-    density                  : longblob         # density of presented directions
+    response                 : longblob         # response (STA) to directions
+    density                  : longblob         # density of directions
     """
 
     @property

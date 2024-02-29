@@ -204,7 +204,7 @@ class GaborSequence(VideoType):
 
 
 @keys
-class DotSequence(VideoType):
+class DotSequence(SpatialType):
     """Dot Sequence Video"""
 
     @property

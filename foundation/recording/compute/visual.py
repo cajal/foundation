@@ -186,7 +186,7 @@ class VisualDirectionTuning:
         # videos
         videos = (VideoSet & self.item).members
 
-        # trials restricted by videos
+        # trials
         trials = (VisualTrials & self.item & trialset & videos).trial_videos
 
         # fetch trials
@@ -228,6 +228,81 @@ class VisualDirectionTuning:
 
 
 @keys
+class VisualSpatialGrid:
+    """Visual Spatial Grid"""
+
+    @property
+    def keys(self):
+        return [
+            recording.TrialSet,
+            recording.TrialFilterSet,
+            stimulus.VideoSet,
+            utility.Resolution,
+        ]
+
+    @rowproperty
+    def df(self):
+        """
+        Returns
+        -------
+        pd.DataFrame
+            trial_id -- foundation.recording.trial.Trial
+            video_id -- foundation.stimulus.video.Video
+            start -- time of trial start (seconds)
+            on -- time of spatial onset (seconds relative to start)
+            off -- time of spatial offset (seconds relative to start)
+            spatial_type -- spatial type
+            spatial_grid -- spatial grid
+        """
+        from foundation.stimulus.video import VideoSet, Video
+        from foundation.stimulus.compute.video import SpatialType
+        from torch import tensor, nn
+
+        # videos
+        videos = (VideoSet & self.item).members
+
+        # trials
+        trials = (VisualTrials & self.item & videos).trial_videos
+
+        # fetch trials
+        trial_ids, video_ids, starts = trials.fetch("trial_id", "video_id", "start", order_by="start")
+
+        # trial dataframe
+        tdf = pd.DataFrame({"trial_id": trial_ids, "video_id": video_ids, "start": starts})
+
+        # video dataframe
+        rows = []
+        for video_id in tqdm(np.unique(video_ids), desc="Videos"):
+
+            # load video
+            video = (Video & {"video_id": video_id}).link.compute
+            assert isinstance(video, SpatialType)
+
+            # spatial info
+            stypes, sgrids, ons, offs = zip(*video.spatials())
+
+            # resize spatial grids
+            sgrids = tensor(np.stack(sgrids)[None])
+            sgrids = nn.functional.interpolate(sgrids, [self.item["height"], self.item["width"]], mode="area")
+            sgrids = sgrids[0].numpy()
+
+            for stype, sgrid, on, off in zip(stypes, sgrids, ons, offs):
+
+                row = {
+                    "video_id": video_id,
+                    "on": on,
+                    "off": off,
+                    "spatial_type": stype,
+                    "spatial_grid": sgrid,
+                }
+                rows.append(row)
+
+        vdf = pd.DataFrame(rows)
+
+        return tdf.merge(vdf)
+
+
+@keys
 class VisualSpatialTuning:
     """Visual Spatial Tuning"""
 
@@ -237,10 +312,58 @@ class VisualSpatialTuning:
             recording.Trace,
             recording.TrialFilterSet,
             stimulus.VideoSet,
-            utility.Impulse,
-            utility.Precision,
             utility.Offset,
+            utility.Impulse,
+            utility.Resolution,
         ]
+
+    @rowproperty
+    def tuning(self):
+        """
+        Yields
+        ------
+        str
+            spatial type
+        2D array
+            response (STA) to spatial locations
+        2D array
+            density of spatial locations
+        """
+        from foundation.recording.trace import Trace
+        from foundation.utility.resample import Offset
+        from foundation.utility.impulse import Impulse
+
+        # trace times and values
+        trace = (Trace & self.item).link.compute
+        times, values = trace.times, trace.values
+
+        # offset
+        offset = (Offset & self.item).link.offset
+
+        # impulse
+        impulse = (Impulse & self.item).link.impulse(times, values, offset)
+
+        # trialset
+        trialset = (recording.TraceTrials & self.item).fetch1()
+
+        # trial and video dataframe
+        df = (VisualSpatialGrid & trialset & self.item).df.copy()
+
+        # spatial response
+        df["response"] = df.apply(lambda x: impulse(x.start + x.on, x.start + x.off), axis=1)
+
+        # drop NA response and sort by spatial type
+        df = df[df.response.notna()].sort_values("spatial_type")
+
+        # iterate spatial types
+        for spatial_type, sdf in df.groupby("spatial_type"):
+
+            # compute density and response
+            grids = np.stack(sdf.spatial_grid, axis=-1)
+            density = grids.sum(axis=-1)
+            response = (grids * sdf.response.values).sum(axis=-1) / density
+
+            yield spatial_type, response, density
 
 
 if __name__ == "__main__":
