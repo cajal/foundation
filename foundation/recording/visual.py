@@ -90,8 +90,14 @@ class VisualSpatialTuning:
     def make(self, key):
         from foundation.recording.compute.visual import VisualSpatialTuning
 
+        # rows for each spatial type
+        rows = []
+
         # spatial tuning
         for spatial_type, response, density in (VisualSpatialTuning & key).tuning:
 
-            # insert
-            self.insert1(dict(key, spatial_type, response=response, density=density))
+            # collect row
+            row.append(dict(key, spatial_type=spatial_type, response=response, density=density))
+
+        # insert
+        self.insert(rows)

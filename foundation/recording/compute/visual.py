@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from tqdm import tqdm
 from djutils import keys, merge, rowproperty, cache_rowproperty, keyproperty, U
 from foundation.utils import tqdm, logger
 from foundation.virtual import utility, stimulus, recording
@@ -364,17 +365,3 @@ class VisualSpatialTuning:
             response = (grids * sdf.response.values).sum(axis=-1) / density
 
             yield spatial_type, response, density
-
-
-if __name__ == "__main__":
-
-    def test_visual_direction_tuning():
-        from foundation.virtual import recording, stimulus, utility
-        from foundation.recording.compute.visual import VisualDirectionTuning
-
-        unit_key = recording.Trace.ScanUnit & "animal_id=17797 and session=4 and scan_idx=7 and unit_id=1"
-        trial_filter_set = recording.TrialFilterSet & 'trial_filterset_id="d00bbb175d63398818ca652391c18856"'
-        video_set = stimulus.VideoSet & 'videoset_id="01eba4d8945512806337d42d015f2780"'
-        offset = utility.Offset.MsOffset & "ms_offset=150"
-        test = VisualDirectionTuning & unit_key & trial_filter_set & video_set & offset
-        return test.tuning

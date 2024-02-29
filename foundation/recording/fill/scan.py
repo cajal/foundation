@@ -1,6 +1,6 @@
-from djutils import keys, merge
+from djutils import keys, merge, cache_rowproperty
 from foundation.virtual.bridge import pipe_fuse, pipe_shared
-from foundation.virtual import scan, recording
+from foundation.virtual import scan, recording, stimulus, utility
 
 
 class _VisualScanRecording:
@@ -114,7 +114,8 @@ class VisualScanRawRecording(_VisualScanRecording):
     @property
     def keys(self):
         return [
-            (scan.Scan * pipe_shared.PipelineVersion * pipe_shared.SegmentationMethod).proj() & pipe_fuse.ScanDone,
+            (scan.Scan * pipe_shared.PipelineVersion * pipe_shared.SegmentationMethod).proj()
+            & pipe_fuse.ScanDone,
             pipe_shared.TrackingMethod & scan.PupilTrace,
         ]
 
@@ -127,3 +128,32 @@ class VisualScanRawRecording(_VisualScanRecording):
     @property
     def units_homogeneous(self):
         return False
+
+
+@keys
+class VisualScanSpatialTuning:
+    """Visual Scan Spatial Tuning"""
+
+    @property
+    def keys(self):
+        return [
+            recording.ScanUnits,
+            recording.TrialFilterSet,
+            stimulus.VideoSet,
+            utility.Offset,
+            utility.Impulse,
+            utility.Resolution,
+        ]
+
+    def fill(self):
+        from foundation.recording.trace import TraceSet
+        from foundation.recording.visual import VisualSpatialTuning
+
+        for key in self.key:
+
+            traces = recording.ScanUnits & key
+            traces = (TraceSet & traces).members
+
+            with cache_rowproperty():
+
+                VisualSpatialTuning.populate(key, traces, reserve_jobs=True, display_progress=True)
