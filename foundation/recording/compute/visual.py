@@ -41,12 +41,14 @@ class VisualTrials:
         return tuple(trials.fetch("trial_id", order_by="start"))
 
     @keyproperty(recording.TrialSet, recording.TrialFilterSet)
-    def trial_videos(self):
+    def df(self):
         """
         Returns
         -------
-        datajoint.Table
-            trial_id | start, end, video_id
+        pd.DataFrame
+            trial_id -- foundation.recording.trial.Trial
+            video_id -- foundation.stimulus.video.Video
+            start -- time of trial start (seconds)
         """
         from foundation.recording.trial import Trial, TrialSet, TrialVideo, TrialBounds, TrialFilterSet
 
@@ -62,7 +64,10 @@ class VisualTrials:
         # video trials
         trials = merge(trials.proj(), TrialBounds, TrialVideo) & self.key
 
-        return trials
+        # fetch trials
+        trial_ids, video_ids, starts = trials.fetch("trial_id", "video_id", "start", order_by="start")
+
+        return pd.DataFrame({"trial_id": trial_ids, "video_id": video_ids, "start": starts})
 
 
 @keys
@@ -165,14 +170,8 @@ class VisualDirectionSet:
         # videos
         videos = (VideoSet & self.item).members
 
-        # trials
-        trials = (VisualTrials & self.item & videos).trial_videos
-
-        # fetch trials
-        trial_ids, video_ids, starts = trials.fetch("trial_id", "video_id", "start", order_by="start")
-
         # trial dataframe
-        tdf = pd.DataFrame({"trial_id": trial_ids, "video_id": video_ids, "start": starts})
+        tdf = (VisualTrials & self.item & videos).df
 
         # video dataframe
         vdf = (DirectionSet & videos).df()
@@ -283,14 +282,8 @@ class VisualSpatialSet:
         # videos
         videos = (VideoSet & self.item).members
 
-        # trials
-        trials = (VisualTrials & self.item & videos).trial_videos
-
-        # fetch trials
-        trial_ids, video_ids, starts = trials.fetch("trial_id", "video_id", "start", order_by="start")
-
         # trial dataframe
-        tdf = pd.DataFrame({"trial_id": trial_ids, "video_id": video_ids, "start": starts})
+        tdf = (VisualTrials & self.item & videos).df
 
         # video dataframe
         vdf = (SpatialSet & videos).df(height=self.item["height"], width=self.item["width"])
