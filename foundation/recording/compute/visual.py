@@ -135,6 +135,65 @@ class VisualMeasure:
 
 
 @keys
+class VisualDirectionSet:
+    """Visual Direction Set"""
+
+    @property
+    def keys(self):
+        return [
+            recording.TrialSet,
+            recording.TrialFilterSet,
+            stimulus.VideoSet,
+        ]
+
+    @rowproperty
+    def df(self):
+        """
+        Returns
+        -------
+        pd.DataFrame
+            trial_id -- foundation.recording.trial.Trial
+            video_id -- foundation.stimulus.video.Video
+            start -- time of trial start (seconds)
+            onset -- time of spatial onset (seconds relative to start)
+            offset -- time of spatial offset (seconds relative to start)
+            direction -- direction (degrees, 0 to 360)
+        """
+        from foundation.stimulus.video import VideoSet, Video
+        from foundation.stimulus.compute.video import DirectionType
+
+        # videos
+        videos = (VideoSet & self.item).members
+
+        # trials
+        trials = (VisualTrials & self.item & videos).trial_videos
+
+        # fetch trials
+        trial_ids, video_ids, starts = trials.fetch("trial_id", "video_id", "start", order_by="start")
+
+        # trial dataframe
+        tdf = pd.DataFrame({"trial_id": trial_ids, "video_id": video_ids, "start": starts})
+
+        # video dataframe
+        rows = []
+        for video_id in tqdm(np.unique(video_ids), desc="Videos"):
+
+            # load video
+            video = (Video & {"video_id": video_id}).link.compute
+            assert isinstance(video, DirectionType)
+
+            # direction info
+            for direction, onset, offset in video.directions():
+
+                row = {"video_id": video_id, "onset": onset, "offset": offset, "direction": direction}
+                rows.append(row)
+
+        vdf = pd.DataFrame(rows)
+
+        return tdf.merge(vdf)
+
+
+@keys
 class VisualDirectionTuning:
     """Visual Direction Tuning"""
 
@@ -162,8 +221,6 @@ class VisualDirectionTuning:
             number of trials per direction
         """
         from foundation.recording.trace import Trace
-        from foundation.stimulus.video import VideoSet, Video
-        from foundation.stimulus.compute.video import DirectionType
         from foundation.utility.resample import Offset
         from foundation.utility.impulse import Impulse
         from foundation.utility.numeric import Precision
@@ -184,48 +241,26 @@ class VisualDirectionTuning:
         # trialset
         trialset = (recording.TraceTrials & self.item).fetch1()
 
-        # videos
-        videos = (VideoSet & self.item).members
+        # trial and video dataframe
+        df = (VisualDirectionSet & trialset & self.item).df.copy()
 
-        # trials
-        trials = (VisualTrials & self.item & trialset & videos).trial_videos
+        # direction response
+        df["response"] = df.apply(lambda x: impulse(x.start + x.onset, x.start + x.offset), axis=1)
 
-        # fetch trials
-        video_ids, starts = trials.fetch("video_id", "start", order_by="start")
+        # direction discretization
+        df["direction"] = df.apply(lambda x: pstr(x.direction), axis=1)
 
-        # video dataframe
-        rows = []
-        for video_id in tqdm(np.unique(video_ids), desc="Videos"):
+        # drop NA response and sort by spatial type
+        df = df[df.response.notna()]
 
-            video = (Video & {"video_id": video_id}).link.compute
-            assert isinstance(video, DirectionType)
+        # compute response and density
+        df = df.groupby("direction")
+        df = df.agg(dict(response=["mean", "count"]))
+        df.index = df.index.astype(float)
+        df = df.reset_index()
+        df = df.sort_values("direction")
 
-            dirs, ons, offs = zip(*video.directions())
-
-            row = {"video_id": video_id, "dirs": list(map(pstr, dirs)), "ons": ons, "offs": offs}
-            rows.append(row)
-
-        vdf = pd.DataFrame(rows).set_index("video_id")
-
-        # response dataframe
-        rows = []
-        for video_id, start in zip(tqdm(video_ids, desc="Trials"), starts):
-
-            vid = vdf.loc[video_id]
-
-            for direction, on, off in zip(vid.dirs, vid.ons, vid.offs):
-
-                row = {"direction": direction, "response": impulse(start + on, start + off)}
-                rows.append(row)
-
-        rdf = pd.DataFrame(rows)
-        rdf = rdf.groupby("direction")
-        rdf = rdf.agg(dict(response=["mean", "count"]))
-        rdf.index = rdf.index.astype(float)
-        rdf = rdf.reset_index()
-        rdf = rdf.sort_values("direction")
-
-        return rdf["direction"].values, rdf["response"]["mean"].values, rdf["response"]["count"].values
+        return df["direction"].values, df["response"]["mean"].values, df["response"]["count"].values
 
 
 @keys

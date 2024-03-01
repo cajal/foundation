@@ -45,9 +45,9 @@ class VisualDirectionTuning:
     -> utility.Impulse
     -> utility.Precision
     ---
-    direction                : longblob         # presented directions (degrees, sorted) 
-    response                 : longblob         # response (STA) to directions
-    density                  : longblob         # density of directions
+    direction               : longblob         # presented directions (degrees, sorted) 
+    response                : longblob         # response (STA) to directions
+    density                 : longblob         # density of directions
     """
 
     @property
@@ -60,7 +60,7 @@ class VisualDirectionTuning:
         from foundation.recording.compute.visual import VisualDirectionTuning
 
         # visual direction tuning
-        key["directions"], key["mean"], key["n_trials"] = (VisualDirectionTuning & key).tuning
+        key["direction"], key["response"], key["density"] = (VisualDirectionTuning & key).tuning
 
         # insert
         self.insert1(key)
@@ -97,7 +97,7 @@ class VisualSpatialTuning:
         for spatial_type, response, density in (VisualSpatialTuning & key).tuning:
 
             # collect row
-            row.append(dict(key, spatial_type=spatial_type, response=response, density=density))
+            rows.append(dict(key, spatial_type=spatial_type, response=response, density=density))
 
         # insert
         self.insert(rows)
