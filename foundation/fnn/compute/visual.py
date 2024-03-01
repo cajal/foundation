@@ -171,6 +171,7 @@ class VisualDirectionTuning:
         from foundation.utility.resample import Offset
         from foundation.utility.resize import Resize
         from foundation.utility.impulse import Impulse
+        from foundation.utility.numeric import Precision
         from foundation.stimulus.video import VideoSet, Video
         from foundation.stimulus.compute.video import DirectionType
         from foundation.fnn.model import Model
@@ -195,6 +196,9 @@ class VisualDirectionTuning:
         # model response burnin
         burnin = self.item["burnin"]
 
+        # precision
+        pstr = (Precision & self.item).link.string
+
         # videos
         video_ids = (VideoSet & self.item).members
         video_ids = video_ids.fetch("KEY", order_by=video_ids.primary_key)
@@ -202,48 +206,35 @@ class VisualDirectionTuning:
 
         with cache_rowproperty():
             df = []
-            stimuli = []
-            current_time = 0
 
-            # resize all stimuli and concatenate
             for video_id in tqdm(video_ids, desc="Videos"):
                 
                 # check if video is a direction type
                 video = (Video & video_id).link.compute
                 assert isinstance(video, DirectionType), "Video is not a direction type"
 
-                # get direction onset and offset times within a single trial
-                df.extend(
-                    (round(_dir), current_time + _start, current_time + _end) for _dir, _start, _end in video.directions()
-                )
-
                 # get resized stimulus
                 rvideo = (
                     Resize & {'resize_id': data.resize_id}
                 ).link.resize(video.video, *data.resolution)
-                stimuli.append(list(rvideo.generate(period=period, display_progress=False)))
+                r = model.generate_response(rvideo.generate(period=period, display_progress=False))
+                r = np.stack(list(r), axis=0)  # (frame, units)
 
-                current_time += rvideo.period * len(rvideo)
-                
-            df = pd.DataFrame(df, columns=["direction", "start", "end"])
-            stimuli = np.concatenate(stimuli, axis=0)
+                # impulse
+                impulse = (Impulse & self.item).link.impulse(
+                    (np.arange(len(r)) * period)[burnin:], r[burnin:], offset_correction
+                )
 
-            # generate prediction
-            r = model.generate_response(tqdm(stimuli))
+                # extract directions and responses
+                for _dir, _start, _end in video.directions():
+                    df.append(
+                        dict(
+                            direction=pstr(_dir),
+                            response=impulse(_start, _end)
+                        )
+                    )
 
-            r = np.stack(list(r), axis=0)  # (frame, units)
-
-            # compute time from period
-            t = np.arange(len(r)) * period
-
-            # impulse
-            impulse = (Impulse & self.item).link.impulse(
-                t[burnin:], r[burnin:], offset_correction
-            )
-            df["response"] = df.apply(
-                lambda x: impulse(x["start"], x["end"]), axis=1
-            )
-
+        df = pd.DataFrame(df)        
         df = df.groupby("direction")['response'].agg(
             mean=lambda x: np.mean(x, axis=0),
             count=lambda x: len(x),
@@ -251,6 +242,7 @@ class VisualDirectionTuning:
         df.index = df.index.astype(float)
         df = df.reset_index()
         df = df.sort_values("direction")
+
         return (
             df['direction'].to_numpy(), 
             np.stack(df["mean"].to_numpy(), axis=0),  # direction x units
@@ -261,11 +253,8 @@ class VisualDirectionTuning:
 if __name__ == "__main__":
 
     def test_visual_direction_tuning():
-        from foundation.virtual import recording, stimulus, utility
+        from foundation.virtual import stimulus, utility
         from foundation.fnn.compute.visual import VisualDirectionTuning
-        import os
-        os.environ['FOUNDATION_CUDA'] = '1'
-
         model_key = {
             'data_id': '11e7be67a39d58be8a10202f654af2b3',
             'network_id': 'c17d459afa99a88b3e48a32fbabc21e4',

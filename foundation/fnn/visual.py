@@ -74,6 +74,6 @@ class VisualDirectionTuning:
 
         # insert
         self.insert(
-            {**key, "direction": d, "mean": m, "n_trials": n, "unit": u}
-            for u, (d, m, n) in enumerate(zip(repeat(direction), mean.T, repeat(n_trials)))
+            {**key, "direction": d, "response": r, "density": n, "unit": u}
+            for u, (d, r, n) in enumerate(zip(repeat(direction), mean.T, repeat(n_trials)))
         )
