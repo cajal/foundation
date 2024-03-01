@@ -1,6 +1,8 @@
 import io
 import av
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
 from djutils import keys, rowproperty, rowmethod, MissingError, merge
 from foundation.utils import video
 from foundation.virtual import stimulus
@@ -361,3 +363,102 @@ class FrameList(VideoType):
                 times += [current_time + pre_blank, current_time + pre_blank + duration]
             current_time = times[-1]
         return video.Video(images, times=times)
+
+
+# -- Video Sets --
+
+
+@keys
+class DirectionSet:
+    """Direction Set"""
+
+    @property
+    def keys(self):
+        return [
+            stimulus.Video,
+        ]
+
+    def df(self):
+        """
+        Returns
+        -------
+        pd.DataFrame
+            video_id -- foundation.stimulus.video.Video
+            onset -- time of spatial onset (seconds relative to start of video)
+            offset -- time of spatial offset (seconds relative to start of video)
+            direction -- direction (degrees, 0 to 360)
+        """
+        from foundation.stimulus.video import Video
+
+        # dataframe rows
+        rows = []
+
+        for key in tqdm(self.key, desc="Videos"):
+
+            # load video
+            vid = (Video & key).link.compute
+            assert isinstance(vid, DirectionType)
+
+            # direction info
+            for direction, onset, offset in vid.directions():
+
+                row = dict(key, onset=onset, offset=offset, direction=direction)
+                rows.append(row)
+
+        return pd.DataFrame(rows).sort_values(by=["video_id", "onset"]).reset_index(drop=True)
+
+
+@keys
+class SpatialSet:
+    """Spatial Set"""
+
+    @property
+    def keys(self):
+        return [
+            stimulus.Video,
+        ]
+
+    def df(self, height, width):
+        """
+        Parameters
+        ----------
+        height : int
+            spatial grid height
+        width : int
+            spatial grid width
+
+        Returns
+        -------
+        pd.DataFrame
+            video_id -- foundation.stimulus.video.Video
+            onset -- time of spatial onset (seconds relative to start of video)
+            offset -- time of spatial offset (seconds relative to start of video)
+            spatial_type -- spatial type (str)
+            spatial_grid -- spatial grid (2D array)
+        """
+        from foundation.stimulus.video import Video
+        from torch import tensor, nn
+
+        # dataframe rows
+        rows = []
+
+        for key in tqdm(self.key, desc="Videos"):
+
+            # load video
+            vid = (Video & key).link.compute
+            assert isinstance(vid, SpatialType)
+
+            # spatial info
+            stypes, sgrids, onsets, offsets = zip(*vid.spatials())
+
+            # resize spatial grids
+            sgrids = tensor(np.stack(sgrids)[None])
+            sgrids = nn.functional.interpolate(sgrids, [height, width], mode="area")
+            sgrids = sgrids[0].numpy()
+
+            for stype, sgrid, onset, offset in zip(stypes, sgrids, onsets, offsets):
+
+                row = dict(key, onset=onset, offset=offset, spatial_type=stype, spatial_grid=sgrid)
+                rows.append(row)
+
+        return pd.DataFrame(rows).sort_values(by=["spatial_type", "video_id", "onset"]).reset_index(drop=True)

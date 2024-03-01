@@ -159,8 +159,8 @@ class VisualDirectionSet:
             offset -- time of spatial offset (seconds relative to start)
             direction -- direction (degrees, 0 to 360)
         """
-        from foundation.stimulus.video import VideoSet, Video
-        from foundation.stimulus.compute.video import DirectionType
+        from foundation.stimulus.video import VideoSet
+        from foundation.stimulus.compute.video import DirectionSet
 
         # videos
         videos = (VideoSet & self.item).members
@@ -175,20 +175,7 @@ class VisualDirectionSet:
         tdf = pd.DataFrame({"trial_id": trial_ids, "video_id": video_ids, "start": starts})
 
         # video dataframe
-        rows = []
-        for video_id in tqdm(np.unique(video_ids), desc="Videos"):
-
-            # load video
-            video = (Video & {"video_id": video_id}).link.compute
-            assert isinstance(video, DirectionType)
-
-            # direction info
-            for direction, onset, offset in video.directions():
-
-                row = {"video_id": video_id, "onset": onset, "offset": offset, "direction": direction}
-                rows.append(row)
-
-        vdf = pd.DataFrame(rows)
+        vdf = (DirectionSet & videos).df()
 
         return tdf.merge(vdf)
 
@@ -250,7 +237,7 @@ class VisualDirectionTuning:
         # direction discretization
         df["direction"] = df.apply(lambda x: pstr(x.direction), axis=1)
 
-        # drop NA response and sort by spatial type
+        # drop NA response
         df = df[df.response.notna()]
 
         # compute response and density
@@ -290,9 +277,8 @@ class VisualSpatialSet:
             spatial_type -- spatial type (str)
             spatial_grid -- spatial grid (2D array)
         """
-        from foundation.stimulus.video import VideoSet, Video
-        from foundation.stimulus.compute.video import SpatialType
-        from torch import tensor, nn
+        from foundation.stimulus.video import VideoSet
+        from foundation.stimulus.compute.video import SpatialSet
 
         # videos
         videos = (VideoSet & self.item).members
@@ -307,33 +293,7 @@ class VisualSpatialSet:
         tdf = pd.DataFrame({"trial_id": trial_ids, "video_id": video_ids, "start": starts})
 
         # video dataframe
-        rows = []
-        for video_id in tqdm(np.unique(video_ids), desc="Videos"):
-
-            # load video
-            video = (Video & {"video_id": video_id}).link.compute
-            assert isinstance(video, SpatialType)
-
-            # spatial info
-            stypes, sgrids, onsets, offsets = zip(*video.spatials())
-
-            # resize spatial grids
-            sgrids = tensor(np.stack(sgrids)[None])
-            sgrids = nn.functional.interpolate(sgrids, [self.item["height"], self.item["width"]], mode="area")
-            sgrids = sgrids[0].numpy()
-
-            for stype, sgrid, onset, offset in zip(stypes, sgrids, onsets, offsets):
-
-                row = {
-                    "video_id": video_id,
-                    "onset": onset,
-                    "offset": offset,
-                    "spatial_type": stype,
-                    "spatial_grid": sgrid,
-                }
-                rows.append(row)
-
-        vdf = pd.DataFrame(rows)
+        vdf = (SpatialSet & videos).df(height=self.item["height"], width=self.item["width"])
 
         return tdf.merge(vdf)
 
@@ -388,8 +348,8 @@ class VisualSpatialTuning:
         # spatial response
         df["response"] = df.apply(lambda x: impulse(x.start + x.onset, x.start + x.offset), axis=1)
 
-        # drop NA response and sort by spatial type
-        df = df[df.response.notna()].sort_values("spatial_type")
+        # drop NA responses
+        df = df[df.response.notna()]
 
         # iterate spatial types
         for spatial_type, sdf in df.groupby("spatial_type"):
