@@ -64,16 +64,13 @@ class VisualDirectionTuning:
 
     def make(self, key):
         from foundation.fnn.compute.visual import VisualDirectionTuning
-        from itertools import repeat
 
-        # unit tunings
-        direction, mean, n_trials = (VisualDirectionTuning & key).tunings
+        # visual direction tuning
+        key["direction"], response, density = (VisualDirectionTuning & key).tuning
 
         # verify units
-        assert mean.shape[1] == (Data & key).link.compute.units
+        assert len(response) == len(density) == (Data & key).link.compute.units
 
         # insert
-        self.insert(
-            {**key, "direction": d, "response": r, "density": n, "unit": u}
-            for u, (d, r, n) in enumerate(zip(repeat(direction), mean.T, repeat(n_trials)))
-        )
+        keys = [dict(key, unit=u, response=r, density=d) for u, (r, d) in enumerate(zip(response, density))]
+        self.insert(keys)

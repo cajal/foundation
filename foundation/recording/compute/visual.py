@@ -62,7 +62,7 @@ class VisualTrials:
         trials = (TrialFilterSet & key).filter(trials)
 
         # video trials
-        trials = merge(trials.proj(), TrialBounds, TrialVideo) & self.key
+        trials = merge(trials, TrialBounds, TrialVideo) & self.key
 
         # fetch trials
         trial_ids, video_ids, starts = trials.fetch("trial_id", "video_id", "start", order_by="start")
@@ -199,12 +199,12 @@ class VisualDirectionTuning:
         """
         Returns
         -------
-        list
-            direction
-        list
-            mean response to direction
-        list
-            number of trials per direction
+        1D array
+            directions (degrees)
+        1D array
+            response (STA) to directions
+        1D array
+            density of directions
         """
         from foundation.recording.trace import Trace
         from foundation.utility.resample import Offset

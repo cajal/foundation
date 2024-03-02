@@ -157,27 +157,26 @@ class VisualDirectionTuning:
         ]
 
     @rowproperty
-    def tunings(self):
+    def tuning(self):
         """
         Returns
         -------
-        numpy.ndarray
-            directions presented (degrees), sorted
-        numpy.ndarray
-            list of unit-wise mean responses to directions, direction x units
-        numpy.ndarray
-            number of trials per direction
+        1D array
+            directions (degrees) -- [directions]
+        2D array
+            response (STA) to directions -- [directions X units]
+        2D array
+            density of directions -- [directions X units]
         """
+        from foundation.fnn.model import Model
+        from foundation.fnn.data import Data
+        from foundation.stimulus.video import Video, VideoSet
+        from foundation.stimulus.compute.video import DirectionSet
         from foundation.utility.resample import Offset
         from foundation.utility.resize import Resize
         from foundation.utility.impulse import Impulse
         from foundation.utility.numeric import Precision
-        from foundation.stimulus.video import VideoSet, Video
-        from foundation.stimulus.compute.video import DirectionType
-        from foundation.fnn.model import Model
-        from foundation.fnn.data import Data
         from foundation.utils import cuda_enabled
-        from tqdm import tqdm
 
         # load model
         model = (Model & self.item).model(device="cuda" if cuda_enabled() else "cpu")
@@ -185,83 +184,69 @@ class VisualDirectionTuning:
         # load data
         data = (Data & self.item).link.compute
 
-        # model offset
-        model_offset = data.unit_offset
-        target_offset = (Offset & self.item).link.offset
-        offset_correction = target_offset - model_offset
+        # stimulus resolution
+        height, width = data.resolution
 
-        # model period
+        # sampling period
         period = data.sampling_period
 
-        # model response burnin
-        burnin = self.item["burnin"]
+        # response offset
+        offset = (Offset & self.item).link.offset - data.unit_offset
 
-        # precision
+        # resize function
+        resize = (Resize & {"resize_id": data.resize_id}).link.resize
+
+        # impulse function
+        impulse = (Impulse & self.item).link.impulse
+
+        # precision function
         pstr = (Precision & self.item).link.string
 
         # videos
-        video_ids = (VideoSet & self.item).members
-        video_ids = video_ids.fetch("KEY", order_by=video_ids.primary_key)
+        videos = (VideoSet & self.item).members
 
+        # response dataframe
+        dfs = []
+        for video_id, df in tqdm((DirectionSet & videos).df().groupby("video_id"), desc="Responses"):
 
-        with cache_rowproperty():
-            df = []
+            # load video
+            video = resize(
+                video=(Video & {"video_id": video_id}).link.compute.video,
+                height=height,
+                width=width,
+            ).generate(period=period, display_progress=False)
 
-            for video_id in tqdm(video_ids, desc="Videos"):
-                
-                # check if video is a direction type
-                video = (Video & video_id).link.compute
-                assert isinstance(video, DirectionType), "Video is not a direction type"
+            # response to video
+            response = model.generate_response(video)
+            response = np.stack(list(response), axis=0)
 
-                # get resized stimulus
-                rvideo = (
-                    Resize & {'resize_id': data.resize_id}
-                ).link.resize(video.video, *data.resolution)
-                r = model.generate_response(rvideo.generate(period=period, display_progress=False))
-                r = np.stack(list(r), axis=0)  # (frame, units)
+            # response impulse
+            imp = impulse(
+                times=np.arange(self.item["burnin"], len(response)) * period,
+                values=response[self.item["burnin"] :],
+                target_offset=offset,
+            )
 
-                # impulse
-                impulse = (Impulse & self.item).link.impulse(
-                    (np.arange(len(r)) * period)[burnin:], r[burnin:], offset_correction
-                )
+            # direction response and discretization
+            df["response"] = df.apply(lambda x: imp(x.onset, x.offset), axis=1)
+            df["direction"] = df.apply(lambda x: pstr(x.direction), axis=1)
 
-                # extract directions and responses
-                for _dir, _start, _end in video.directions():
-                    df.append(
-                        dict(
-                            direction=pstr(_dir),
-                            response=impulse(_start, _end)
-                        )
-                    )
+            dfs.append(df)
 
-        df = pd.DataFrame(df)        
-        df = df.groupby("direction")['response'].agg(
-            mean=lambda x: np.mean(x, axis=0),
-            count=lambda x: len(x),
-        )
+        df = pd.concat(dfs)
+        df = df.groupby("direction")["response"].agg(response=lambda x: np.stack(x, axis=1))
+
+        # compute density and response STA
+        df["density"] = df.apply(lambda x: np.isfinite(x.response).sum(axis=1), axis=1)
+        df["response"] = df.apply(lambda x: np.nansum(x.response, axis=1) / x.density, axis=1)
+
+        # sort by direction
         df.index = df.index.astype(float)
         df = df.reset_index()
         df = df.sort_values("direction")
 
         return (
-            df['direction'].to_numpy(), 
-            np.stack(df["mean"].to_numpy(), axis=0),  # direction x units
-            df["count"].to_numpy()
+            df["direction"].values,
+            np.stack(df["response"], axis=1).astype(np.float32),
+            np.stack(df["density"], axis=1).astype(int),
         )
-    
-
-if __name__ == "__main__":
-
-    def test_visual_direction_tuning():
-        from foundation.virtual import stimulus, utility
-        from foundation.fnn.compute.visual import VisualDirectionTuning
-        model_key = {
-            'data_id': '11e7be67a39d58be8a10202f654af2b3',
-            'network_id': 'c17d459afa99a88b3e48a32fbabc21e4',
-            'instance_id': '6600970e9cfe7860b80a70375cb6f20c'
-        }
-        video_set = stimulus.VideoSet & 'videoset_id="9df3d6b96304c6ed9807c27e0d46966c"'  # random 10 Monet2 video
-        offset = utility.Offset.MsOffset & "ms_offset=150"
-        burnin = utility.Burnin & "burnin=10"
-        test = VisualDirectionTuning & model_key & video_set & offset & burnin
-        return test.tunings

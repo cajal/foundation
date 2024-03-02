@@ -144,7 +144,8 @@ class VisualScanDataRaw(_VisualScanData):
     def keys(self):
         return [
             fnn.Spec.VisualSpec,
-            (scan.Scan * pipe_shared.PipelineVersion * pipe_shared.SegmentationMethod).proj() & pipe_fuse.ScanDone,
+            (scan.Scan * pipe_shared.PipelineVersion * pipe_shared.SegmentationMethod).proj()
+            & pipe_fuse.ScanDone,
             recording.ScanVisualPerspectives,
             recording.ScanVisualModulations,
             recording.TraceFilterSet,
@@ -294,3 +295,32 @@ class VisualScanCorrelation:
                 VisualMeasure.populate(
                     key, _key, traces, utility.Measure.CCMax, reserve_jobs=True, display_progress=True
                 )
+
+
+@keys
+class VisualScanDirectionTuning:
+    """Visual Scan Direction Tuning"""
+
+    @property
+    def keys(self):
+        return [
+            (scan.Scan * fnn.Model) & fnn.Data.VisualScan,
+            stimulus.VideoSet,
+            utility.Offset,
+            utility.Impulse,
+            utility.Precision,
+            utility.Burnin,
+        ]
+
+    def fill(self, cuda=True):
+        from foundation.fnn.visual import VisualDirectionTuning
+        from foundation.utils import use_cuda
+        from contextlib import nullcontext
+
+        # cuda context
+        context = use_cuda if cuda else nullcontext
+
+        with context():
+
+            # direction tuning
+            VisualDirectionTuning.populate(self.key, reserve_jobs=True, display_progress=True)
