@@ -30,11 +30,10 @@ class VisualRecordingCorrelation:
         1D array
             correlation values -- [units]
         """
-        from foundation.recording.compute.visual import VisualTrialSet
-        from foundation.utility.response import Correlation
-        from foundation.stimulus.video import VideoSet
         from foundation.fnn.model import Model
         from foundation.fnn.data import Data
+        from foundation.utility.response import Correlation
+        from foundation.recording.compute.visual import VisualTrialSet
         from foundation.utils.response import Trials, concatenate
         from foundation.utils import cuda_enabled
 
