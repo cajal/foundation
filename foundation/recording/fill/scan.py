@@ -131,6 +131,37 @@ class VisualScanRawRecording(_VisualScanRecording):
 
 
 @keys
+class VisualScanMeasure:
+    """Visual Scan Measure"""
+
+    @property
+    def keys(self):
+        return [
+            recording.ScanUnits,
+            recording.TrialFilterSet,
+            stimulus.VideoSet,
+            utility.Resample,
+            utility.Offset,
+            utility.Rate,
+            utility.Measure,
+            utility.Burnin,
+        ]
+
+    def fill(self):
+        from foundation.recording.trace import TraceSet
+        from foundation.recording.visual import VisualMeasure
+
+        for key in self.key:
+
+            traces = recording.ScanUnits & key
+            traces = (TraceSet & traces).members
+
+            with cache_rowproperty():
+
+                VisualMeasure.populate(key, traces, reserve_jobs=True, display_progress=True)
+
+
+@keys
 class VisualScanDirectionTuning:
     """Visual Scan Direction Tuning"""
 
