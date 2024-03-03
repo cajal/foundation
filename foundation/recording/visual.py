@@ -29,7 +29,7 @@ class VisualMeasure:
         from foundation.recording.compute.visual import VisualMeasure
 
         # visual measure
-        key["measure"] = (VisualMeasure & key).measure
+        key["measure"] = (VisualMeasure & key).measure()
 
         # insert
         self.insert1(key)
@@ -60,7 +60,7 @@ class VisualDirectionTuning:
         from foundation.recording.compute.visual import VisualDirectionTuning
 
         # visual direction tuning
-        key["direction"], key["response"], key["density"] = (VisualDirectionTuning & key).tuning
+        key["direction"], key["response"], key["density"] = (VisualDirectionTuning & key).tuning()
 
         # insert
         self.insert1(key)
@@ -94,7 +94,7 @@ class VisualSpatialTuning:
         rows = []
 
         # spatial tuning
-        for spatial_type, response, density in (VisualSpatialTuning & key).tuning:
+        for spatial_type, response, density in (VisualSpatialTuning & key).tuning():
 
             # collect row
             rows.append(dict(key, spatial_type=spatial_type, response=response, density=density))

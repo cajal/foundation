@@ -1,46 +1,24 @@
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
-from djutils import keys, merge, rowproperty, cache_rowproperty, keyproperty, U
+from djutils import keys, merge, rowmethod, rowproperty, cache_rowproperty, U
 from foundation.utils import tqdm, logger
 from foundation.virtual import utility, stimulus, recording
 
 
 @keys
-class VisualTrials:
-    """Visual Trials"""
+class VisualTrialSet:
+    """Visual Trial Set"""
 
     @property
     def keys(self):
         return [
             recording.TrialSet,
             recording.TrialFilterSet,
-            stimulus.Video,
+            stimulus.VideoSet,
         ]
 
     @rowproperty
-    def trial_ids(self):
-        """
-        Returns
-        -------
-        Tuple[str]
-            tuple of keys (foundation.recording.trial.Trial) -- ordered by trial start time
-        """
-        from foundation.recording.trial import Trial, TrialSet, TrialVideo, TrialBounds, TrialFilterSet
-
-        # all trials
-        trials = Trial & (TrialSet & self.item).members
-
-        # filtered trials
-        trials = (TrialFilterSet & self.item).filter(trials)
-
-        # video trials
-        trials = merge(trials, TrialBounds, TrialVideo) & self.item
-
-        # trial ids, ordered by trial start
-        return tuple(trials.fetch("trial_id", order_by="start"))
-
-    @keyproperty(recording.TrialSet, recording.TrialFilterSet)
     def df(self):
         """
         Returns
@@ -49,25 +27,24 @@ class VisualTrials:
             trial_id -- foundation.recording.trial.Trial
             video_id -- foundation.stimulus.video.Video
             start -- time of trial start (seconds)
+            end -- time of trial end (seconds)
         """
         from foundation.recording.trial import Trial, TrialSet, TrialVideo, TrialBounds, TrialFilterSet
-
-        # trials key
-        key = (U("trialset_id", "trial_filterset_id") & self.key).fetch1("KEY")
+        from foundation.stimulus.video import VideoSet
 
         # all trials
-        trials = Trial & (TrialSet & key).members
+        trials = Trial & (TrialSet & self.item).members
 
         # filtered trials
-        trials = (TrialFilterSet & key).filter(trials)
+        trials = (TrialFilterSet & self.item).filter(trials)
 
         # video trials
-        trials = merge(trials, TrialBounds, TrialVideo) & self.key
+        trials = merge(trials, TrialBounds, TrialVideo) & (VideoSet & self.item).members
 
         # fetch trials
-        trial_ids, video_ids, starts = trials.fetch("trial_id", "video_id", "start", order_by="start")
+        tids, vids, starts, ends = trials.fetch("trial_id", "video_id", "start", "end", order_by="start")
 
-        return pd.DataFrame({"trial_id": trial_ids, "video_id": video_ids, "start": starts})
+        return pd.DataFrame({"trial_id": tids, "video_id": vids, "start": starts, "end": ends})
 
 
 @keys
@@ -87,7 +64,7 @@ class VisualMeasure:
             utility.Burnin,
         ]
 
-    @rowproperty
+    @rowmethod
     def measure(self):
         """
         Returns
@@ -96,29 +73,24 @@ class VisualMeasure:
             visual response measure
         """
         from foundation.recording.compute.resample import ResampledTrace
-        from foundation.stimulus.video import VideoSet
         from foundation.utility.response import Measure
         from foundation.utils.response import Trials, concatenate
 
         # trial set
         trialset = (recording.TraceTrials & self.item).fetch1()
 
-        # videos
-        videos = (VideoSet & self.item).members
-        videos = videos.fetch("KEY", order_by=videos.primary_key)
+        # trial df
+        df = (VisualTrialSet & trialset & self.item).df
+
+        # trial responses
+        responses = []
 
         with cache_rowproperty():
-            # visual responses
-            responses = []
 
-            for video in tqdm(videos, desc="Videos"):
+            for video_id, vdf in tqdm(df.groupby("video_id"), desc="Videos"):
+
                 # trial ids
-                trial_ids = (VisualTrials & trialset & video & self.item).trial_ids
-
-                # no trials for video
-                if not trial_ids:
-                    logger.warning(f"No trials found for video_id `{video['video_id']}`")
-                    continue
+                trial_ids = list(vdf.trial_id)
 
                 # trial responses
                 trials = (ResampledTrace & self.item).trials(trial_ids=trial_ids)
@@ -160,6 +132,7 @@ class VisualDirectionSet:
             trial_id -- foundation.recording.trial.Trial
             video_id -- foundation.stimulus.video.Video
             start -- time of trial start (seconds)
+            end -- time of trial end (seconds)
             onset -- time of spatial onset (seconds relative to start)
             offset -- time of spatial offset (seconds relative to start)
             direction -- direction (degrees, 0 to 360)
@@ -167,14 +140,11 @@ class VisualDirectionSet:
         from foundation.stimulus.video import VideoSet
         from foundation.stimulus.compute.video import DirectionSet
 
-        # videos
-        videos = (VideoSet & self.item).members
-
         # trial dataframe
-        tdf = (VisualTrials & self.item & videos).df
+        tdf = (VisualTrialSet & self.item).df
 
         # video dataframe
-        vdf = (DirectionSet & videos).df()
+        vdf = (DirectionSet & self.item).df
 
         return tdf.merge(vdf)
 
@@ -194,7 +164,7 @@ class VisualDirectionTuning:
             utility.Precision,
         ]
 
-    @rowproperty
+    @rowmethod
     def tuning(self):
         """
         Returns
@@ -271,22 +241,19 @@ class VisualSpatialSet:
             trial_id -- foundation.recording.trial.Trial
             video_id -- foundation.stimulus.video.Video
             start -- time of trial start (seconds)
+            end -- time of trial end (seconds)
             onset -- time of spatial onset (seconds relative to start)
             offset -- time of spatial offset (seconds relative to start)
             spatial_type -- spatial type (str)
             spatial_grid -- spatial grid (2D array)
         """
-        from foundation.stimulus.video import VideoSet
         from foundation.stimulus.compute.video import SpatialSet
 
-        # videos
-        videos = (VideoSet & self.item).members
-
         # trial dataframe
-        tdf = (VisualTrials & self.item & videos).df
+        tdf = (VisualTrialSet & self.item).df
 
         # video dataframe
-        vdf = (SpatialSet & videos).df(height=self.item["height"], width=self.item["width"])
+        vdf = (SpatialSet & self.item).df
 
         return tdf.merge(vdf)
 
@@ -306,7 +273,7 @@ class VisualSpatialTuning:
             utility.Resolution,
         ]
 
-    @rowproperty
+    @rowmethod
     def tuning(self):
         """
         Yields

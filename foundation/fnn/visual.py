@@ -30,7 +30,7 @@ class VisualRecordingCorrelation:
         from foundation.fnn.compute.visual import VisualRecordingCorrelation
 
         # unit correlations
-        correlations = (VisualRecordingCorrelation & key).units
+        correlations = (VisualRecordingCorrelation & key).correlation()
 
         # verify units
         assert len(correlations) == (Data & key).link.compute.units
@@ -66,7 +66,7 @@ class VisualDirectionTuning:
         from foundation.fnn.compute.visual import VisualDirectionTuning
 
         # visual direction tuning
-        key["direction"], response, density = (VisualDirectionTuning & key).tuning
+        key["direction"], response, density = (VisualDirectionTuning & key).tuning()
 
         # verify units
         assert len(response) == len(density) == (Data & key).link.compute.units

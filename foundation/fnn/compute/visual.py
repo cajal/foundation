@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from itertools import repeat
-from djutils import keys, rowproperty, cache_rowproperty
+from djutils import keys, rowmethod, cache_rowproperty
 from foundation.utils import tqdm, logger
 from foundation.virtual import utility, stimulus, recording, fnn
 
@@ -22,15 +22,15 @@ class VisualRecordingCorrelation:
             utility.Bool.proj(modulation="bool"),
         ]
 
-    @rowproperty
-    def units(self):
+    @rowmethod
+    def correlation(self):
         """
         Returns
         -------
         1D array
-            [units] -- unitwise correlations
+            correlation values -- [units]
         """
-        from foundation.recording.compute.visual import VisualTrials
+        from foundation.recording.compute.visual import VisualTrialSet
         from foundation.utility.response import Correlation
         from foundation.stimulus.video import VideoSet
         from foundation.fnn.model import Model
@@ -47,6 +47,9 @@ class VisualRecordingCorrelation:
         # trial set
         trialset = {"trialset_id": data.trialset_id}
 
+        # trial df
+        df = (VisualTrialSet & trialset & self.item).df
+
         # videos
         videos = (VideoSet & self.item).members
         videos = videos.fetch("KEY", order_by=videos.primary_key)
@@ -58,29 +61,24 @@ class VisualRecordingCorrelation:
 
         with cache_rowproperty():
 
-            for video in tqdm(videos, desc="Videos"):
+            for video_id, vdf in tqdm(df.groupby("video_id"), desc="Videos"):
 
-                # trials
-                trial_ids = (VisualTrials & trialset & video & self.item).trial_ids
+                # trial ids
+                trial_ids = list(vdf.trial_id)
 
-                # no trials for video
-                if not trial_ids:
-                    logger.warning(f"No trials found for video_id `{video['video_id']}`")
-                    continue
-
-                # stimuli
+                # trial stimuli
                 stimuli = data.trial_stimuli(trial_ids)
 
-                # units
+                # trial units
                 units = data.trial_units(trial_ids)
 
-                # perspectives
+                # trial perspectives
                 if self.item["perspective"]:
                     perspectives = data.trial_perspectives(trial_ids)
                 else:
                     perspectives = repeat(None)
 
-                # modulations
+                # trial modulations
                 if self.item["modulation"]:
                     modulations = data.trial_modulations(trial_ids)
                 else:
@@ -156,7 +154,7 @@ class VisualDirectionTuning:
             utility.Burnin,
         ]
 
-    @rowproperty
+    @rowmethod
     def tuning(self):
         """
         Returns

@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 from djutils import keys, rowproperty, rowmethod, MissingError, merge
 from foundation.utils import video
-from foundation.virtual import stimulus
+from foundation.virtual import stimulus, utility
 from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
 
 
@@ -375,9 +375,10 @@ class DirectionSet:
     @property
     def keys(self):
         return [
-            stimulus.Video,
+            stimulus.VideoSet,
         ]
 
+    @rowproperty
     def df(self):
         """
         Returns
@@ -388,21 +389,24 @@ class DirectionSet:
             offset -- time of spatial offset (seconds relative to start of video)
             direction -- direction (degrees, 0 to 360)
         """
-        from foundation.stimulus.video import Video
+        from foundation.stimulus.video import Video, VideoSet
+
+        # videos
+        video_ids = (VideoSet & self.item).members.fetch("video_id")
 
         # dataframe rows
         rows = []
 
-        for key in tqdm(self.key, desc="Videos"):
+        for video_id in tqdm(video_ids, desc="Videos"):
 
             # load video
-            vid = (Video & key).link.compute
+            vid = (Video & {"video_id": video_id}).link.compute
             assert isinstance(vid, DirectionType)
 
             # direction info
             for direction, onset, offset in vid.directions():
 
-                row = dict(key, onset=onset, offset=offset, direction=direction)
+                row = dict(video_id=video_id, onset=onset, offset=offset, direction=direction)
                 rows.append(row)
 
         return pd.DataFrame(rows).sort_values(by=["video_id", "onset"]).reset_index(drop=True)
@@ -415,18 +419,13 @@ class SpatialSet:
     @property
     def keys(self):
         return [
-            stimulus.Video,
+            stimulus.VideoSet,
+            utility.Resolution,
         ]
 
-    def df(self, height, width):
+    @rowproperty
+    def df(self):
         """
-        Parameters
-        ----------
-        height : int
-            spatial grid height
-        width : int
-            spatial grid width
-
         Returns
         -------
         pd.DataFrame
@@ -436,16 +435,19 @@ class SpatialSet:
             spatial_type -- spatial type (str)
             spatial_grid -- spatial grid (2D array)
         """
-        from foundation.stimulus.video import Video
+        from foundation.stimulus.video import Video, VideoSet
         from torch import tensor, nn
+
+        # videos
+        video_ids = (VideoSet & self.item).members.fetch("video_id")
 
         # dataframe rows
         rows = []
 
-        for key in tqdm(self.key, desc="Videos"):
+        for video_id in tqdm(video_ids, desc="Videos"):
 
             # load video
-            vid = (Video & key).link.compute
+            vid = (Video & {"video_id": video_id}).link.compute
             assert isinstance(vid, SpatialType)
 
             # spatial info
@@ -453,12 +455,14 @@ class SpatialSet:
 
             # resize spatial grids
             sgrids = tensor(np.stack(sgrids)[None])
-            sgrids = nn.functional.interpolate(sgrids, [height, width], mode="area")
+            sgrids = nn.functional.interpolate(sgrids, [self.item["height"], self.item["width"]], mode="area")
             sgrids = sgrids[0].numpy()
 
             for stype, sgrid, onset, offset in zip(stypes, sgrids, onsets, offsets):
 
-                row = dict(key, onset=onset, offset=offset, spatial_type=stype, spatial_grid=sgrid)
+                row = dict(
+                    video_id=video_id, onset=onset, offset=offset, spatial_type=stype, spatial_grid=sgrid
+                )
                 rows.append(row)
 
         return pd.DataFrame(rows).sort_values(by=["spatial_type", "video_id", "onset"]).reset_index(drop=True)
