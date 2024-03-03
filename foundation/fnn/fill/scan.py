@@ -253,12 +253,13 @@ class VisualScanCorrelation:
             (scan.Scan * fnn.Model) & fnn.Data.VisualScan,
             recording.TrialFilterSet,
             stimulus.VideoSet,
+            utility.Correlation,
             utility.Burnin,
             utility.Bool.proj(perspective="bool"),
             utility.Bool.proj(modulation="bool"),
         ]
 
-    def fill_cc_abs(self, cuda=True):
+    def fill(self, cuda=True):
         from foundation.fnn.visual import VisualRecordingCorrelation
         from foundation.utils import use_cuda
         from contextlib import nullcontext
@@ -268,33 +269,8 @@ class VisualScanCorrelation:
 
         with context():
 
-            # unit correlations
-            VisualRecordingCorrelation.populate(
-                self.key, utility.Correlation.CCSignal, reserve_jobs=True, display_progress=True
-            )
-
-    def fill_cc_max(self):
-        from foundation.fnn.data import Data
-        from foundation.recording.visual import VisualMeasure
-        from foundation.recording.trace import TraceSet
-
-        keys = U("data_id", "trial_filterset_id", "videoset_id", "burnin") & self.key
-
-        for key in keys:
-
-            # unit key
-            _key = (Data & key).link.compute.key_unit
-            _key.pop("trial_filterset_id")
-
-            # unit traces
-            traces = (TraceSet & _key).members
-
-            with cache_rowproperty():
-
-                # unit measures
-                VisualMeasure.populate(
-                    key, _key, traces, utility.Measure.CCMax, reserve_jobs=True, display_progress=True
-                )
+            # correlation
+            VisualRecordingCorrelation.populate(self.key, reserve_jobs=True, display_progress=True)
 
 
 @keys

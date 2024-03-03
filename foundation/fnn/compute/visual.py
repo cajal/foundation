@@ -50,10 +50,6 @@ class VisualRecordingCorrelation:
         # trial df
         df = (VisualTrialSet & trialset & self.item).df
 
-        # videos
-        videos = (VideoSet & self.item).members
-        videos = videos.fetch("KEY", order_by=videos.primary_key)
-
         # trials, targets, predictions
         trials = []
         targs = []
@@ -61,7 +57,7 @@ class VisualRecordingCorrelation:
 
         with cache_rowproperty():
 
-            for video_id, vdf in tqdm(df.groupby("video_id"), desc="Videos"):
+            for _, vdf in tqdm(df.groupby("video_id"), desc="Videos"):
 
                 # trial ids
                 trial_ids = list(vdf.trial_id)
