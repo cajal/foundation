@@ -14,16 +14,16 @@ class Impulse:
         ----------
         times : 1D array
             trace times, monotonically increasing
-        values : 1D array
-            trace values, same length as times
+        values : ND array
+            trace values, first dim same length as times
         target_offset : float
             target offset
         """
-        if not times.ndim == values.ndim == 1:
+        if not times.ndim == 1:
             raise ValueError("Times and Values must be 1D")
 
-        if times.size != values.size:
-            raise ValueError("Times and Values are not the same size")
+        if times.size != len(values):
+            raise ValueError("Times and Values are incompatible sizes")
 
         if not monotonic(times):
             raise ValueError("Times do not monotonically increase.")
@@ -43,7 +43,7 @@ class Impulse:
 
         Returns
         -------
-        float
+        float | array
             target value
         """
         raise NotImplementedError()
@@ -60,4 +60,4 @@ class Box(Impulse):
         j = np.searchsorted(self.times, self.target_offset + end, side="right")
 
         v = self.values[i:j]
-        return np.mean(v)
+        return np.mean(v, axis=0)

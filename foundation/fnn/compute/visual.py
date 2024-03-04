@@ -1,6 +1,7 @@
 import numpy as np
+import pandas as pd
 from itertools import repeat
-from djutils import keys, rowproperty, cache_rowproperty
+from djutils import keys, rowmethod, cache_rowproperty
 from foundation.utils import tqdm, logger
 from foundation.virtual import utility, stimulus, recording, fnn
 
@@ -21,19 +22,18 @@ class VisualRecordingCorrelation:
             utility.Bool.proj(modulation="bool"),
         ]
 
-    @rowproperty
-    def units(self):
+    @rowmethod
+    def correlation(self):
         """
         Returns
         -------
         1D array
-            [units] -- unitwise correlations
+            correlation values -- [units]
         """
-        from foundation.recording.compute.visual import VisualTrials
-        from foundation.utility.response import Correlation
-        from foundation.stimulus.video import VideoSet
         from foundation.fnn.model import Model
         from foundation.fnn.data import Data
+        from foundation.utility.response import Correlation
+        from foundation.recording.compute.visual import VisualTrialSet
         from foundation.utils.response import Trials, concatenate
         from foundation.utils import cuda_enabled
 
@@ -46,9 +46,8 @@ class VisualRecordingCorrelation:
         # trial set
         trialset = {"trialset_id": data.trialset_id}
 
-        # videos
-        videos = (VideoSet & self.item).members
-        videos = videos.fetch("KEY", order_by=videos.primary_key)
+        # trial df
+        df = (VisualTrialSet & trialset & self.item).df
 
         # trials, targets, predictions
         trials = []
@@ -57,29 +56,24 @@ class VisualRecordingCorrelation:
 
         with cache_rowproperty():
 
-            for video in tqdm(videos, desc="Videos"):
+            for _, vdf in tqdm(df.groupby("video_id"), desc="Videos"):
 
-                # trials
-                trial_ids = (VisualTrials & trialset & video & self.item).trial_ids
+                # trial ids
+                trial_ids = list(vdf.trial_id)
 
-                # no trials for video
-                if not trial_ids:
-                    logger.warning(f"No trials found for video_id `{video['video_id']}`")
-                    continue
-
-                # stimuli
+                # trial stimuli
                 stimuli = data.trial_stimuli(trial_ids)
 
-                # units
+                # trial units
                 units = data.trial_units(trial_ids)
 
-                # perspectives
+                # trial perspectives
                 if self.item["perspective"]:
                     perspectives = data.trial_perspectives(trial_ids)
                 else:
                     perspectives = repeat(None)
 
-                # modulations
+                # trial modulations
                 if self.item["modulation"]:
                     modulations = data.trial_modulations(trial_ids)
                 else:
@@ -138,3 +132,114 @@ class VisualRecordingCorrelation:
             correlations.append(cc(unit_targ, unit_pred))
 
         return np.array(correlations)
+
+
+@keys
+class VisualDirectionTuning:
+    """Visual Direction"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.Model,
+            stimulus.VideoSet,
+            utility.Offset,
+            utility.Impulse,
+            utility.Precision,
+            utility.Burnin,
+        ]
+
+    @rowmethod
+    def tuning(self):
+        """
+        Returns
+        -------
+        1D array
+            directions (degrees) -- [directions]
+        2D array
+            response (STA) to directions -- [directions X units]
+        2D array
+            density of directions -- [directions X units]
+        """
+        from foundation.fnn.model import Model
+        from foundation.fnn.data import Data
+        from foundation.stimulus.video import Video, VideoSet
+        from foundation.stimulus.compute.video import DirectionSet
+        from foundation.utility.resample import Offset
+        from foundation.utility.resize import Resize
+        from foundation.utility.impulse import Impulse
+        from foundation.utility.numeric import Precision
+        from foundation.utils import cuda_enabled
+
+        # load model
+        model = (Model & self.item).model(device="cuda" if cuda_enabled() else "cpu")
+
+        # load data
+        data = (Data & self.item).link.compute
+
+        # stimulus resolution
+        height, width = data.resolution
+
+        # sampling period
+        period = data.sampling_period
+
+        # response offset
+        offset = (Offset & self.item).link.offset - data.unit_offset
+
+        # resize function
+        resize = (Resize & {"resize_id": data.resize_id}).link.resize
+
+        # impulse function
+        impulse = (Impulse & self.item).link.impulse
+
+        # precision function
+        pstr = (Precision & self.item).link.string
+
+        # videos
+        videos = (VideoSet & self.item).members
+
+        # response dataframe
+        dfs = []
+        for video_id, df in tqdm((DirectionSet & videos).df().groupby("video_id"), desc="Responses"):
+
+            # load video
+            video = resize(
+                video=(Video & {"video_id": video_id}).link.compute.video,
+                height=height,
+                width=width,
+            ).generate(period=period, display_progress=False)
+
+            # response to video
+            response = model.generate_response(video)
+            response = np.stack(list(response), axis=0)
+
+            # response impulse
+            imp = impulse(
+                times=np.arange(self.item["burnin"], len(response)) * period,
+                values=response[self.item["burnin"] :],
+                target_offset=offset,
+            )
+
+            # direction response and discretization
+            df["response"] = df.apply(lambda x: imp(x.onset, x.offset), axis=1)
+            df["direction"] = df.apply(lambda x: pstr(x.direction), axis=1)
+
+            dfs.append(df)
+
+        df = pd.concat(dfs)
+        df = df.groupby("direction")["response"].agg(response=lambda x: np.stack(x, axis=1))
+
+        # compute density and response STA
+        df["density"] = df.apply(lambda x: np.isfinite(x.response).sum(axis=1), axis=1)
+        df["response"] = df.apply(lambda x: np.nansum(x.response, axis=1) / x.density, axis=1)
+
+        # sort by direction
+        df.index = df.index.astype(float)
+        df = df.reset_index()
+        df = df.sort_values("direction")
+
+        return (
+            df["direction"].values,
+            np.stack(df["response"], axis=1).astype(np.float32),
+            np.stack(df["density"], axis=1).astype(int),
+        )
