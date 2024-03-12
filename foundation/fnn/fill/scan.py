@@ -144,7 +144,8 @@ class VisualScanDataRaw(_VisualScanData):
     def keys(self):
         return [
             fnn.Spec.VisualSpec,
-            (scan.Scan * pipe_shared.PipelineVersion * pipe_shared.SegmentationMethod).proj() & pipe_fuse.ScanDone,
+            (scan.Scan * pipe_shared.PipelineVersion * pipe_shared.SegmentationMethod).proj()
+            & pipe_fuse.ScanDone,
             recording.ScanVisualPerspectives,
             recording.ScanVisualModulations,
             recording.TraceFilterSet,
@@ -252,12 +253,13 @@ class VisualScanCorrelation:
             (scan.Scan * fnn.Model) & fnn.Data.VisualScan,
             recording.TrialFilterSet,
             stimulus.VideoSet,
+            utility.Correlation,
             utility.Burnin,
             utility.Bool.proj(perspective="bool"),
             utility.Bool.proj(modulation="bool"),
         ]
 
-    def fill_cc_abs(self, cuda=True):
+    def fill(self, cuda=True):
         from foundation.fnn.visual import VisualRecordingCorrelation
         from foundation.utils import use_cuda
         from contextlib import nullcontext
@@ -267,30 +269,34 @@ class VisualScanCorrelation:
 
         with context():
 
-            # unit correlations
-            VisualRecordingCorrelation.populate(
-                self.key, utility.Correlation.CCSignal, reserve_jobs=True, display_progress=True
-            )
+            # correlation
+            VisualRecordingCorrelation.populate(self.key, reserve_jobs=True, display_progress=True)
 
-    def fill_cc_max(self):
-        from foundation.fnn.data import Data
-        from foundation.recording.visual import VisualMeasure
-        from foundation.recording.trace import TraceSet
 
-        keys = U("data_id", "trial_filterset_id", "videoset_id", "burnin") & self.key
+@keys
+class VisualScanDirectionTuning:
+    """Visual Scan Direction Tuning"""
 
-        for key in keys:
+    @property
+    def keys(self):
+        return [
+            (scan.Scan * fnn.Model) & fnn.Data.VisualScan,
+            stimulus.VideoSet,
+            utility.Offset,
+            utility.Impulse,
+            utility.Precision,
+            utility.Burnin,
+        ]
 
-            # unit key
-            _key = (Data & key).link.compute.key_unit
-            _key.pop("trial_filterset_id")
+    def fill(self, cuda=True):
+        from foundation.fnn.visual import VisualDirectionTuning
+        from foundation.utils import use_cuda
+        from contextlib import nullcontext
 
-            # unit traces
-            traces = (TraceSet & _key).members
+        # cuda context
+        context = use_cuda if cuda else nullcontext
 
-            with cache_rowproperty():
+        with context():
 
-                # unit measures
-                VisualMeasure.populate(
-                    key, _key, traces, utility.Measure.CCMax, reserve_jobs=True, display_progress=True
-                )
+            # direction tuning
+            VisualDirectionTuning.populate(self.key, reserve_jobs=True, display_progress=True)

@@ -60,10 +60,29 @@ class SigmoidLstm(ModulationType):
         return SigmoidLstm(**self.fetch1("KEY"))
 
 
+@schema.lookup
+class MlpLstm(ModulationType):
+    definition = """
+    mlp_features        : int unsigned      # mlp features per stream
+    mlp_layers          : int unsigned      # mlp layers
+    mlp_nonlinear       : varchar(128)      # mlp nonlinearity
+    lstm_features       : int unsigned      # lstm features per stream
+    init_input          : decimal(6, 4)     # initial input gate bias
+    init_forget         : decimal(6, 4)     # initial forget gate bias
+    dropout             : decimal(6, 6)     # dropout probability
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.modulations import MlpLstm
+
+        return MlpLstm(**self.fetch1("KEY"))
+
+
 # -- Modulation --
 
 
 @schema.link
 class Modulation:
-    links = [FlatLstm, SigmoidLstm]
+    links = [FlatLstm, SigmoidLstm, MlpLstm]
     name = "modulation"

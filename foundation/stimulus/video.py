@@ -52,6 +52,17 @@ class Monet2(VideoType):
 
         return Monet2 & self
 
+@schema.lookup
+class Gratezk(VideoType):
+    definition = """
+    -> pipe_stim.Gratezk
+    """
+
+    @rowproperty
+    def compute(self):
+        from foundation.stimulus.compute.video import Gratezk
+
+        return Gratezk & self
 
 @schema.lookup
 class Trippy(VideoType):
@@ -152,6 +163,7 @@ class Video:
     links = [
         Clip,
         Monet2,
+        Gratezk,
         Trippy,
         GaborSequence,
         DotSequence,

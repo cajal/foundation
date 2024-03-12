@@ -17,8 +17,8 @@ class ImpulseType:
         -------
         times : 1D array
             trace times, monotonically increasing
-        values : 1D array
-            trace values, same length as times
+        values : ND array
+            trace values, first dim same length as times
         target_offset : float
             target offset
 

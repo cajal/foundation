@@ -83,12 +83,24 @@ class Norm(FeatureType):
         return Norm(**self.fetch1())
 
 
+@schema.method
+class Vanilla(FeatureType):
+    name = "vanilla"
+    comment = "vanilla feature"
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.features import Vanilla
+
+        return Vanilla()
+
+
 # -- Feature --
 
 
 @schema.link
 class Feature:
-    links = [Norm]
+    links = [Norm, Vanilla]
     name = "feature"
 
 
@@ -176,10 +188,23 @@ class Poisson(UnitType):
         return Poisson()
 
 
+@schema.lookup
+class EluMse(PositionType):
+    definition = """
+    alpha   : decimal(6, 4)     # alpha value for elu
+    """
+
+    @rowproperty
+    def nn(self):
+        from fnn.model.units import EluMse
+
+        return EluMse(alpha=float(self.fetch1("alpha")))
+
+
 # -- Unit --
 
 
 @schema.link
 class Unit:
-    links = [Poisson]
+    links = [Poisson, EluMse]
     name = "unit"

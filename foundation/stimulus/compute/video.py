@@ -1,9 +1,11 @@
 import io
 import av
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
 from djutils import keys, rowproperty, rowmethod, MissingError, merge
 from foundation.utils import video
-from foundation.virtual import stimulus
+from foundation.virtual import stimulus, utility
 from foundation.virtual.bridge import pipe_stim, pipe_gabor, pipe_dot, pipe_rdk
 
 
@@ -40,6 +42,26 @@ class DirectionType(VideoType):
             start time of direction (seconds)
         float
             end time of direction (seconds)
+        """
+        raise NotImplementedError()
+
+
+class SpatialType(VideoType):
+    """Spatial Video"""
+
+    @rowmethod
+    def spatials(self):
+        """
+        Yields
+        ------
+        str
+            spatial type
+        2D array
+            spatial grid, float, between 0 and 1
+        float
+            start time of grid (seconds)
+        float
+            end time of grid (seconds)
         """
         raise NotImplementedError()
 
@@ -114,6 +136,37 @@ class Monet2(DirectionType):
 
 
 @keys
+class Gratezk(DirectionType):
+    """Gratezk Video"""
+
+    @property
+    def keys(self):
+        return [
+            pipe_stim.Gratezk,
+        ]
+
+    @rowproperty
+    def video(self):
+        frames, fps = (pipe_stim.Gratezk & self.item).fetch1("movie", "fps")
+        frames = np.einsum("H W T -> T H W", frames)
+        return video.Video.fromarray(frames, period=1 / float(fps))
+
+    @rowmethod
+    def directions(self):
+        direction, pre_blank, duration = (pipe_stim.Gratezk & self.item).fetch1(
+            "direction", "pre_blank", "duration"
+        )
+        direction = float(direction)
+        pre_blank = float(pre_blank)
+        duration = float(duration)
+
+        # 0 degree is right, 90 is up
+        direction = (90 - direction) % 360
+
+        yield direction, pre_blank, pre_blank + duration
+
+
+@keys
 class Trippy(VideoType):
     """Trippy Video"""
 
@@ -153,7 +206,7 @@ class GaborSequence(VideoType):
 
 
 @keys
-class DotSequence(VideoType):
+class DotSequence(SpatialType):
     """Dot Sequence Video"""
 
     @property
@@ -176,6 +229,26 @@ class DotSequence(VideoType):
         assert len(frames) == n_frames
 
         return video.Video.fromarray(frames, period=1 / fps)
+
+    @rowmethod
+    def spatials(self):
+        sequence = (pipe_stim.DotSequence & self.item).fetch1()
+        fps = (pipe_dot.Display & sequence).fetch1("fps")
+
+        dots = pipe_dot.Dot * pipe_dot.Sequence.Dot * pipe_dot.Display & sequence
+        dots, ons = dots.fetch("mask", "dot_on", order_by="dot_id ASC")
+
+        id_trace = (pipe_dot.Trace * pipe_dot.Display & sequence).fetch1("id_trace")
+        breaks = np.where(np.diff(id_trace, prepend=np.nan, append=np.nan))[0]
+        times = breaks / fps
+
+        assert len(dots) == len(ons) == len(times) - 1
+
+        for dot, on, start, end in zip(dots, ons, times[:-1], times[1:]):
+
+            yield "on_off", dot, start, end
+
+            yield "on" if on else "off", dot, start, end
 
 
 @keys
@@ -250,9 +323,9 @@ class FrameList(VideoType):
     @rowproperty
     def video(self):
         members = stimulus.FrameList.Member & self.item
-        if len(members) != (stimulus.FrameList & self.item).fetch1('members'):
+        if len(members) != (stimulus.FrameList & self.item).fetch1("members"):
             raise MissingError(f"FrameList {self.item} is missing members")
-        
+
         tups = merge(
             members,
             pipe_stim.StaticImage.Image,
@@ -290,7 +363,6 @@ class FrameList(VideoType):
                 times += [current_time + pre_blank, current_time + pre_blank + duration]
             current_time = times[-1]
         return video.Video(images, times=times)
-
 
 @keys
 class Frame2List(VideoType):
@@ -368,3 +440,107 @@ class Frame2List(VideoType):
                 times += [current_time + pre_blank, current_time + pre_blank + duration]
             current_time = times[-1]
         return video.Video(images, times=times)
+
+
+# -- Video Sets --
+
+
+@keys
+class DirectionSet:
+    """Direction Set"""
+
+    @property
+    def keys(self):
+        return [
+            stimulus.VideoSet,
+        ]
+
+    @rowproperty
+    def df(self):
+        """
+        Returns
+        -------
+        pd.DataFrame
+            video_id -- foundation.stimulus.video.Video
+            onset -- time of spatial onset (seconds relative to start of video)
+            offset -- time of spatial offset (seconds relative to start of video)
+            direction -- direction (degrees, 0 to 360)
+        """
+        from foundation.stimulus.video import Video, VideoSet
+
+        # videos
+        video_ids = (VideoSet & self.item).members.fetch("video_id")
+
+        # dataframe rows
+        rows = []
+
+        for video_id in tqdm(video_ids, desc="Videos"):
+
+            # load video
+            vid = (Video & {"video_id": video_id}).link.compute
+            assert isinstance(vid, DirectionType)
+
+            # direction info
+            for direction, onset, offset in vid.directions():
+
+                row = dict(video_id=video_id, onset=onset, offset=offset, direction=direction)
+                rows.append(row)
+
+        return pd.DataFrame(rows).sort_values(by=["video_id", "onset"]).reset_index(drop=True)
+
+
+@keys
+class SpatialSet:
+    """Spatial Set"""
+
+    @property
+    def keys(self):
+        return [
+            stimulus.VideoSet,
+            utility.Resolution,
+        ]
+
+    @rowproperty
+    def df(self):
+        """
+        Returns
+        -------
+        pd.DataFrame
+            video_id -- foundation.stimulus.video.Video
+            onset -- time of spatial onset (seconds relative to start of video)
+            offset -- time of spatial offset (seconds relative to start of video)
+            spatial_type -- spatial type (str)
+            spatial_grid -- spatial grid (2D array)
+        """
+        from foundation.stimulus.video import Video, VideoSet
+        from torch import tensor, nn
+
+        # videos
+        video_ids = (VideoSet & self.item).members.fetch("video_id")
+
+        # dataframe rows
+        rows = []
+
+        for video_id in tqdm(video_ids, desc="Videos"):
+
+            # load video
+            vid = (Video & {"video_id": video_id}).link.compute
+            assert isinstance(vid, SpatialType)
+
+            # spatial info
+            stypes, sgrids, onsets, offsets = zip(*vid.spatials())
+
+            # resize spatial grids
+            sgrids = tensor(np.stack(sgrids)[None])
+            sgrids = nn.functional.interpolate(sgrids, [self.item["height"], self.item["width"]], mode="area")
+            sgrids = sgrids[0].numpy()
+
+            for stype, sgrid, onset, offset in zip(stypes, sgrids, onsets, offsets):
+
+                row = dict(
+                    video_id=video_id, onset=onset, offset=offset, spatial_type=stype, spatial_grid=sgrid
+                )
+                rows.append(row)
+
+        return pd.DataFrame(rows).sort_values(by=["spatial_type", "video_id", "onset"]).reset_index(drop=True)
+
