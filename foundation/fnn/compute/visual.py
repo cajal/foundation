@@ -200,7 +200,7 @@ class VisualDirectionTuning:
 
         # response dataframe
         dfs = []
-        for video_id, df in tqdm((DirectionSet & videos).df().groupby("video_id"), desc="Responses"):
+        for video_id, df in tqdm((DirectionSet & videos).df.groupby("video_id"), desc="Responses"):
 
             # load video
             video = resize(
