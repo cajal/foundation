@@ -163,7 +163,7 @@ class BiVonMises:
 
         fit = model.fit(response, params, x=x)
 
-        params = {
+        result = {
             "success": fit.success,
             "kappa": fit.params["g_kappa"].value,
             "scale": fit.params["g_amp"].value,
@@ -175,10 +175,10 @@ class BiVonMises:
         phi = fit.params["g_phi"].value
 
         if phi > 0.5:
-            params["mu"] = mu % (2 * np.pi)
-            params["phi"] = phi
+            result["mu"] = mu % (2 * np.pi)
+            result["phi"] = phi
         else:
-            params["mu"] = (mu + np.pi) % (2 * np.pi)
-            params["phi"] = 1 - phi
+            result["mu"] = (mu + np.pi) % (2 * np.pi)
+            result["phi"] = 1 - phi
 
-        return params
+        return result
