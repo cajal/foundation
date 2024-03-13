@@ -123,7 +123,7 @@ class GlobalDSI:
 
 @keys
 class BiVonMises:
-    """Bi Von Mises"""
+    """Two von Mises distributions separated by pi"""
 
     @property
     def keys(self):
