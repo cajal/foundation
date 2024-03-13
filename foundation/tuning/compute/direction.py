@@ -89,6 +89,12 @@ class GlobalOSI:
 
     @rowproperty
     def global_osi(self):
+        """
+        Returns
+        -------
+        float
+            global orientation selectivity index
+        """
         from foundation.tuning.direction import Direction
 
         direction, response = (Direction & self.item).link.compute.tuning
@@ -111,6 +117,12 @@ class GlobalDSI:
 
     @rowproperty
     def global_osi(self):
+        """
+        Returns
+        -------
+        float
+            global direction selectivity index
+        """
         from foundation.tuning.direction import Direction
 
         direction, response = (Direction & self.item).link.compute.tuning
@@ -133,6 +145,12 @@ class BiVonMises:
 
     @rowproperty
     def bi_von_mises(self):
+        """
+        Returns
+        -------
+        dict[str, bool | float]
+            bi von mises parameters
+        """
         from foundation.tuning.direction import Direction
         from lmfit import Model
 
