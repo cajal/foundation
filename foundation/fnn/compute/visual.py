@@ -135,6 +135,85 @@ class VisualRecordingCorrelation:
 
 
 @keys
+class VisualImpulse:
+    """Visual Response"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.Model,
+            stimulus.VideoSet,
+            utility.Offset,
+            utility.Impulse,
+            utility.Burnin,
+        ]
+
+    @rowmethod
+    def impulse(self):
+        """
+        Yields
+        ------
+        str
+            key (foundation.stimulus.video.Video)
+        foundation.utils.impulse.Impulse
+            impulse function
+        """
+        from foundation.fnn.model import Model
+        from foundation.fnn.data import Data
+        from foundation.stimulus.video import Video, VideoSet
+        from foundation.utility.resample import Offset
+        from foundation.utility.resize import Resize
+        from foundation.utility.impulse import Impulse
+        from foundation.utils import cuda_enabled
+
+        # load model
+        model = (Model & self.item).model(device="cuda" if cuda_enabled() else "cpu")
+
+        # load data
+        data = (Data & self.item).link.compute
+
+        # stimulus resolution
+        height, width = data.resolution
+
+        # sampling period
+        period = data.sampling_period
+
+        # response offset
+        offset = (Offset & self.item).link.offset - data.unit_offset
+
+        # resize function
+        resize = (Resize & {"resize_id": data.resize_id}).link.resize
+
+        # impulse function
+        impulse = (Impulse & self.item).link.impulse
+
+        # videos
+        video_ids = (VideoSet & self.item).members.fetch("video_id", order_by="video_id")
+
+        for video_id in tqdm(video_ids, desc="Videos"):
+
+            # load video
+            video = resize(
+                video=(Video & {"video_id": video_id}).link.compute.video,
+                height=height,
+                width=width,
+            ).generate(period=period, display_progress=False)
+
+            # response to video
+            response = model.generate_response(video)
+            response = np.stack(list(response), axis=0)
+
+            # response impulse
+            imp = impulse(
+                times=np.arange(self.item["burnin"], len(response)) * period,
+                values=response[self.item["burnin"] :],
+                target_offset=offset,
+            )
+
+            yield video_id, imp
+
+
+@keys
 class VisualDirectionTuning:
     """Visual Direction"""
 
@@ -161,36 +240,9 @@ class VisualDirectionTuning:
         2D array
             density of directions -- [directions X units]
         """
-        from foundation.fnn.model import Model
-        from foundation.fnn.data import Data
-        from foundation.stimulus.video import Video, VideoSet
+        from foundation.stimulus.video import VideoSet
         from foundation.stimulus.compute.video import DirectionSet
-        from foundation.utility.resample import Offset
-        from foundation.utility.resize import Resize
-        from foundation.utility.impulse import Impulse
         from foundation.utility.numeric import Precision
-        from foundation.utils import cuda_enabled
-
-        # load model
-        model = (Model & self.item).model(device="cuda" if cuda_enabled() else "cpu")
-
-        # load data
-        data = (Data & self.item).link.compute
-
-        # stimulus resolution
-        height, width = data.resolution
-
-        # sampling period
-        period = data.sampling_period
-
-        # response offset
-        offset = (Offset & self.item).link.offset - data.unit_offset
-
-        # resize function
-        resize = (Resize & {"resize_id": data.resize_id}).link.resize
-
-        # impulse function
-        impulse = (Impulse & self.item).link.impulse
 
         # precision function
         pstr = (Precision & self.item).link.string
@@ -198,31 +250,19 @@ class VisualDirectionTuning:
         # videos
         videos = (VideoSet & self.item).members
 
+        # directions
+        directions = (DirectionSet & videos).df.groupby("video_id")
+
         # response dataframe
         dfs = []
-        for video_id, df in tqdm((DirectionSet & videos).df().groupby("video_id"), desc="Responses"):
+        for video_id, impulse in (VisualImpulse & self.item).impulse():
 
-            # load video
-            video = resize(
-                video=(Video & {"video_id": video_id}).link.compute.video,
-                height=height,
-                width=width,
-            ).generate(period=period, display_progress=False)
-
-            # response to video
-            response = model.generate_response(video)
-            response = np.stack(list(response), axis=0)
-
-            # response impulse
-            imp = impulse(
-                times=np.arange(self.item["burnin"], len(response)) * period,
-                values=response[self.item["burnin"] :],
-                target_offset=offset,
-            )
+            # direction dataframe
+            df = directions.get_group(video_id)
 
             # direction response and discretization
-            df["response"] = df.apply(lambda x: imp(x.onset, x.offset), axis=1)
-            df["direction"] = df.apply(lambda x: pstr(x.direction), axis=1)
+            df.loc[:, ["response"]] = df.apply(lambda x: impulse(x.onset, x.offset), axis=1)
+            df.loc[:, ["direction"]] = df.apply(lambda x: pstr(x.direction), axis=1)
 
             dfs.append(df)
 
