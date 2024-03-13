@@ -1,136 +1,103 @@
-from djutils import merge, rowproperty, rowmethod
+from djutils import rowproperty
 from foundation.virtual import recording, fnn, stimulus, utility
 from foundation.schemas import tuning as schema
 
 
-# ---------------------------- DirectionResp ----------------------------
+# ---------------------------- Direction Tuning ----------------------------
 
-# -- DirectionResp Interface --
+# -- Direction Tuning Interface --
 
 
-class DirectionResp:
-    """Unit responses to direction stimuli"""
+class DirectionType:
+    """Direction Type"""
 
     @rowproperty
     def compute(self):
         """
         Returns
         -------
-        foundation.tuning.compute.direction (row)
-            compute unit responses to direction stimuli
+        foundation.tuning.compute.direction.DirectionType (row)
+            compute direction
         """
         raise NotImplementedError()
 
 
-# -- DirectionResp Types --
+# -- Direction Types --
 
 
 @schema.lookup
-class RecordingDirectionResp(DirectionResp):
+class RecordingVisualDirection(DirectionType):
     definition = """
-    -> recording.TraceSet
-    -> recording.TrialFilterSet
-    -> stimulus.VideoSet
-    -> utility.Offset
-    -> utility.Impulse
-    -> utility.Precision
+    -> recording.VisualDirectionTuning
     """
 
     @rowproperty
     def compute(self):
-        from foundation.tuning.compute.direction import RecordingDirectionResp
+        from foundation.tuning.compute.direction import RecordingVisualDirection
 
-        return RecordingDirectionResp & self
+        return RecordingVisualDirection & self
 
 
 @schema.lookup
-class FnnDirectionResp(DirectionResp):
+class FnnVisualDirection(DirectionType):
     definition = """
-    -> fnn.Model
-    -> stimulus.VideoSet
-    -> utility.Burnin
-    -> utility.Offset
-    -> utility.Impulse
-    -> utility.Precision
+    -> fnn.VisualDirectionTuning
     """
 
     @rowproperty
     def compute(self):
-        from foundation.tuning.compute.direction import FnnDirectionResp
+        from foundation.tuning.compute.direction import FnnVisualDirection
 
-        return FnnDirectionResp & self
+        return FnnVisualDirection & self
 
 
-# -- DirectionResp --
+# -- Direction Tuning --
 
 
 @schema.link
-class DirectionResp:
-    links = [RecordingDirectionResp, FnnDirectionResp]
-    name = "direction_resp"
-    comment = "unit responses to direction stimuli"
+class Direction:
+    links = [RecordingVisualDirection, FnnVisualDirection]
+    name = "direction"
+    comment = "direction tuning"
 
 
-# -- gOSI --
+# ----------------------------- Direction Fit -----------------------------
 
 
 @schema.computed
-class GOSI:
+class GlobalOSI:
     definition = """
-    -> DirectionResp
-    -> recording.Trace
+    -> Direction
     ---
-    gosi = NULL     : float     # global orientation selectivity index
+    global_osi      : float     # global orientation selectivity index
     """
 
-    @property
-    def key_source(self):
-        from foundation.tuning.compute.direction import GOSI
-
-        return GOSI.key_source
-
     def make(self, key):
-        from foundation.tuning.compute.direction import GOSI
+        from foundation.tuning.compute.direction import GlobalOSI
 
-        gosi, trace_ids = (GOSI & key).gosi
-        self.insert(
-            [{**key, "trace_id": trace, "gosi": g} for trace, g in zip(trace_ids, gosi)]
-        )
-
-
-# -- gDSI --
+        key["global_osi"] = (GlobalOSI & key).global_osi
+        self.insert1(key)
 
 
 @schema.computed
-class GDSI:
+class GlobalDSI:
     definition = """
-    -> DirectionResp
-    -> recording.Trace
+    -> Direction
     ---
-    gdsi = NULL     : float     # global direction selectivity index
+    global_dsi      : float     # global direction selectivity index
     """
 
-    @property
-    def key_source(self):
-        from foundation.tuning.compute.direction import GDSI
-
-        return GDSI.key_source
-
     def make(self, key):
-        from foundation.tuning.compute.direction import GDSI
+        from foundation.tuning.compute.direction import GlobalDSI
 
-        gdsi, trace_ids = (GDSI & key).gdsi
-        self.insert(
-            [{**key, "trace_id": trace, "gdsi": g} for trace, g in zip(trace_ids, gdsi)]
-        )
+        key["global_dsi"] = (GlobalDSI & key).global_osi
+        self.insert1(key)
 
 
-# -- BiVonMisesFit --
 @schema.computed
-class BiVonMises():
+class BiVonMises:
     definition = """
-    -> DirectionResp
-    -> recording.Trace
+    -> Direction
     ---
     success     : bool      # success of least squares optimization
     mu          : float     # center of the first von Mises distribution
@@ -139,19 +106,10 @@ class BiVonMises():
     scale       : float     # von Mises amplitude
     bias        : float     # uniform amplitude
     mse         : float     # mean squared error
-    osi         : float     # orientation selectivity index
-    dsi         : float     # direction selectivity index
     """
 
-    @property
-    def key_source(self):
-        from foundation.tuning.compute.direction import BiVonMises
-        return BiVonMises.key_source
-
-    
     def make(self, key):
         from foundation.tuning.compute.direction import BiVonMises
-        fit = (BiVonMises & key).fit
-        for k, v in key.items():
-            fit[k] = v
-        self.insert(fit)
+
+        key = dict(key, **(BiVonMises & key).bi_von_mises)
+        self.insert1(key)
