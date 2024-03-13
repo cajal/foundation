@@ -270,8 +270,8 @@ class VisualDirectionTuning:
         df = df.groupby("direction")["response"].agg(response=lambda x: np.stack(x, axis=1))
 
         # compute density and response STA
-        df["density"] = df.apply(lambda x: np.isfinite(x.response).sum(axis=1), axis=1)
-        df["response"] = df.apply(lambda x: np.nansum(x.response, axis=1) / x.density, axis=1)
+        df.loc[:, ["density"]] = df.apply(lambda x: np.isfinite(x.response).sum(axis=1), axis=1)
+        df.loc[:, ["response"]] = df.apply(lambda x: np.nansum(x.response, axis=1) / x.density, axis=1)
 
         # sort by direction
         df.index = df.index.astype(float)
