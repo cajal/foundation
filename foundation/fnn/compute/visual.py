@@ -236,9 +236,9 @@ class VisualDirectionTuning:
         1D array
             directions (degrees) -- [directions]
         2D array
-            response (STA) to directions -- [directions X units]
+            response (STA) to directions -- [units X directions]
         2D array
-            density of directions -- [directions X units]
+            density of directions -- [units X directions]
         """
         from foundation.stimulus.video import VideoSet
         from foundation.stimulus.compute.video import DirectionSet
@@ -296,9 +296,8 @@ class VisualSpatialTuning:
             stimulus.VideoSet,
             utility.Offset,
             utility.Impulse,
-            utility.Precision,
-            utility.Burnin,
             utility.Resolution,
+            utility.Burnin,
         ]
 
     @rowmethod
@@ -309,9 +308,9 @@ class VisualSpatialTuning:
         str
             spatial type
         3D array
-            response (STA) to spatial locations -- [height X width X units]
+            response (STA) to spatial locations -- [units X height X width]
         3D array
-            density of spatial locations -- [height X width X units]
+            density of spatial locations -- [units X height X width]
         """
         from foundation.stimulus.video import VideoSet
         from foundation.stimulus.compute.video import SpatialSet
@@ -343,4 +342,7 @@ class VisualSpatialTuning:
             densities = np.sum(grids[:, :, None] * masks, axis=-1)
             stas = np.nansum(grids[:, :, None] * responses, axis=-1) / densities
 
-            yield spatial_type, stas.astype(np.float32), densities.astype(np.float32)
+            stas = stas.astype(np.float32).transpose(2, 0, 1)
+            densities = densities.astype(np.float32).transpose(2, 0, 1)
+
+            yield spatial_type, stas, densities

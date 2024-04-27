@@ -71,6 +71,52 @@ class VisualDirectionTuning:
         # verify units
         assert len(response) == len(density) == (Data & key).link.compute.units
 
-        # insert
+        # create keys
         keys = [dict(key, unit=u, response=r, density=d) for u, (r, d) in enumerate(zip(response, density))]
+
+        # insert
         self.insert(keys)
+
+
+@schema.computed
+class VisualSpatialTuning:
+    definition = """
+    -> Model
+    -> stimulus.VideoSet
+    -> utility.Offset
+    -> utility.Impulse
+    -> utility.Resolution
+    -> utility.Burnin
+    unit                    : int unsigned     # unit index
+    spatial_type            : varchar(128)     # spatial type    
+    ---
+    response                : longblob         # response (STA) to spatial locations -- 2D array
+    density                 : longblob         # density of spatial locations -- 2D array
+    """
+
+    @property
+    def key_source(self):
+        from foundation.fnn.compute.visual import VisualSpatialTuning
+
+        return VisualSpatialTuning.key_source
+
+    def make(self, key):
+        from foundation.fnn.compute.visual import VisualSpatialTuning
+
+        # number of units
+        units = (Data & key).link.compute.units
+
+        # spatial tuning
+        for spatial_type, response, density in (VisualSpatialTuning & key).tuning():
+
+            # verify units
+            assert len(response) == len(density) == units
+
+            # create keys
+            keys = [
+                dict(key, spatial_type=spatial_type, unit=u, response=r, density=d)
+                for u, (r, d) in enumerate(zip(response, density))
+            ]
+
+            # insert
+            self.insert(keys)
