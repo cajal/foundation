@@ -4,7 +4,7 @@ from djutils import Schema
 config["stores"] = {
     "external": dict(
         protocol="file",
-        location="/mnt/scratch09/scratch09/foundation/external/",
+        location="/mnt/scratch09/foundation/external/",
     ),
 }
 
