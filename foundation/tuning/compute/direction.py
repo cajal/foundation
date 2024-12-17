@@ -1,5 +1,4 @@
 import numpy as np
-import pandas as pd
 from djutils import rowproperty, keys
 
 from foundation.virtual import recording, fnn, tuning

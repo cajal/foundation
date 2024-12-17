@@ -215,7 +215,7 @@ class VisualImpulse:
 
 @keys
 class VisualDirectionTuning:
-    """Visual Direction"""
+    """Visual Direction Tuning"""
 
     @property
     def keys(self):
@@ -236,9 +236,9 @@ class VisualDirectionTuning:
         1D array
             directions (degrees) -- [directions]
         2D array
-            response (STA) to directions -- [directions X units]
+            response (STA) to directions -- [units X directions]
         2D array
-            density of directions -- [directions X units]
+            density of directions -- [units X directions]
         """
         from foundation.stimulus.video import VideoSet
         from foundation.stimulus.compute.video import DirectionSet
@@ -283,3 +283,66 @@ class VisualDirectionTuning:
             np.stack(df["response"], axis=1).astype(np.float32),
             np.stack(df["density"], axis=1).astype(int),
         )
+
+
+@keys
+class VisualSpatialTuning:
+    """Visual Direction Tuning"""
+
+    @property
+    def keys(self):
+        return [
+            fnn.Model,
+            stimulus.VideoSet,
+            utility.Offset,
+            utility.Impulse,
+            utility.Resolution,
+            utility.Burnin,
+        ]
+
+    @rowmethod
+    def tuning(self):
+        """
+        Yields
+        ------
+        str
+            spatial type
+        3D array
+            response (STA) to spatial locations -- [units X height X width]
+        3D array
+            density of spatial locations -- [units X height X width]
+        """
+        from foundation.stimulus.video import VideoSet
+        from foundation.stimulus.compute.video import SpatialSet
+
+        # videos
+        videos = (VideoSet & self.item).members
+
+        # spatials
+        spatials = (SpatialSet & videos & self.item).df.groupby("video_id")
+
+        # response dataframe
+        dfs = []
+        for video_id, impulse in (VisualImpulse & self.item).impulse():
+
+            # spatial dataframe and response
+            df = spatials.get_group(video_id)
+            df.loc[:, ["response"]] = df.apply(lambda x: impulse(x.onset, x.offset), axis=1)
+            dfs.append(df)
+
+        df = pd.concat(dfs)
+
+        # iterate spatial types
+        for spatial_type, sdf in df.groupby("spatial_type"):
+
+            # compute density and STA
+            grids = np.stack(sdf.spatial_grid, axis=-1)
+            responses = np.stack(sdf.response, axis=-1)
+            masks = np.isfinite(responses)
+            densities = np.sum(grids[:, :, None] * masks, axis=-1)
+            stas = np.nansum(grids[:, :, None] * responses, axis=-1) / densities
+
+            stas = stas.astype(np.float32).transpose(2, 0, 1)
+            densities = densities.astype(np.float32).transpose(2, 0, 1)
+
+            yield spatial_type, stas, densities

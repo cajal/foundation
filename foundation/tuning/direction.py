@@ -1,5 +1,5 @@
 from djutils import rowproperty
-from foundation.virtual import recording, fnn, stimulus, utility
+from foundation.virtual import recording, fnn
 from foundation.schemas import tuning as schema
 
 

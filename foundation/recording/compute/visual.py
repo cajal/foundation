@@ -316,7 +316,9 @@ class VisualSpatialTuning:
 
             # compute density and response
             grids = np.stack(sdf.spatial_grid, axis=-1)
-            density = grids.sum(axis=-1)
-            response = (grids * sdf.response.values).sum(axis=-1) / density
+            responses = sdf.response.values
+            masks = np.isfinite(responses)
+            density = np.sum(grids * masks, axis=-1)
+            sta = np.nansum(grids * responses, axis=-1) / density
 
-            yield spatial_type, response, density
+            yield spatial_type, sta.astype(np.float32), density.astype(np.float32)

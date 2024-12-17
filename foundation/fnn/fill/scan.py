@@ -300,3 +300,32 @@ class VisualScanDirectionTuning:
 
             # direction tuning
             VisualDirectionTuning.populate(self.key, reserve_jobs=True, display_progress=True)
+
+
+@keys
+class VisualScanSpatialTuning:
+    """Visual Scan Spatial Tuning"""
+
+    @property
+    def keys(self):
+        return [
+            (scan.Scan * fnn.Model) & fnn.Data.VisualScan,
+            stimulus.VideoSet,
+            utility.Offset,
+            utility.Impulse,
+            utility.Resolution,
+            utility.Burnin,
+        ]
+
+    def fill(self, cuda=True):
+        from foundation.fnn.visual import VisualSpatialTuning
+        from foundation.utils import use_cuda
+        from contextlib import nullcontext
+
+        # cuda context
+        context = use_cuda if cuda else nullcontext
+
+        with context():
+
+            # direction tuning
+            VisualSpatialTuning.populate(self.key, reserve_jobs=True, display_progress=True)
