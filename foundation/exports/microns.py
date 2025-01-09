@@ -35,7 +35,7 @@ def export(target_dir=None):
     Returns
     -------
     str
-        target path name
+        export file path
     """
     from foundation.fnn.model import Model
     from foundation.fnn.query.scan import VisualScanRecording
