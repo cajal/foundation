@@ -29,7 +29,7 @@ def export(target_dir=None):
     """
     Parameters
     ----------
-    target_dir : str | os.PathLike | None
+    target_dir : os.PathLike | None
         target directory
 
     Returns
