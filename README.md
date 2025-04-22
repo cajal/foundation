@@ -2,6 +2,9 @@
 
 Neuronal recordings and Foundation models
 
+This repository covers the training and analysis pipeline used for the foundation model described in [Wang et al., 2025](https://www.nature.com/articles/s41586-025-08829-y).
+For accessing source code, trained model weights, or to train your own version of the model, please see: https://github.com/cajal/fnn
+
 
 ## Requirements
 
