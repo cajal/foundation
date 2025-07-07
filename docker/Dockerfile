@@ -32,6 +32,7 @@ RUN curl -v -o ~/miniconda.sh -O  https://repo.anaconda.com/miniconda/Miniconda3
     \
     && /opt/conda/bin/conda install -y -c conda-forge \
     python=$PYTHON_VERSION \
+    python_abi=$PYTHON_VERSION \
     av=10.0.0 \
     jupyterlab=3.6.3 \
     pandas=2.0.0 \
