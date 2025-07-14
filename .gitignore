@@ -1,3 +1,11 @@
+# Deploy
+personal*
+
+# MacOS
+.DS_Store
+~*
+*~
+
 .idea/
 
 # Byte-compiled / optimized / DLL files
