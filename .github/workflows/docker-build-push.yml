@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'docker/Dockerfile'
+      - '.github/workflows/docker-build-push.yml'
   workflow_dispatch:
 
 jobs:
@@ -30,7 +33,7 @@ jobs:
       - name: Build and Push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./docker              # path to the directory containing Dockerfile
-          file: ./docker/Dockerfile      # path to the Dockerfile itself
+          context: ./docker
+          file: ./docker/Dockerfile
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/foundation:latest
