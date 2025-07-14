@@ -1,19 +1,35 @@
-version: "3"
-
 services:
   foundation:
-    image: at-docker.ad.bcm.edu:5000/foundation:v0
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAME:-foundation}:${IMAGE_TAG:-latest}
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     env_file: .env
+    ports:
+      - "${JUPYTER_HOST:-0.0.0.0}:${JUPYTER_PORT_CONTAINER:-8888}:8888"
     volumes:
+      - ..:/workspace/foundation
       - /etc/localtime:/etc/localtime:ro
       - /mnt/scratch09/:/mnt/scratch09/
     entrypoint:
       [
-        "/bin/bash",
-        "-c",
-        "pip install git+https://github.com/cajal/djutils.git@v0.0.1 && \
-         pip install git+https://github.com/cajal/foundation.git && \
-         jupyter lab --NotebookApp.token=$${JUPYTER_TOKEN}"
+        "/bin/bash", "-c",
+        "set -e && \
+         pip install git+https://github.com/cajal/djutils.git@v0.0.1 && \
+         pip install git+https://github.com/cajal/fnn && \
+         pip install -e /workspace/foundation && \
+         jupyter lab \
+           --ip=0.0.0.0 \
+           --NotebookApp.token=$$JUPYTER_TOKEN \
+           --NotebookApp.allow_root=True \
+           --NotebookApp.open_browser=False"
       ]
-    working_dir: /
+    working_dir: /workspace/foundation/demos
     ipc: host
+  foundation-cpu:
+    extends: foundation
+    runtime: runc
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=""
+      - CUDA_VISIBLE_DEVICES=""

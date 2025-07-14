@@ -1,0 +1,20 @@
+version: "3"
+services:
+  foundation:
+    image: registry.atlab.stanford.edu:5000/foundation:test
+    env_file: .env
+    ports:
+      - "8888:8888"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /mnt/scratch09/:/mnt/scratch09/
+    entrypoint:
+      [
+        "/bin/bash",
+        "-c",
+        "pip install git+https://github.com/cajal/djutils.git@v0.0.1 && \
+         pip install git+https://github.com/cajal/foundation.git && \
+         jupyter lab --ip=0.0.0.0 --NotebookApp.token=$${JUPYTER_TOKEN}"
+      ]
+    working_dir: /
+    ipc: host
