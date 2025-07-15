@@ -22,14 +22,21 @@ extract_var() {
 }
 
 IMAGE_REGISTRY=$(extract_var IMAGE_REGISTRY)
+IMAGE_NAMESPACE=$(extract_var IMAGE_NAMESPACE)
 IMAGE_NAME=$(extract_var IMAGE_NAME)
 IMAGE_TAG=$(extract_var IMAGE_TAG)
 
 IMAGE_REGISTRY=${IMAGE_REGISTRY:-localhost}
+IMAGE_NAMESPACE=${IMAGE_NAMESPACE:-cajal}
 IMAGE_NAME=${IMAGE_NAME:-foundation}
 IMAGE_TAG=${IMAGE_TAG:-dev}
 
-IMAGE_FULL_TAG="${IMAGE_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+if [[ "$IMAGE_REGISTRY" == "ghcr.io" && "$PUSH_IMAGE" == true ]]; then
+  echo "Pushing to ghcr.io is disabled. Use GitHub Actions to publish."
+  exit 1
+fi
+
+IMAGE_FULL_TAG="${IMAGE_REGISTRY}/${IMAGE_NAMESPACE}/${IMAGE_NAME}:${IMAGE_TAG}"
 
 echo "Building image ${IMAGE_FULL_TAG}"
 docker build -t "${IMAGE_FULL_TAG}" .
