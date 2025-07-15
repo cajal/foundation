@@ -1,10 +1,7 @@
 services:
   foundation:
-    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAME:-foundation}:${IMAGE_TAG:-latest}
+    image: ${IMAGE_REGISTRY:-ghcr.io}/${IMAGE_NAMESPACE:-cajal}/${IMAGE_NAME:-foundation}:${IMAGE_TAG:-latest}
     runtime: nvidia
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
     env_file: .env
     ports:
       - "${JUPYTER_HOST:-0.0.0.0}:${JUPYTER_PORT_CONTAINER:-8888}:8888"
@@ -12,6 +9,7 @@ services:
       - ..:/workspace/foundation
       - /etc/localtime:/etc/localtime:ro
       - /mnt/scratch09/:/mnt/scratch09/
+      - /mnt/scratch09/scratch09/foundation/external/:/external
     entrypoint:
       [
         "/bin/bash", "-c",
@@ -30,6 +28,3 @@ services:
   foundation-cpu:
     extends: foundation
     runtime: runc
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=""
-      - CUDA_VISIBLE_DEVICES=""
