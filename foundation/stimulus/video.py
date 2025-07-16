@@ -142,6 +142,19 @@ class FrameList(VideoType):
         return FrameList & self
 
 
+@schema.list
+class Frame2List(VideoType):
+    keys = [pipe_stim.Frame2]
+    name = "frame2list"
+    comment = "an ordered list of frame2 stimuli"
+
+    @rowproperty
+    def compute(self):
+        from foundation.stimulus.compute.video import Frame2List
+
+        return Frame2List & self
+    
+
 # -- Video --
 
 
