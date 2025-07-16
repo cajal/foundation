@@ -4,7 +4,7 @@ services:
     runtime: nvidia
     env_file: .env
     ports:
-      - "${JUPYTER_HOST:-0.0.0.0}:${JUPYTER_PORT_CONTAINER:-8888}:8888"
+      - "${JUPYTER_HOST:-0.0.0.0}:${JUPYTER_PORT:-8888}:8888"
     volumes:
       - ..:/workspace/foundation
       - /etc/localtime:/etc/localtime:ro
