@@ -4,7 +4,7 @@ services:
     runtime: nvidia
     env_file: .env
     ports:
-      - "${JUPYTER_HOST:-0.0.0.0}:${JUPYTER_PORT:-8888}:8888"
+      - "${JUPYTER_HOST:-0.0.0.0}:${JUPYTER_HOST_PORT:-8888}:8888"
     volumes:
       - ..:/workspace/foundation
       - /etc/localtime:/etc/localtime:ro
@@ -20,9 +20,10 @@ services:
          pip install -e /workspace/foundation && \
          jupyter lab \
            --ip=0.0.0.0 \
-           --NotebookApp.token=$$JUPYTER_TOKEN \
-           --NotebookApp.allow_root=True \
-           --NotebookApp.open_browser=False"
+           --port=8888 \
+           --IdentityProvider.token=$$JUPYTER_TOKEN \
+           --ServerApp.allow_root=True \
+           --no-browser"
       ]
     working_dir: /workspace/foundation/demos
     ipc: host
